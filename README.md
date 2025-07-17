@@ -130,17 +130,10 @@ function MyComponent() {
 }
 ```
 
-## 🎯 Key Features
-
 ### IDS Components
 
 ```typescript
-import {
-  PrimaryButton,
-  SecondaryButton,
-  StoreRow,
-  LoadingGenericOnEnter,
-} from "@instacart/ids-customers";
+import { PrimaryButton } from "@instacart/ids-customers";
 
 // Use components with full theme integration
 <PrimaryButton>Click me</PrimaryButton>;
