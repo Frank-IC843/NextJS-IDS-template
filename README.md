@@ -143,13 +143,6 @@ import {
 // Object syntax
 <div css={{ display: 'flex', gap: '10px' }}>
 
-// Template literal with theme
-<div css={css`
-  background-color: ${theme.colors.brandPrimaryRegular};
-  padding: 20px;
-`}>
-```
-
 ### React Compiler
 
 The template includes React Compiler for automatic performance optimizations. Components are automatically memoized when beneficial, so there is no need to use `useMemo()`, `useCallback()` or `React.Memo` for the majority of use cases.
