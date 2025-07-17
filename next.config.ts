@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  compiler: {
+    emotion: true,
+  },
+  experimental: {
+    reactCompiler: true,
+  },
 };
 
 export default nextConfig;
