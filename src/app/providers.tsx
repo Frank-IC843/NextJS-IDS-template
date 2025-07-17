@@ -11,17 +11,20 @@ declare module "@instacart/ids-core" {
   }
 }
 
-// how to override the theme
+/*
+ * Sample theme overrides
+ * This can be a partial list, missing atoms falling back to the default theme
+ */
 const themeOverrides = {
   colors: {
-    brandPrimaryRegular: "#2563eb", // Blue
-    brandPrimaryDark: "#1d4ed8", // Darker blue
-    brandPrimaryExtraDark: "#1e40af", // Deep blue
-    brandSecondaryRegular: "#64748b", // Slate
-    brandSecondaryDark: "#475569", // Darker slate
-    brandSecondaryLight: "#94a3b8", // Light slate
-    brandHighlightRegular: "#0ea5e9", // Sky blue
-    brandHighlightDark: "#0284c7", // Darker sky blue
+    brandPrimaryRegular: "#0AAD0A",
+    brandPrimaryDark: "#098A09",
+    brandPrimaryExtraDark: "#0C670C",
+    brandSecondaryRegular: "#72767E",
+    brandSecondaryDark: "#343538",
+    brandSecondaryLight: "#F6F7F8",
+    brandHighlightRegular: "#2B78C6",
+    brandHighlightDark: "#1F5A96",
   },
 };
 
