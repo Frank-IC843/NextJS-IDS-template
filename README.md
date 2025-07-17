@@ -50,7 +50,7 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 ### Prerequisites
 
 - Node.js 18+. [Link to download NodeJs](https://nodejs.org/en/download/current)
-- Access to Instacart's private npm registry (`@instacart` packages). [Link to Doc on how to set up](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM). For convenience, the `setup_gpr` script has been copied into this project directory.
+- Access to Instacart's private npm registry (`@instacart` packages). [Link to Doc](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM)
 
 ### Installation
 
@@ -61,15 +61,6 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
    cd ids-nextjs
    ```
 
-1. **Set up GitHub Package Registry (GPR) for IDS**
-   [Follow this doc](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM) to set up GPR using a github access token. This is required in order to install IDS as a dependency.
-
-   ```bash
-   yarn setup_gpr
-   # or
-   npm run setup_gpr
-   ```
-
 1. **Install dependencies**
 
    ```bash
@@ -77,6 +68,8 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
    # or
    npm install
    ```
+
+   Note: running npm/yarn install will trigger the `setup_gpr` script through a preinstall hook. This will check if you have set up an access token for Instacart GitHub Package Registry (GPR) in order to download IDS dependencies, and prompt you to paste one if you've never set it up.
 
 1. **Start development server**
 
