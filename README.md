@@ -113,7 +113,7 @@ function MyComponent() {
     <div
       css={{
         backgroundColor: theme.colors.brandPrimaryRegular,
-        color: "white",
+        color: theme.colors.systemGrayscale80,
         padding: "20px",
       }}
     >
