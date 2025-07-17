@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup-gpr": "bash setup_gpr"
+    "preinstall": "bash setup_gpr"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
