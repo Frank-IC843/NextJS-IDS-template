@@ -50,7 +50,7 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 ### Prerequisites
 
 - Node.js 18+
-- Access to Instacart's private npm registry (`@instacart` packages)
+- Access to Instacart's private npm registry (`@instacart` packages). [Link to Doc on how to set up](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM)
 
 ### Installation
 
