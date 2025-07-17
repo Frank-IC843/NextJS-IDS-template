@@ -1,36 +1,155 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NextJS + Instacart IDS Template
 
-## Getting Started
+A ready-to-use NextJS template pre-configured with Instacart's frontend tooling, designed to provide an easy starting point for POCs and 0-1 applications while maintaining development speed and leveraging Instacart's design system.
 
-First, run the development server:
+## 🚀 Why NextJS?
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Full-Stack Framework Benefits
+
+- **Collocated Frontend/Backend**: Single codebase with shared types across the full stack
+- **Single Language**: End-to-end TypeScript development
+- **File-based Routing**: Intuitive page routing out of the box
+- **Rich Ecosystem**: Extensive library support for auth, database integrations, and more
+
+### Development Experience
+
+- **AI/LLM Optimized**: NextJS has the most training data available, making it ideal for Cursor and other AI coding assistants
+- **React Server Components (RSC)**: Currently the only framework that fully leverages RSC - a powerful React feature our current web apps can't use
+- **Modern React Features**: Built-in support for the latest React innovations
+
+### Scalability
+
+- **0-1 to Scale**: Perfect for rapid prototyping and can scale to 50-100k+ users
+- **Backend-for-Frontend (BFF)**: Can evolve into a BFF pattern when connecting to dedicated backends
+- **Production Ready**: Battle-tested framework used by companies at scale
+
+## 🛠️ What's Pre-Configured
+
+### Instacart Design System (IDS)
+
+- **@instacart/ids-core**: Core design system components and theming
+- **@instacart/ids-customers**: Customer-facing component library
+- **Theme Integration**: Pre-configured with sample theme overrides
+- **TypeScript Support**: Full type safety for IDS components
+
+### Styling & Theming
+
+- **Emotion**: CSS-in-JS with full theme integration
+- **CSS Prop Support**: Use `css` prop on any element with theme access
+- **Responsive Design**: Media queries and responsive styling ready
+
+### Performance & Developer Experience
+
+- **React Compiler**: Experimental React compiler for automatic optimizations
+- **Next.js 15**: Latest version with App Router and React 19 support
+- **TypeScript**: Full TypeScript setup with proper type declarations
+- **Image Optimization**: Pre-configured for CloudFront
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Access to Instacart's private npm registry (`@instacart` packages)
+
+### Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone <your-repo-url>
+   cd ids-nextjs
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   yarn install
+   # or
+   npm install
+   ```
+
+3. **Start development server**
+
+   ```bash
+   yarn dev
+   # or
+   npm run dev
+   ```
+
+4. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🎨 Theme Configuration
+
+The template includes a sample theme in `src/app/providers.tsx`:
+
+```typescript
+const themeOverrides = {
+  colors: {
+    brandPrimaryRegular: "#0AAD0A",
+    brandPrimaryDark: "#098A09",
+    brandPrimaryExtraDark: "#0C670C",
+    brandSecondaryRegular: "#72767E",
+    brandSecondaryDark: "#343538",
+    brandSecondaryLight: "#F6F7F8",
+    brandHighlightRegular: "#2B78C6",
+    brandHighlightDark: "#1F5A96",
+  },
+};
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Using Theme Colors
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```typescript
+import { useTheme } from "@emotion/react";
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+function MyComponent() {
+  const theme = useTheme();
 
-## Learn More
+  return (
+    <div
+      css={{
+        backgroundColor: theme.colors.brandPrimaryRegular,
+        color: "white",
+        padding: "20px",
+      }}
+    >
+      Themed content
+    </div>
+  );
+}
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🎯 Key Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### IDS Components
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```typescript
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StoreRow,
+  LoadingGenericOnEnter,
+} from "@instacart/ids-customers";
 
-## Deploy on Vercel
+// Use components with full theme integration
+<PrimaryButton>Click me</PrimaryButton>;
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### CSS Prop Support
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```typescript
+// Object syntax
+<div css={{ display: 'flex', gap: '10px' }}>
+
+// Template literal with theme
+<div css={css`
+  background-color: ${theme.colors.brandPrimaryRegular};
+  padding: 20px;
+`}>
+```
+
+### React Compiler
+
+The template includes React Compiler for automatic performance optimizations. Components are automatically memoized when beneficial, so there is no need to use `useMemo()`, `useCallback()` or `React.Memo` for the majority of use cases.
