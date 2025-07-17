@@ -49,8 +49,8 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 
 ### Prerequisites
 
-- Node.js 18+
-- Access to Instacart's private npm registry (`@instacart` packages). [Link to Doc on how to set up](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM)
+- Node.js 18+. [Link to download NodeJs](https://nodejs.org/en/download/current)
+- Access to Instacart's private npm registry (`@instacart` packages). [Link to Doc on how to set up](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM). For convenience, the `setup_gpr` script has been copied into this project directory.
 
 ### Installation
 
@@ -61,7 +61,16 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
    cd ids-nextjs
    ```
 
-2. **Install dependencies**
+1. **Set up GitHub Package Registry (GPR) for IDS**
+   [Follow this doc](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM) to set up GPR using a github access token. This is required in order to install IDS as a dependency.
+
+   ```bash
+   yarn setup_gpr
+   # or
+   npm run setup_gpr
+   ```
+
+1. **Install dependencies**
 
    ```bash
    yarn install
@@ -69,7 +78,7 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
    npm install
    ```
 
-3. **Start development server**
+1. **Start development server**
 
    ```bash
    yarn dev
@@ -77,8 +86,8 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
    npm run dev
    ```
 
-4. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+1. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000). If you get a Instacart 404 page, use the ip address from the output of the dev server, as localhost might be routed to Instacart domain.
 
 ## 🎨 Theme Configuration
 
@@ -146,3 +155,4 @@ import {
 ### React Compiler
 
 The template includes React Compiler for automatic performance optimizations. Components are automatically memoized when beneficial, so there is no need to use `useMemo()`, `useCallback()` or `React.Memo` for the majority of use cases.
+```

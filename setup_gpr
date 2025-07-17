@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Short-circuit for happy path
+npm view @instacart/ids-core --registry https://npm.pkg.github.com/ > /dev/null && exit 0
+
+while [[ ! $(npm view @instacart/ids-core --registry https://npm.pkg.github.com/) ]]; do
+  if [[ -n ${GITHUB_PACKAGE_REPOSITORY_READONLY_TOKEN:-} ]]; then
+    echo "Setting NPM token found at \$GITHUB_PACKAGE_REPOSITORY_READONLY_TOKEN"
+    AUTH_TOKEN=$GITHUB_PACKAGE_REPOSITORY_READONLY_TOKEN
+  else
+    echo "❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌"
+    echo "ERROR - You are not authenticated with Instacart's Github Package Registry (GPR)"
+    echo "This is required to access our private packages."
+    echo "Follow these instructions and enter the token below: https://instacart.atlassian.net/l/c/ugHLtxUN"
+    echo "❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌"
+    echo -n "Please enter your GPR auth token: "
+    read -s AUTH_TOKEN
+  fi
+
+  yarn run set-gpr-auth $AUTH_TOKEN
+done
+
+echo "You are authenticated with Instacart's Github Package Registry"
