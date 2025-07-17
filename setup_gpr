@@ -19,7 +19,7 @@ while [[ ! $(npm view @instacart/ids-core --registry https://npm.pkg.github.com/
     read -s AUTH_TOKEN
   fi
 
-  yarn run set-gpr-auth $AUTH_TOKEN
+  npm config set //npm.pkg.github.com/:_authToken $AUTH_TOKEN
 done
 
 echo "You are authenticated with Instacart's Github Package Registry"
