@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { HttpLink } from "@apollo/client";
-import {
-  ApolloNextAppProvider,
-  ApolloClient,
-  InMemoryCache,
-} from "@apollo/client-integration-nextjs";
+import { HttpLink } from '@apollo/client';
+import { ApolloNextAppProvider, ApolloClient, InMemoryCache } from '@apollo/client-integration-nextjs';
 
 // have a function to create a client for you
 function makeClient() {
   const httpLink = new HttpLink({
-    uri: "http://localhost:3030/graphql",
+    uri: 'http://localhost:3030/graphql',
     fetchOptions: {
       // you can pass additional options that should be passed to `fetch` here,
       // e.g. Next.js-related `fetch` options regarding caching and revalidation
@@ -26,9 +22,5 @@ function makeClient() {
 
 // you need to create a component to wrap your app in
 export function ApolloWrapper({ children }: React.PropsWithChildren) {
-  return (
-    <ApolloNextAppProvider makeClient={makeClient}>
-      {children}
-    </ApolloNextAppProvider>
-  );
+  return <ApolloNextAppProvider makeClient={makeClient}>{children}</ApolloNextAppProvider>;
 }

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from '@apollo/client';
 
 const BUSINESS_IMAGE_FRAGMENT = gql`
   fragment BusinessImageFragment on Image {

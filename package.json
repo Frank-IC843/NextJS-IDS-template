@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "preinstall": "bash setup_gpr"
+    "preinstall": "bash setup_gpr",
+    "codegen": "graphql-codegen --config codegen.json",
+    "codegen-cleanup": "find -L . -type d -name '__generated__' -prune -exec rm -r {} \\;"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
@@ -30,12 +32,17 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/client-preset": "^4.8.3",
+    "@graphql-codegen/typescript": "^4.1.6",
+    "@graphql-codegen/typescript-operations": "^4.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "eslint": "^9",
     "eslint-config-next": "15.4.1",
+    "prettier": "^3.6.2",
     "typescript": "^5"
   }
 }

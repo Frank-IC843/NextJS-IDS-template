@@ -1,14 +1,12 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { IdsProvider } from "@instacart/ids-core";
-import { ApolloWrapper } from "@/lib/apollo-wrapper";
+import { useRouter } from 'next/navigation';
+import { IdsProvider } from '@instacart/ids-core';
+import { ApolloWrapper } from '@/lib/apollo-wrapper';
 
-declare module "@instacart/ids-core" {
+declare module '@instacart/ids-core' {
   interface RouterConfig {
-    routerOptions: NonNullable<
-      Parameters<ReturnType<typeof useRouter>["push"]>[1]
-    >;
+    routerOptions: NonNullable<Parameters<ReturnType<typeof useRouter>['push']>[1]>;
   }
 }
 
@@ -18,14 +16,14 @@ declare module "@instacart/ids-core" {
  */
 const themeOverrides = {
   colors: {
-    brandPrimaryRegular: "#0AAD0A",
-    brandPrimaryDark: "#098A09",
-    brandPrimaryExtraDark: "#0C670C",
-    brandSecondaryRegular: "#72767E",
-    brandSecondaryDark: "#343538",
-    brandSecondaryLight: "#F6F7F8",
-    brandHighlightRegular: "#2B78C6",
-    brandHighlightDark: "#1F5A96",
+    brandPrimaryRegular: '#0AAD0A',
+    brandPrimaryDark: '#098A09',
+    brandPrimaryExtraDark: '#0C670C',
+    brandSecondaryRegular: '#72767E',
+    brandSecondaryDark: '#343538',
+    brandSecondaryLight: '#F6F7F8',
+    brandHighlightRegular: '#2B78C6',
+    brandHighlightDark: '#1F5A96',
   },
 };
 

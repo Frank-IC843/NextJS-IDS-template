@@ -78,8 +78,8 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 #### Server Component Usage
 
 ```typescript
-import { gql } from "@apollo/client";
-import { getClient } from "@/lib/apollo-client";
+import { gql } from '@apollo/client';
+import { getClient } from '@/lib/apollo-client';
 
 const GET_USERS = gql`
   query GetUsers {
@@ -101,9 +101,9 @@ export default async function UsersPage() {
 #### Client Component Usage
 
 ```typescript
-"use client";
+'use client';
 
-import { gql, useQuery } from "@apollo/client";
+import { gql, useQuery } from '@apollo/client';
 
 const GET_USERS = gql`
   query GetUsers {
@@ -185,14 +185,14 @@ The template includes a sample theme in `src/app/providers.tsx`:
 ```typescript
 const themeOverrides = {
   colors: {
-    brandPrimaryRegular: "#0AAD0A",
-    brandPrimaryDark: "#098A09",
-    brandPrimaryExtraDark: "#0C670C",
-    brandSecondaryRegular: "#72767E",
-    brandSecondaryDark: "#343538",
-    brandSecondaryLight: "#F6F7F8",
-    brandHighlightRegular: "#2B78C6",
-    brandHighlightDark: "#1F5A96",
+    brandPrimaryRegular: '#0AAD0A',
+    brandPrimaryDark: '#098A09',
+    brandPrimaryExtraDark: '#0C670C',
+    brandSecondaryRegular: '#72767E',
+    brandSecondaryDark: '#343538',
+    brandSecondaryLight: '#F6F7F8',
+    brandHighlightRegular: '#2B78C6',
+    brandHighlightDark: '#1F5A96',
   },
 };
 ```

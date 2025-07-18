@@ -1,14 +1,14 @@
-import { getClient } from "@/lib/apollo-client";
-import { BUSINESS_LAYOUT_QUERY } from "./queries";
-import { Buttons } from "@/app/components/buttons";
+import { TestSuspenseQuery } from './components/suspense-test';
+import { ServerSideDataTile } from './components/server-side-data-tile';
 
 export default async function Home() {
-  const { data } = await getClient().query({ query: BUSINESS_LAYOUT_QUERY });
-  console.log(data);
-
   return (
-    <div css={{ display: "flex", flexDirection: "column" }}>
-      <Buttons />
+    <div css={{ display: 'flex', flexDirection: 'column' }}>
+      <h1 css={{ margin: '20px 10px', fontSize: '24px', fontWeight: 'bold' }}>GraphQL Data Fetching Comparison</h1>
+      <div css={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <ServerSideDataTile />
+        <TestSuspenseQuery />
+      </div>
     </div>
   );
 }
