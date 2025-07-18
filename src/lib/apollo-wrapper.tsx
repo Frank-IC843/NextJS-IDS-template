@@ -2,11 +2,12 @@
 
 import { HttpLink } from '@apollo/client';
 import { ApolloNextAppProvider, ApolloClient, InMemoryCache } from '@apollo/client-integration-nextjs';
+import { GRAPHQL_URL } from './constants';
 
 // have a function to create a client for you
 function makeClient() {
   const httpLink = new HttpLink({
-    uri: 'http://localhost:3030/graphql',
+    uri: GRAPHQL_URL,
     fetchOptions: {
       // you can pass additional options that should be passed to `fetch` here,
       // e.g. Next.js-related `fetch` options regarding caching and revalidation

@@ -1,7 +1,8 @@
 import { CodegenConfig } from '@graphql-codegen/cli';
+import { GRAPHQL_URL } from './src/lib/constants';
 
 const config: CodegenConfig = {
-  schema: './schema.graphql',
+  schema: GRAPHQL_URL,
   documents: ['src/**/queries.ts'],
   generates: {
     './src/__generated__/graphql-types.ts': {
@@ -17,6 +18,9 @@ const config: CodegenConfig = {
         },
       },
     },
+  },
+  hooks: {
+    afterOneFileWrite: ['prettier --write'],
   },
 };
 
