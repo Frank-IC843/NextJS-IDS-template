@@ -28,7 +28,13 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 ### Prerequisites
 
 - Node.js 18+. [Link to download NodeJs](https://nodejs.org/en/download/current)
-- Access to Instacart's private npm registry (`@instacart` packages). [Link to Doc](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM)
+- Access to Instacart's private npm registry (`@instacart` packages). You will be prompted to set this up if you haven't already when installing dependencies [Link to Doc](https://instacart.atlassian.net/wiki/spaces/Customers/pages/2081816908/Using+GitHub+Package+Registry+GPR+for+Yarn+NPM+PNPM)
+- If you want to query the Instacart GraphQL server, ensure the bento customers/fullstack profile is running.
+
+  ```bash
+  bento profile set customers/backend
+  bento setup # or bento update if setup was already ran
+  ```
 
 ### Installation
 
@@ -58,7 +64,11 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
    ```
 
 1. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000). If you get a Instacart 404 page, use the ip address from the output of the dev server, as localhost might be routed to Instacart domain.
+   Navigate to [http://localhost:3000](http://localhost:3000). If you have the customers/fullstack profile running, you should be able to see the data fetched from the example `BusinessLayout` query.
+
+ <p align="center">
+  <img src="public/images/preview.png" width="800" alt="App Preview" />
+</p>
 
 ## 🛠️ What's Pre-Configured
 
@@ -71,7 +81,7 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 
 ### Apollo Client GraphQL & Data Fetching
 
-- **Apollo Client**: Pre-configured with Next.js integration for RSC support
+- **Apollo Client**: Pre-configured with Next.js integration for RSC support, and codegen commands
 - **Server Components**: Query data directly in server components with `getClient()`
 - **Client Components**: Full Apollo Client provider setup for client-side data fetching
 
@@ -164,6 +174,27 @@ export function UsersPage() {
 ```
 
 > **Why useSuspenseQuery is better for RSC**: `useSuspenseQuery` integrates seamlessly with React's Suspense boundaries, enabling better streaming and progressive loading. It eliminates the need for manual loading states and works perfectly with Next.js's streaming SSR, allowing the server to send HTML as soon as it's ready while still loading data in the background.
+
+### GraphQL Code Generation
+
+The template includes GraphQL Code Generator for automatic TypeScript type generation from your GraphQL schema and operations.
+
+#### Prerequisites
+
+- **GraphQL Server**: A GraphQL server must be running locally at `http://localhost:3030/graphql`. This should work with the default bento customers/backend profile
+- **GraphQL Operations**: Define your queries, mutations, and subscriptions in `src/**/queries.ts` files
+
+#### Running Code Generation
+
+```bash
+# Generate TypeScript types from GraphQL schema and operations
+yarn codegen
+
+# This will:
+# 1. Clean up existing generated files
+# 2. Connect to your local GraphQL server
+# 3. Generate types in src/__generated__/graphql-types.ts
+```
 
 ### Styling & Theming
 

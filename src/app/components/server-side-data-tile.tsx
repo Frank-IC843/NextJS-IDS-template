@@ -13,12 +13,15 @@ export async function ServerSideDataTile() {
         border: '1px solid #c3e6cb',
       }}
     >
-      <h2>🚀 Server-Side Data Fetching (SSR)</h2>
+      <h2>🚀 Server-Side Data Fetching in a React Server Component</h2>
       <p>
         <strong>Status:</strong> Data rendered immediately on server!
       </p>
       <p>
         <strong>Loading State:</strong> None - data available instantly
+      </p>
+      <p>
+        <strong>Javascript Imports:</strong> None sent to client as Server Components are only rendered on the server
       </p>
       <details>
         <summary>Raw Data (click to expand)</summary>
