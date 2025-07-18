@@ -41,8 +41,8 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 1. **Clone the repository**
 
    ```bash
-   git clone <your-repo-url>
-   cd ids-nextjs
+   git clone https://github.com/Frank-IC843/NextJS-IDS-template.git <custom-folder-name>
+   cd <custom-folder-name>
    ```
 
 1. **Install dependencies**

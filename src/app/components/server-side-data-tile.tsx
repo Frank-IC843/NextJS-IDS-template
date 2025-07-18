@@ -1,8 +1,8 @@
-import { getClient } from '@/lib/apollo-client';
+import { query } from '@/lib/apollo-client';
 import { BUSINESS_LAYOUT_QUERY } from '../queries';
 
 export async function ServerSideDataTile() {
-  const { data } = await getClient().query({ query: BUSINESS_LAYOUT_QUERY });
+  const { data } = await query({ query: BUSINESS_LAYOUT_QUERY });
   return (
     <div
       css={{
