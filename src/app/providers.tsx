@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { IdsProvider } from "@instacart/ids-core";
+import { ApolloWrapper } from "@/lib/apollo-wrapper";
 
 declare module "@instacart/ids-core" {
   interface RouterConfig {
@@ -32,13 +33,15 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   return (
-    <IdsProvider
-      themeOverrides={themeOverrides}
-      routing={{
-        navigate: router.push,
-      }}
-    >
-      {children}
-    </IdsProvider>
+    <ApolloWrapper>
+      <IdsProvider
+        themeOverrides={themeOverrides}
+        routing={{
+          navigate: router.push,
+        }}
+      >
+        {children}
+      </IdsProvider>
+    </ApolloWrapper>
   );
 }

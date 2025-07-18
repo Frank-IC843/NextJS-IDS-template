@@ -23,29 +23,7 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 - **Backend-for-Frontend (BFF)**: Can evolve into a BFF pattern when connecting to dedicated backends
 - **Production Ready**: Battle-tested framework used by companies at scale
 
-## 🛠️ What's Pre-Configured
-
-### Instacart Design System (IDS)
-
-- **@instacart/ids-core**: Core design system components and theming
-- **@instacart/ids-customers**: Customer-facing component library
-- **Theme Integration**: Pre-configured with sample theme overrides
-- **TypeScript Support**: Full type safety for IDS components
-
-### Styling & Theming
-
-- **Emotion**: CSS-in-JS with full theme integration
-- **CSS Prop Support**: Use `css` prop on any element with theme access
-- **Responsive Design**: Media queries and responsive styling ready
-
-### Performance & Developer Experience
-
-- **React Compiler**: Experimental React compiler for automatic optimizations
-- **Next.js 15**: Latest version with App Router and React 19 support
-- **TypeScript**: Full TypeScript setup with proper type declarations
-- **Image Optimization**: Pre-configured for CloudFront
-
-## 🚀 Getting Started
+## 🚀 Quick Start Guide
 
 ### Prerequisites
 
@@ -81,6 +59,124 @@ A ready-to-use NextJS template pre-configured with Instacart's frontend tooling,
 
 1. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000). If you get a Instacart 404 page, use the ip address from the output of the dev server, as localhost might be routed to Instacart domain.
+
+## 🛠️ What's Pre-Configured
+
+### Instacart Design System (IDS)
+
+- **@instacart/ids-core**: Core design system components and theming
+- **@instacart/ids-customers**: Customer-facing component library
+- **Theme Integration**: Pre-configured with sample theme overrides
+- **TypeScript Support**: Full type safety for IDS components
+
+### Apollo Client GraphQL & Data Fetching
+
+- **Apollo Client**: Pre-configured with Next.js integration for RSC support
+- **Server Components**: Query data directly in server components with `getClient()`
+- **Client Components**: Full Apollo Client provider setup for client-side data fetching
+
+#### Server Component Usage
+
+```typescript
+import { gql } from "@apollo/client";
+import { getClient } from "@/lib/apollo-client";
+
+const GET_USERS = gql`
+  query GetUsers {
+    users {
+      id
+      name
+      email
+    }
+  }
+`;
+
+export default async function UsersPage() {
+  const { data, loading, error } = await getClient().query({
+    query: GET_USERS,
+  });
+}
+```
+
+#### Client Component Usage
+
+```typescript
+"use client";
+
+import { gql, useQuery } from "@apollo/client";
+
+const GET_USERS = gql`
+  query GetUsers {
+    users {
+      id
+      name
+      email
+    }
+  }
+`;
+
+export default function UsersClient() {
+  const { data, loading, error } = useQuery(GET_USERS);
+}
+```
+
+#### Client Component with Suspense (Recommended for RSC)
+
+```typescript
+"use client";
+
+import { Suspense } from "react";
+import { gql, useSuspenseQuery } from "@apollo/client";
+
+const GET_USERS = gql`
+  query GetUsers {
+    users {
+      id
+      name
+      email
+    }
+  }
+`;
+
+export default function UsersClientSuspense() {
+  const { data } = useSuspenseQuery(GET_USERS);
+
+  return (
+    <div>
+      {data.users.map((user) => (
+        <div key={user.id}>
+          <h3>{user.name}</h3>
+          <p>{user.email}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Usage in parent component with Suspense boundary
+export function UsersPage() {
+  return (
+    <Suspense fallback={<div>Loading users...</div>}>
+      <UsersClientSuspense />
+    </Suspense>
+  );
+}
+```
+
+> **Why useSuspenseQuery is better for RSC**: `useSuspenseQuery` integrates seamlessly with React's Suspense boundaries, enabling better streaming and progressive loading. It eliminates the need for manual loading states and works perfectly with Next.js's streaming SSR, allowing the server to send HTML as soon as it's ready while still loading data in the background.
+
+### Styling & Theming
+
+- **Emotion**: CSS-in-JS with full theme integration
+- **CSS Prop Support**: Use `css` prop on any element with theme access
+- **Responsive Design**: Media queries and responsive styling ready
+
+### Performance & Developer Experience
+
+- **React Compiler**: Experimental React compiler for automatic optimizations
+- **Next.js 15**: Latest version with App Router and React 19 support
+- **TypeScript**: Full TypeScript setup with proper type declarations
+- **Image Optimization**: Pre-configured for CloudFront
 
 ## 🎨 Theme Configuration
 
@@ -135,7 +231,7 @@ import { PrimaryButton } from "@instacart/ids-customers";
 ### CSS Prop Support
 
 ```typescript
-// Object syntax
+// elements accept a 'css' prop
 <div css={{ display: 'flex', gap: '10px' }}>
 ```
 

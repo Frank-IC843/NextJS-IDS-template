@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ClientProviders } from "./providers";
+import { ApolloWrapper } from "@/lib/apollo-wrapper";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClientProviders>{children}</ClientProviders>
+        <ApolloWrapper>
+          <ClientProviders>{children}</ClientProviders>
+        </ApolloWrapper>
       </body>
     </html>
   );

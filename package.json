@@ -10,6 +10,8 @@
     "preinstall": "bash setup_gpr"
   },
   "dependencies": {
+    "@apollo/client": "^3.13.8",
+    "@apollo/client-integration-nextjs": "^0.12.2",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/serialize": "^1.3.3",
@@ -17,6 +19,7 @@
     "@instacart/ids-core": "^0.0.902",
     "@instacart/ids-customers": "^0.0.902",
     "body-scroll-lock": "4.0.0-beta.0",
+    "graphql": "^16.11.0",
     "next": "15.4.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
