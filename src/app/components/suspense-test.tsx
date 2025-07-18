@@ -35,7 +35,7 @@ function BusinessLayoutTest() {
 export function TestSuspenseQuery() {
   return (
     <div>
-      <h1>GraphQL useSuspenseQuery Integration Test</h1>
+      <h2>🚀 Server-Side Data Fetching (SSR)</h2>
       <Suspense
         fallback={
           <div css={{ padding: '20px', backgroundColor: '#fff3cd', margin: '10px', borderRadius: '8px' }}>

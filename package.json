@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "preinstall": "bash setup_gpr",
-    "codegen": "graphql-codegen --config codegen.json",
+    "codegen": "yarn codegen-cleanup && graphql-codegen",
     "codegen-cleanup": "find -L . -type d -name '__generated__' -prune -exec rm -r {} \\;"
   },
   "dependencies": {
