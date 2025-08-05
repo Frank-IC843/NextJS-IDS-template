@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ClientProviders } from './providers';
 import { ApolloWrapper } from '@/lib/apollo-wrapper';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Create Next App',
