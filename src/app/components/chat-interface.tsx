@@ -162,6 +162,8 @@ export function ChatInterface() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
   const styles = useStyles();
 
   const scrollToBottom = () => {
@@ -172,9 +174,32 @@ export function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (readerRef.current) {
+        try {
+          readerRef.current.releaseLock();
+        } catch (error) {
+          console.warn('Reader cleanup warning:', error);
+        }
+      }
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    // Cancel previous request if still running
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
 
     const userMessage: Message = { role: 'user', content: input.trim() };
     setMessages(prev => [...prev, userMessage]);
@@ -192,6 +217,7 @@ export function ChatInterface() {
           messages: [...messages, userMessage],
           stream: true,
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
@@ -201,6 +227,7 @@ export function ChatInterface() {
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No reader available');
 
+      readerRef.current = reader;
       let assistantContent = '';
 
       while (true) {
@@ -213,7 +240,16 @@ export function ChatInterface() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6).trim();
-            if (data === '[DONE]') return;
+            if (data === '[DONE]') {
+              // Clean up reader before returning
+              try {
+                reader.releaseLock();
+                readerRef.current = null;
+              } catch (error) {
+                console.warn('Reader release warning:', error);
+              }
+              return;
+            }
 
             try {
               const parsed = JSON.parse(data);
@@ -237,6 +273,12 @@ export function ChatInterface() {
         }
       }
     } catch (error) {
+      // Handle abort errors gracefully (user cancelled or component unmounted)
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Request was cancelled');
+        return;
+      }
+
       console.error('Chat error:', error);
 
       setMessages(prev => {
@@ -250,6 +292,16 @@ export function ChatInterface() {
         return newMessages;
       });
     } finally {
+      // Clean up references
+      if (readerRef.current) {
+        try {
+          readerRef.current.releaseLock();
+        } catch (error) {
+          console.warn('Reader cleanup warning:', error);
+        }
+        readerRef.current = null;
+      }
+      abortControllerRef.current = null;
       setIsLoading(false);
     }
   };
