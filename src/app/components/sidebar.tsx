@@ -1,5 +1,21 @@
 'use client';
-import { ArrowLeftIcon, MenuIcon, MarkerIcon, useTheme } from '@instacart/ids-core';
+import {
+  ArrowLeftIcon,
+  GearIcon,
+  MarkerIcon,
+  PlusBadgeIcon,
+  ReceiptIcon,
+  CardIcon,
+  useTheme,
+  LoyaltyCardIcon,
+  DealsCategoryFilledIcon,
+  NotificationIcon,
+  DashboardIcon,
+  TeamIcon,
+  DollarIcon,
+  OrderIcon,
+  TimeIcon,
+} from '@instacart/ids-core';
 import { DividerBase } from '@instacart/ids-customers';
 import { MenuItem, MenuItemProps } from './menu-item';
 
@@ -8,27 +24,37 @@ function useStyles() {
   return {
     sidebar: {
       width: '100%',
-      padding: '16px',
+      paddingTop: '8px',
+      paddingRight: '16px',
       borderRight: `1px solid ${theme.colors.systemGrayscale20}`,
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      gap: '8px',
+    },
+    menuItems: {
+      display: 'flex',
+      flexDirection: 'column',
+      paddingLeft: '16px',
+      gap: '5px',
+    },
+    divider: {
+      marginTop: '6px',
+      marginBottom: '6px',
     },
   } as const;
 }
 
 const personalMenuItems: MenuItemProps[] = [
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for order history
+    Icon: ReceiptIcon,
     label: 'Order history',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for account settings
+    Icon: GearIcon,
     label: 'Account settings',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for Instacart+
+    Icon: PlusBadgeIcon,
     label: 'Instacart+',
   },
   {
@@ -36,57 +62,53 @@ const personalMenuItems: MenuItemProps[] = [
     label: 'Addresses',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for payment methods
+    Icon: CardIcon,
     label: 'Payment methods',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for credits/promos
+    Icon: DealsCategoryFilledIcon,
     label: 'Credits, promos, and gift cards',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for notification settings
+    Icon: NotificationIcon,
     label: 'Notification settings',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for loyalty cards
+    Icon: LoyaltyCardIcon,
     label: 'Loyalty cards',
   },
 ];
 
 const businessMenuItems: MenuItemProps[] = [
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for dashboard
+    Icon: DashboardIcon,
     label: 'Dashboard',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for team members
+    Icon: TeamIcon,
     label: 'Team members',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for tax exemptions
+    Icon: DollarIcon,
     label: 'Tax exemptions',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for order guides
+    Icon: OrderIcon,
     label: 'Order guides',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for invoicing
+    Icon: ReceiptIcon,
     label: 'Invoicing',
     isNew: true,
     isSelected: true,
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for order approvals
+    Icon: TimeIcon,
     label: 'Order approvals',
   },
   {
-    Icon: MenuIcon, // Using MenuIcon as placeholder for business settings
+    Icon: GearIcon,
     label: 'Business settings',
-  },
-  {
-    Icon: ArrowLeftIcon, // Using ArrowLeftIcon as placeholder for switch to personal
-    label: 'Switch to personal',
   },
 ];
 
@@ -95,25 +117,31 @@ export function Sidebar() {
 
   return (
     <nav css={styles.sidebar}>
-      <>
+      <div css={styles.menuItems}>
         <MenuItem Icon={ArrowLeftIcon} label="Back" />
-        <DividerBase />
-      </>
-      <>
+        <DividerBase styles={{ divider: styles.divider }} />
+      </div>
+      <div css={styles.menuItems}>
         {personalMenuItems.map(item => (
           <MenuItem key={item.label} Icon={item.Icon} label={item.label} isNew={item.isNew} />
         ))}
-        <DividerBase />
-      </>
-      {businessMenuItems.map(item => (
-        <MenuItem
-          key={item.label}
-          Icon={item.Icon}
-          label={item.label}
-          isNew={item.isNew}
-          isSelected={item.isSelected}
-        />
-      ))}
+        <DividerBase styles={{ divider: styles.divider }} />
+      </div>
+      <div css={styles.menuItems}>
+        {businessMenuItems.map(item => (
+          <MenuItem
+            key={item.label}
+            Icon={item.Icon}
+            label={item.label}
+            isNew={item.isNew}
+            isSelected={item.isSelected}
+          />
+        ))}
+        <DividerBase styles={{ divider: styles.divider }} />
+      </div>
+      <div css={styles.menuItems}>
+        <MenuItem Icon={ArrowLeftIcon} label="Switch to personal" />
+      </div>
     </nav>
   );
 }
