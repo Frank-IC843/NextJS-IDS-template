@@ -1,5 +1,6 @@
 'use client';
 import { ArrowLeftIcon, MenuIcon, MarkerIcon, useTheme } from '@instacart/ids-core';
+import { DividerBase } from '@instacart/ids-customers';
 import { MenuItem, MenuItemProps } from './menu-item';
 
 function useStyles() {
@@ -17,11 +18,7 @@ function useStyles() {
   } as const;
 }
 
-const menuItems: MenuItemProps[] = [
-  {
-    Icon: ArrowLeftIcon,
-    label: 'Back',
-  },
+const personalMenuItems: MenuItemProps[] = [
   {
     Icon: MenuIcon, // Using MenuIcon as placeholder for order history
     label: 'Order history',
@@ -54,6 +51,9 @@ const menuItems: MenuItemProps[] = [
     Icon: MenuIcon, // Using MenuIcon as placeholder for loyalty cards
     label: 'Loyalty cards',
   },
+];
+
+const businessMenuItems: MenuItemProps[] = [
   {
     Icon: MenuIcon, // Using MenuIcon as placeholder for dashboard
     label: 'Dashboard',
@@ -74,6 +74,7 @@ const menuItems: MenuItemProps[] = [
     Icon: MenuIcon, // Using MenuIcon as placeholder for invoicing
     label: 'Invoicing',
     isNew: true,
+    isSelected: true,
   },
   {
     Icon: MenuIcon, // Using MenuIcon as placeholder for order approvals
@@ -94,8 +95,24 @@ export function Sidebar() {
 
   return (
     <nav css={styles.sidebar}>
-      {menuItems.map(item => (
-        <MenuItem key={item.label} Icon={item.Icon} label={item.label} isNew={item.isNew} />
+      <>
+        <MenuItem Icon={ArrowLeftIcon} label="Back" />
+        <DividerBase />
+      </>
+      <>
+        {personalMenuItems.map(item => (
+          <MenuItem key={item.label} Icon={item.Icon} label={item.label} isNew={item.isNew} />
+        ))}
+        <DividerBase />
+      </>
+      {businessMenuItems.map(item => (
+        <MenuItem
+          key={item.label}
+          Icon={item.Icon}
+          label={item.label}
+          isNew={item.isNew}
+          isSelected={item.isSelected}
+        />
       ))}
     </nav>
   );

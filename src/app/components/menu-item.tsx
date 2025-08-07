@@ -1,15 +1,17 @@
 'use client';
 
-import { ArrowLeftIcon } from '@instacart/ids-core';
-import { Text } from '@instacart/ids-customers';
+import { ArrowLeftIcon, useTheme } from '@instacart/ids-core';
+import { BadgeNotifier, Text } from '@instacart/ids-customers';
 
 export type MenuItemProps = {
   Icon: typeof ArrowLeftIcon;
   label: string;
   isNew?: boolean;
+  isSelected?: boolean;
 };
 
-const useStyles = () => {
+const useStyles = (isSelected?: boolean) => {
+  const theme = useTheme();
   return {
     menuItem: {
       display: 'flex',
@@ -26,9 +28,12 @@ const useStyles = () => {
       padding: '8px',
       borderRadius: '6px',
       transition: 'background-color 0.2s ease',
-      '&:hover': {
-        backgroundColor: '#F3F4F6',
-      },
+      backgroundColor: isSelected ? theme.colors.systemGrayscale99 : 'transparent',
+      ...(!isSelected && {
+        '&:hover': {
+          backgroundColor: theme.colors.systemGrayscale10,
+        },
+      }),
     },
     newBadge: {
       backgroundColor: '#EF4444',
@@ -42,15 +47,19 @@ const useStyles = () => {
   } as const;
 };
 
-export function MenuItem({ Icon, label, isNew }: MenuItemProps) {
-  const styles = useStyles();
+export function MenuItem({ Icon, label, isNew, isSelected }: MenuItemProps) {
+  const styles = useStyles(isSelected);
   return (
     <div css={styles.menuItem}>
       <div css={styles.menuItemContent}>
-        <Icon size="24px" />
-        <Text typography="bodyLarge2">{label}</Text>
+        <>
+          <Icon size="24px" color={isSelected ? 'systemGrayscale00' : 'systemGrayscale80'} />
+          <Text typography="bodyLarge1" color={isSelected ? 'systemGrayscale00' : 'systemGrayscale70'}>
+            {label}
+          </Text>
+        </>
+        {isNew && <BadgeNotifier value="New" css={{ marginLeft: 'auto' }} />}
       </div>
-      {isNew && <span css={styles.newBadge}>New</span>}
     </div>
   );
 }

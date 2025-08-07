@@ -8,7 +8,7 @@ function useStyles() {
     layoutGrid: {
       display: 'grid',
       gridTemplateRows: '80px 1fr', // Header height, then remaining space
-      gridTemplateColumns: '240px 1fr', // Sidebar width, then remaining space
+      gridTemplateColumns: '270px 1fr', // Sidebar width, then remaining space
       gridTemplateAreas: `
         "header header"
         "sidebar main"
@@ -16,19 +16,22 @@ function useStyles() {
       height: '100vh',
       width: '100vw',
       maxHeight: '100vh',
+      maxWidth: '100vw',
       boxSizing: 'border-box' as const,
-      overflow: 'hidden',
+      overflow: 'hidden', // Prevent any overflow from the grid container
     },
     header: {
       gridArea: 'header',
     },
     sidebar: {
       gridArea: 'sidebar',
+      overflow: 'hidden', // Prevent sidebar from overflowing its grid area
     },
     main: {
       gridArea: 'main',
       padding: '0px 40px',
-      overflow: 'auto',
+      overflow: 'auto', // Allow main content to scroll if needed
+      maxHeight: '100%', // Constrain to grid area
     },
   } as const;
 }
