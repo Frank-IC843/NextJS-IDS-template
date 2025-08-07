@@ -1,7 +1,5 @@
-// import { TestSuspenseQuery } from './components/suspense-test';
-// import { ServerSideDataTile } from './components/server-side-data-tile';
 import { Header } from './components/header';
-import { ButtonGroup } from './components/button-group';
+import { ChatInterface } from './components/chat-interface';
 
 export default function Home() {
   return (
@@ -10,16 +8,14 @@ export default function Home() {
       {/* Main Content */}
       <main
         style={{
-          marginTop: '100px', // Account for fixed header height
+          marginTop: '100px',
           padding: '20px',
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
         }}
       >
-        <ButtonGroup />
-        {/* <ServerSideDataTile />
-        <TestSuspenseQuery /> */}
+        <ChatInterface />
       </main>
     </>
   );
