@@ -206,14 +206,11 @@ export function ChatInterface() {
 
     try {
       // Add assistant message placeholder
-      const assistantMessage: Message = { role: 'assistant', content: '' };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...messages, userMessage],
           stream: true,
@@ -238,14 +235,13 @@ export function ChatInterface() {
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') break;
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') return;
 
             try {
               const parsed = JSON.parse(data);
               if (parsed.content) {
                 assistantContent += parsed.content;
-                // Update the last message (assistant message)
                 setMessages(prev => {
                   const newMessages = [...prev];
                   if (newMessages[newMessages.length - 1]?.role === 'assistant') {
@@ -258,32 +254,20 @@ export function ChatInterface() {
                 });
               }
             } catch (e) {
-              // Skip invalid JSON
+              console.error('Error parsing chunk:', e);
             }
           }
         }
       }
     } catch (error) {
       console.error('Chat error:', error);
-      
-      let errorMessage = 'Sorry, I encountered an error. Please try again.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        } else if (error.message.includes('429')) {
-          errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
-        } else if (error.message.includes('timeout')) {
-          errorMessage = 'Request timed out. Please try again.';
-        }
-      }
-      
+
       setMessages(prev => {
         const newMessages = [...prev];
         if (newMessages[newMessages.length - 1]?.role === 'assistant') {
           newMessages[newMessages.length - 1] = {
             role: 'assistant',
-            content: errorMessage,
+            content: 'Sorry, I encountered an error. Please try again.',
           };
         }
         return newMessages;
