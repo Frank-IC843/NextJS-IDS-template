@@ -18,12 +18,32 @@ import {
 } from '@instacart/ids-core';
 import { DividerBase } from '@instacart/ids-customers';
 import { MenuItem } from './menu-item';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 
 type MenuItem = {
   Icon: typeof ArrowLeftIcon;
   label: string;
   isNew?: boolean;
+};
+
+// Mapping of menu item labels to their corresponding routes
+const menuItemRoutes: Record<string, string> = {
+  Dashboard: '/dashboard',
+  'Order history': '/order-history',
+  'Account settings': '/account-settings',
+  'Instacart+': '/instacart-plus',
+  Addresses: '/addresses',
+  'Payment methods': '/payment-methods',
+  'Credits, promos, and gift cards': '/credits-promos-gift-cards',
+  'Notification settings': '/notification-settings',
+  'Loyalty cards': '/loyalty-cards',
+  'Team members': '/team-members',
+  'Tax exemptions': '/tax-exemptions',
+  'Order guides': '/order-guides',
+  Invoicing: '/invoicing',
+  'Order approvals': '/order-approvals',
+  'Business settings': '/business-settings',
 };
 
 function useStyles() {
@@ -129,11 +149,31 @@ const switchToPersonalMenuItem: MenuItem = {
 };
 
 export function Sidebar() {
-  const [selectedMenuItem, setSelectedMenuItem] = useState('Invoicing');
+  const router = useRouter();
+  const pathname = usePathname();
+  const [selectedMenuItem, setSelectedMenuItem] = useState('');
   const styles = useStyles();
 
+  // Update selected menu item based on current pathname
+  useEffect(() => {
+    const currentMenuItem = Object.entries(menuItemRoutes).find(entry => entry[1] === pathname);
+
+    if (currentMenuItem) {
+      setSelectedMenuItem(currentMenuItem[0]);
+    } else if (pathname === '/') {
+      // Handle home page - you might want to select a default item or none
+      setSelectedMenuItem('');
+    } else {
+      setSelectedMenuItem('');
+    }
+  }, [pathname]);
+
   const handleMenuItemClick = (item: string) => {
-    setSelectedMenuItem(item);
+    const route = menuItemRoutes[item];
+    if (route) {
+      router.push(route);
+    }
+    // The selectedMenuItem will be updated by the useEffect when the route changes
   };
 
   return (
