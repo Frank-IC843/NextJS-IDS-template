@@ -1,9 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { MenuIcon, MarkerIcon, ChevronDownIcon, responsive, CORE_COLORS } from '@instacart/ids-core';
+import { MenuIcon, MarkerIcon, ChevronDownIcon, responsive, useTheme } from '@instacart/ids-core';
 import { CartButton, SearchButton, Text } from '@instacart/ids-customers';
-import { useTheme } from '@emotion/react';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -15,7 +14,7 @@ const useStyles = () => {
       left: 0,
       right: 0,
       width: '100%',
-      backgroundColor: CORE_COLORS.brandBusinessElderberry,
+      backgroundColor: theme.colors.brandBusinessElderberry,
       zIndex: 1000,
       display: 'flex',
       alignItems: 'center',
@@ -51,6 +50,10 @@ const useStyles = () => {
       alignItems: 'center',
     },
 
+    searchButton: {
+      cursor: 'text',
+    },
+
     locationContainer: {
       display: 'flex',
       alignItems: 'center',
@@ -59,10 +62,6 @@ const useStyles = () => {
       cursor: 'pointer',
       padding: '4px 8px',
       borderRadius: '4px',
-      transition: 'background-color 0.2s',
-      '&:hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      },
     },
 
     locationIcon: {
@@ -113,7 +112,7 @@ export function Header() {
         </div>
       </div>
       <div css={styles.searchContainer}>
-        <SearchButton>Search products, stores, and recipes</SearchButton>
+        <SearchButton css={styles.searchButton}>Search products, stores, and recipes</SearchButton>
       </div>
 
       <div css={styles.headerRight}>
