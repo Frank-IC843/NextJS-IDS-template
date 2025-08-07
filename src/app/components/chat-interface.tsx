@@ -1,16 +1,25 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CSSObject } from '@emotion/react';
-import { PrimaryButton, SecondaryButton } from '@instacart/ids-customers';
+import { keyframes } from '@emotion/react';
+import { PrimaryButton, DetrimentalButton } from '@/app/components/buttons';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-const useStyles = (): Record<string, CSSObject> =>
-  ({
+const dotPulse = keyframes`
+  0%, 80%, 100% {
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+`;
+
+const useStyles = () => {
+  return {
     chatContainer: {
       display: 'flex',
       flexDirection: 'column',
@@ -43,18 +52,7 @@ const useStyles = (): Record<string, CSSObject> =>
     },
 
     clearButton: {
-      padding: '8px 16px',
       maxWidth: 'fit-content',
-      background: '#f44336',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      transition: 'background 0.2s',
-      '&:hover': {
-        background: '#d32f2f',
-      },
     },
 
     messagesContainer: {
@@ -155,7 +153,42 @@ const useStyles = (): Record<string, CSSObject> =>
     sendButton: {
       width: '100px',
     },
-  }) as const;
+
+    loadingContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+      color: '#666',
+      fontSize: '14px',
+    },
+
+    thinkingText: {
+      fontStyle: 'italic',
+    },
+
+    loadingDots: {
+      display: 'flex',
+      gap: '1px',
+    },
+
+    dot: {
+      animation: `${dotPulse} 1.4s infinite ease-in-out`,
+      fontSize: '16px',
+    },
+
+    dot1: {
+      animationDelay: '0s',
+    },
+
+    dot2: {
+      animationDelay: '0.2s',
+    },
+
+    dot3: {
+      animationDelay: '0.4s',
+    },
+  } as const;
+};
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -314,9 +347,9 @@ export function ChatInterface() {
     <div css={styles.chatContainer}>
       <div css={styles.chatHeader}>
         <h1 css={styles.chatTitle}>Instacart Business Analytics</h1>
-        <SecondaryButton onClick={clearChat} css={styles.clearButton}>
+        <DetrimentalButton onClick={clearChat} css={styles.clearButton}>
           Clear Chat
-        </SecondaryButton>
+        </DetrimentalButton>
       </div>
 
       <div css={styles.messagesContainer}>
@@ -338,7 +371,19 @@ export function ChatInterface() {
                     message.role === 'user' ? styles.userMessageText : styles.assistantMessageText,
                   ]}
                 >
-                  {message.content || (message.role === 'assistant' && isLoading ? '...' : '')}
+                  {message.content ||
+                    (message.role === 'assistant' && isLoading ? (
+                      <div css={styles.loadingContainer}>
+                        <span css={styles.thinkingText}>thinking</span>
+                        <div css={styles.loadingDots}>
+                          <span css={[styles.dot, styles.dot1]}>.</span>
+                          <span css={[styles.dot, styles.dot2]}>.</span>
+                          <span css={[styles.dot, styles.dot3]}>.</span>
+                        </div>
+                      </div>
+                    ) : (
+                      ''
+                    ))}
                 </div>
               </div>
             </div>
