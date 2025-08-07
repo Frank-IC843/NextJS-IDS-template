@@ -8,6 +8,7 @@ export type MenuItemProps = {
   label: string;
   isNew?: boolean;
   isSelected?: boolean;
+  onClick: (label: string) => void;
 };
 
 const useStyles = (isSelected?: boolean) => {
@@ -47,10 +48,10 @@ const useStyles = (isSelected?: boolean) => {
   } as const;
 };
 
-export function MenuItem({ Icon, label, isNew, isSelected }: MenuItemProps) {
+export function MenuItem({ Icon, label, isNew, isSelected, onClick }: MenuItemProps) {
   const styles = useStyles(isSelected);
   return (
-    <div css={styles.menuItem}>
+    <div css={styles.menuItem} onClick={() => onClick(label)}>
       <div css={styles.menuItemContent}>
         <>
           <Icon size="24px" color={isSelected ? 'systemGrayscale00' : 'systemGrayscale80'} />

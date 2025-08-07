@@ -17,7 +17,14 @@ import {
   TimeIcon,
 } from '@instacart/ids-core';
 import { DividerBase } from '@instacart/ids-customers';
-import { MenuItem, MenuItemProps } from './menu-item';
+import { MenuItem } from './menu-item';
+import { useState } from 'react';
+
+type MenuItem = {
+  Icon: typeof ArrowLeftIcon;
+  label: string;
+  isNew?: boolean;
+};
 
 function useStyles() {
   const theme = useTheme();
@@ -44,7 +51,7 @@ function useStyles() {
   } as const;
 }
 
-const personalMenuItems: MenuItemProps[] = [
+const personalMenuItems: MenuItem[] = [
   {
     Icon: ReceiptIcon,
     label: 'Order history',
@@ -79,7 +86,7 @@ const personalMenuItems: MenuItemProps[] = [
   },
 ];
 
-const businessMenuItems: MenuItemProps[] = [
+const businessMenuItems: MenuItem[] = [
   {
     Icon: DashboardIcon,
     label: 'Dashboard',
@@ -100,7 +107,6 @@ const businessMenuItems: MenuItemProps[] = [
     Icon: ReceiptIcon,
     label: 'Invoicing',
     isNew: true,
-    isSelected: true,
   },
   {
     Icon: TimeIcon,
@@ -112,18 +118,45 @@ const businessMenuItems: MenuItemProps[] = [
   },
 ];
 
+const backMenuItem: MenuItem = {
+  Icon: ArrowLeftIcon,
+  label: 'Back',
+};
+
+const switchToPersonalMenuItem: MenuItem = {
+  Icon: ArrowLeftIcon,
+  label: 'Switch to personal',
+};
+
 export function Sidebar() {
+  const [selectedMenuItem, setSelectedMenuItem] = useState('Invoicing');
   const styles = useStyles();
+
+  const handleMenuItemClick = (item: string) => {
+    setSelectedMenuItem(item);
+  };
 
   return (
     <nav css={styles.sidebar}>
       <div css={styles.menuItems}>
-        <MenuItem Icon={ArrowLeftIcon} label="Back" />
+        <MenuItem
+          Icon={backMenuItem.Icon}
+          label={backMenuItem.label}
+          onClick={() => handleMenuItemClick(backMenuItem.label)}
+          isSelected={selectedMenuItem === backMenuItem.label}
+        />
         <DividerBase styles={{ divider: styles.divider }} />
       </div>
       <div css={styles.menuItems}>
         {personalMenuItems.map(item => (
-          <MenuItem key={item.label} Icon={item.Icon} label={item.label} isNew={item.isNew} />
+          <MenuItem
+            key={item.label}
+            Icon={item.Icon}
+            label={item.label}
+            isNew={item.isNew}
+            onClick={() => handleMenuItemClick(item.label)}
+            isSelected={selectedMenuItem === item.label}
+          />
         ))}
         <DividerBase styles={{ divider: styles.divider }} />
       </div>
@@ -134,13 +167,19 @@ export function Sidebar() {
             Icon={item.Icon}
             label={item.label}
             isNew={item.isNew}
-            isSelected={item.isSelected}
+            onClick={() => handleMenuItemClick(item.label)}
+            isSelected={selectedMenuItem === item.label}
           />
         ))}
         <DividerBase styles={{ divider: styles.divider }} />
       </div>
       <div css={styles.menuItems}>
-        <MenuItem Icon={ArrowLeftIcon} label="Switch to personal" />
+        <MenuItem
+          Icon={switchToPersonalMenuItem.Icon}
+          label={switchToPersonalMenuItem.label}
+          onClick={() => handleMenuItemClick(switchToPersonalMenuItem.label)}
+          isSelected={selectedMenuItem === switchToPersonalMenuItem.label}
+        />
       </div>
     </nav>
   );
