@@ -9,152 +9,153 @@ interface Message {
   content: string;
 }
 
-const useStyles = (): Record<string, CSSObject> => ({
-  chatContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '80vh',
-    maxWidth: '800px',
-    width: '100%',
-    margin: '0 auto',
-    border: '1px solid #e0e0e0',
-    borderRadius: '12px',
-    background: 'white',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-    overflow: 'hidden',
-  },
-
-  chatHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px',
-    borderBottom: '1px solid #e0e0e0',
-    background: '#f8f9fa',
-    borderRadius: '12px 12px 0 0',
-    flexShrink: 0,
-  },
-
-  chatTitle: {
-    margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 600,
-  },
-
-  clearButton: {
-    padding: '8px 16px',
-    maxWidth: 'fit-content',
-    background: '#f44336',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    transition: 'background 0.2s',
-    '&:hover': {
-      background: '#d32f2f',
+const useStyles = (): Record<string, CSSObject> =>
+  ({
+    chatContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      height: '80vh',
+      maxWidth: '800px',
+      width: '100%',
+      margin: '0 auto',
+      border: '1px solid #e0e0e0',
+      borderRadius: '12px',
+      background: 'white',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      overflow: 'hidden',
     },
-  },
 
-  messagesContainer: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    minHeight: 0,
-    maxHeight: '100%',
-  },
+    chatHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '20px',
+      borderBottom: '1px solid #e0e0e0',
+      background: '#f8f9fa',
+      borderRadius: '12px 12px 0 0',
+      flexShrink: 0,
+    },
 
-  emptyState: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
-    color: '#666',
-    fontSize: '1.1rem',
-  },
+    chatTitle: {
+      margin: 0,
+      fontSize: '1.5rem',
+      fontWeight: 600,
+    },
 
-  message: {
-    display: 'flex',
-    maxWidth: '80%',
-    flexShrink: 0,
-    width: 'fit-content',
-  },
+    clearButton: {
+      padding: '8px 16px',
+      maxWidth: 'fit-content',
+      background: '#f44336',
+      color: 'white',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      transition: 'background 0.2s',
+      '&:hover': {
+        background: '#d32f2f',
+      },
+    },
 
-  userMessage: {
-    alignSelf: 'flex-end',
-    flexDirection: 'row-reverse',
-  },
+    messagesContainer: {
+      flex: 1,
+      overflowY: 'auto',
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      minHeight: 0,
+      maxHeight: '100%',
+    },
 
-  assistantMessage: {
-    alignSelf: 'flex-start',
-  },
+    emptyState: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100%',
+      color: '#666',
+      fontSize: '1.1rem',
+    },
 
-  messageContent: {
-    display: 'flex',
-    gap: '12px',
-    alignItems: 'flex-start',
-  },
+    message: {
+      display: 'flex',
+      maxWidth: '80%',
+      flexShrink: 0,
+      width: 'fit-content',
+    },
 
-  userMessageContent: {
-    flexDirection: 'row-reverse',
-  },
+    userMessage: {
+      alignSelf: 'flex-end',
+      flexDirection: 'row-reverse',
+    },
 
-  messageRole: {
-    fontSize: '1.5rem',
-    flexShrink: 0,
-  },
+    assistantMessage: {
+      alignSelf: 'flex-start',
+    },
 
-  messageText: {
-    padding: '12px 16px',
-    borderRadius: '18px',
-    lineHeight: 1.4,
-    wordWrap: 'break-word',
-    whiteSpace: 'pre-wrap',
-    maxWidth: '100%',
-    overflowWrap: 'break-word',
-    minWidth: 0,
-    width: 'fit-content',
-  },
+    messageContent: {
+      display: 'flex',
+      gap: '12px',
+      alignItems: 'flex-start',
+    },
 
-  userMessageText: {
-    background: '#007bff',
-    color: 'white',
-    borderBottomRightRadius: '4px',
-  },
+    userMessageContent: {
+      flexDirection: 'row-reverse',
+    },
 
-  assistantMessageText: {
-    background: '#f1f3f5',
-    color: '#333',
-    borderBottomLeftRadius: '4px',
-  },
+    messageRole: {
+      fontSize: '1.5rem',
+      flexShrink: 0,
+    },
 
-  inputForm: {
-    display: 'flex',
-    gap: '12px',
-    padding: '20px',
-    borderTop: '1px solid #e0e0e0',
-    background: '#f8f9fa',
-    borderRadius: '0 0 12px 12px',
-    flexShrink: 0,
-  },
+    messageText: {
+      padding: '12px 16px',
+      borderRadius: '18px',
+      lineHeight: 1.4,
+      wordWrap: 'break-word',
+      whiteSpace: 'pre-wrap',
+      maxWidth: '100%',
+      overflowWrap: 'break-word',
+      minWidth: 0,
+      width: 'fit-content',
+    },
 
-  messageInput: {
-    flex: 1,
-    padding: '12px 16px',
-    border: '1px solid #ddd',
-    borderRadius: '24px',
-    fontSize: '16px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    minWidth: 0,
-  },
-  sendButton: {
-    width: '100px',
-  },
-});
+    userMessageText: {
+      background: '#007bff',
+      color: 'white',
+      borderBottomRightRadius: '4px',
+    },
+
+    assistantMessageText: {
+      background: '#f1f3f5',
+      color: '#333',
+      borderBottomLeftRadius: '4px',
+    },
+
+    inputForm: {
+      display: 'flex',
+      gap: '12px',
+      padding: '20px',
+      borderTop: '1px solid #e0e0e0',
+      background: '#f8f9fa',
+      borderRadius: '0 0 12px 12px',
+      flexShrink: 0,
+    },
+
+    messageInput: {
+      flex: 1,
+      padding: '12px 16px',
+      border: '1px solid #ddd',
+      borderRadius: '24px',
+      fontSize: '16px',
+      outline: 'none',
+      transition: 'border-color 0.2s',
+      minWidth: 0,
+    },
+    sendButton: {
+      width: '100px',
+    },
+  }) as const;
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);

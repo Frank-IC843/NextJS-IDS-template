@@ -9,13 +9,8 @@ const useStyles = () => {
   return {
     header: {
       height: '80px',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
       width: '100%',
       backgroundColor: theme.colors.brandBusinessElderberry,
-      zIndex: 1000,
       display: 'flex',
       alignItems: 'center',
     },
