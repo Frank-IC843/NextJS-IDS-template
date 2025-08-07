@@ -51,10 +51,12 @@ function getBusinessThemeOverrides(): ThemeOverrides {
       },
       buttonPrimary: {
         // Dark purple solid button (matches header)
-        color: primaryColors.base, // #10004A
+        color: primaryColors.base, // #553A7A
         hoverColor: primaryColors.hover,
         pressColor: primaryColors.press,
         textColor: '#FFFFFF',
+        disabledColor: '#B8A5C9', // Muted purple - maintains brand identity
+        disabledTextColor: '#FFFFFF', // Keep white text for contrast
       },
       buttonSecondary: {
         // Bright blue solid button
@@ -62,6 +64,8 @@ function getBusinessThemeOverrides(): ThemeOverrides {
         hoverColor: secondaryColors.hover,
         pressColor: secondaryColors.press,
         textColor: '#FFFFFF',
+        disabledColor: '#A5B0F7', // Muted blue - maintains brand identity
+        disabledTextColor: '#FFFFFF', // Keep white text for contrast
       },
       buttonTertiary: {
         // White outlined button with blue border

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { CSSObject } from '@emotion/react';
+import { PrimaryButton, SecondaryButton } from '@instacart/ids-customers';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -38,11 +39,11 @@ const useStyles = (): Record<string, CSSObject> => ({
     margin: 0,
     fontSize: '1.5rem',
     fontWeight: 600,
-    color: '#333',
   },
 
   clearButton: {
     padding: '8px 16px',
+    maxWidth: 'fit-content',
     background: '#f44336',
     color: 'white',
     border: 'none',
@@ -149,34 +150,9 @@ const useStyles = (): Record<string, CSSObject> => ({
     outline: 'none',
     transition: 'border-color 0.2s',
     minWidth: 0,
-    '&:focus': {
-      borderColor: '#007bff',
-    },
-    '&:disabled': {
-      background: '#f5f5f5',
-      cursor: 'not-allowed',
-    },
   },
-
   sendButton: {
-    padding: '12px 24px',
-    background: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '24px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: 500,
-    transition: 'background 0.2s',
-    minWidth: '80px',
-    flexShrink: 0,
-    '&:hover:not(:disabled)': {
-      background: '#0056b3',
-    },
-    '&:disabled': {
-      background: '#ccc',
-      cursor: 'not-allowed',
-    },
+    width: '100px',
   },
 });
 
@@ -284,16 +260,16 @@ export function ChatInterface() {
   return (
     <div css={styles.chatContainer}>
       <div css={styles.chatHeader}>
-        <h1 css={styles.chatTitle}>AI Chat Assistant</h1>
-        <button onClick={clearChat} css={styles.clearButton}>
+        <h1 css={styles.chatTitle}>Instacart Business Analytics</h1>
+        <SecondaryButton onClick={clearChat} css={styles.clearButton}>
           Clear Chat
-        </button>
+        </SecondaryButton>
       </div>
 
       <div css={styles.messagesContainer}>
         {messages.length === 0 ? (
           <div css={styles.emptyState}>
-            <p>Start a conversation with the AI assistant!</p>
+            <p>Ask me about your order patterns, spending trends, or cost optimization opportunities!</p>
           </div>
         ) : (
           messages.map((message, index) => (
@@ -323,13 +299,13 @@ export function ChatInterface() {
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Ask about orders, spending, or business insights..."
           disabled={isLoading}
           css={styles.messageInput}
         />
-        <button type="submit" disabled={isLoading || !input.trim()} css={styles.sendButton}>
+        <PrimaryButton type="submit" disabled={isLoading || !input.trim()} css={styles.sendButton}>
           {isLoading ? '...' : 'Send'}
-        </button>
+        </PrimaryButton>
       </form>
     </div>
   );
