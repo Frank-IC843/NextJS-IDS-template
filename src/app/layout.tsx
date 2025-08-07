@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ClientProviders } from './providers';
 import './globals.css';
+import { Header } from './components/header';
 
 export const metadata: Metadata = {
   title: 'AI Chat Assistant - Instacart',
@@ -15,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClientProviders>{children}</ClientProviders>
+        <ClientProviders>
+          <Header />
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

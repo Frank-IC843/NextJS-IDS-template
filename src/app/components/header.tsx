@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { MenuIcon, MarkerIcon, ChevronDownIcon, responsive, useTheme } from '@instacart/ids-core';
+import { MenuIcon, MarkerIcon, ChevronDownIcon, responsive, useTheme, spacing } from '@instacart/ids-core';
 import { CartButton, SearchButton, Text } from '@instacart/ids-customers';
 
 const useStyles = () => {
@@ -28,11 +28,12 @@ const useStyles = () => {
     menuButton: {
       background: 'none',
       border: 'none',
+      borderRadius: theme.radius.r8,
       color: 'white',
       cursor: 'pointer',
       marginRight: '10px',
       marginLeft: '18px',
-      padding: '12px',
+      padding: spacing.s12,
       transition: 'background-color 0.2s',
       '&:hover': {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
