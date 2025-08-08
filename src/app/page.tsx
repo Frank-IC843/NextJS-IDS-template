@@ -1,10 +1,10 @@
-import { PrimaryButtonSmall } from '@/app/components/buttons';
 import { ChatInterface } from './components/chat-interface';
+import { LoginButton } from './components/login-button';
 
 export default function Home() {
   return (
     <div>
-      <PrimaryButtonSmall>Log In</PrimaryButtonSmall>
+      <LoginButton />
       <ChatInterface />
     </div>
   );
