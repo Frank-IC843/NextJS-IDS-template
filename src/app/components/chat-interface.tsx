@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { keyframes } from '@emotion/react';
-import ReactMarkdown from 'react-markdown';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { PrimaryButton } from '@/app/components/buttons';
-import { MermaidChart } from '@/app/components/mermaid-chart';
+import { MessageContent } from '@/app/components/message-content';
 import { Text } from '@instacart/ids-customers';
 
 interface Message {
@@ -197,76 +198,98 @@ export function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
   const styles = useStyles();
 
-  // Simple function to render message content with inline charts
-  const renderMessageContent = (content: string) => {
-    const parts: Array<{ type: 'text' | 'chart'; content: string; key: string }> = [];
-    const mermaidRegex = /```mermaid\s*\n([\s\S]*?)\n```/g;
+  // PDF Export function
+  const handleExportPDF = async () => {
+    if (!chatContainerRef.current) return;
 
-    let lastIndex = 0;
-    let match;
-    let partIndex = 0;
-
-    while ((match = mermaidRegex.exec(content)) !== null) {
-      // Add text before the chart
-      if (match.index > lastIndex) {
-        const textContent = content.slice(lastIndex, match.index);
-        if (textContent.trim()) {
-          parts.push({
-            type: 'text',
-            content: textContent,
-            key: `text-${partIndex++}`,
-          });
-        }
-      }
-
-      // Add the chart
-      parts.push({
-        type: 'chart',
-        content: match[1].trim(),
-        key: `chart-${partIndex++}`,
+    try {
+      const canvas = await html2canvas(chatContainerRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        removeContainer: true,
+        foreignObjectRendering: false,
+        ignoreElements: element => {
+          // Ignore elements that might cause issues
+          return element.classList?.contains('no-export') || false;
+        },
+        onclone: clonedDoc => {
+          // Fix CSS issues that html2canvas can't handle
+          const styleElement = clonedDoc.createElement('style');
+          styleElement.textContent = `
+            * {
+              color: #000000 !important;
+              background-color: transparent !important;
+            }
+            .chat-container {
+              background-color: #ffffff !important;
+            }
+            /* Override any CSS custom properties that cause issues */
+            :root {
+              --color-text: #000000;
+              --color-background: #ffffff;
+            }
+            /* Fix any color() functions */
+            [style*="color("] {
+              color: #000000 !important;
+            }
+          `;
+          clonedDoc.head.appendChild(styleElement);
+          const clonedElement = clonedDoc.querySelector('[ref="chatContainerRef"]') || clonedDoc.body;
+          if (clonedElement && clonedElement instanceof HTMLElement) {
+            clonedElement.style.color = '#000000';
+            clonedElement.style.backgroundColor = '#ffffff';
+          }
+        },
       });
-      lastIndex = match.index + match[0].length;
-    }
 
-    // Add remaining text after the last chart
-    if (lastIndex < content.length) {
-      const textContent = content.slice(lastIndex);
-      if (textContent.trim()) {
-        parts.push({
-          type: 'text',
-          content: textContent,
-          key: `text-${partIndex++}`,
-        });
-      }
-    }
-
-    // If no charts found, return all as text
-    if (parts.length === 0) {
-      parts.push({
-        type: 'text',
-        content: content,
-        key: 'text-0',
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
       });
-    }
 
-    return parts.map(part => (
-      <div key={part.key}>
-        {part.type === 'text' ? (
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <div>{children}</div>,
-            }}
-          >
-            {part.content}
-          </ReactMarkdown>
-        ) : (
-          <MermaidChart chart={part.content} />
-        )}
-      </div>
-    ));
+      // Calculate dimensions to fit the page
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 30; // Add some top margin
+
+      pdf.addImage(
+        imgData,
+        'PNG',
+        imgX,
+        imgY,
+        imgWidth * ratio,
+        Math.min(imgHeight * ratio, pdfHeight - 40) // Ensure it fits with margins
+      );
+
+      // Add metadata
+      pdf.setProperties({
+        title: 'Instacart Business Chat Report',
+        subject: 'AI-Generated Business Analysis',
+        author: 'Instacart Business Intelligence',
+        keywords: 'report, analysis, business, instacart',
+      });
+
+      // Save the PDF
+      const timestamp = new Date().toISOString().split('T')[0];
+      console.log('PDF generated successfully, downloading...');
+      pdf.save(`instacart-report-${timestamp}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
   };
 
   const scrollToBottom = () => {
@@ -415,7 +438,7 @@ export function ChatInterface() {
 
   return (
     <div css={styles.chatContainer}>
-      <div css={styles.messagesContainer}>
+      <div css={styles.messagesContainer} ref={chatContainerRef}>
         {messages.length === 0 ? (
           <div css={styles.emptyState}>
             <Text typography="bodyLarge1" color="systemGrayscale60">
@@ -449,7 +472,7 @@ export function ChatInterface() {
                         </div>
                       </div>
                     ) : (
-                      renderMessageContent(message.content)
+                      <MessageContent content={message.content} onExportPDF={handleExportPDF} />
                     )}
                   </div>
                 </div>
