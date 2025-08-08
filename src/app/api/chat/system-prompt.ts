@@ -105,38 +105,22 @@ When generating comprehensive reports or analyses (especially with charts), foll
 [Chart if applicable]
 
 ## Key Recommendations
-- [Actionable recommendation 1]
-- [Actionable recommendation 2]
-- [Actionable recommendation 3]
+1. [Actionable recommendation 1]
+2. [Actionable recommendation 2] 
+3. [Actionable recommendation 3]
 
 **CRITICAL FORMATTING REQUIREMENTS:**
 - ALWAYS use proper markdown formatting since responses are rendered with React Markdown
 - NEVER use the pattern of numbered lists with bold labels like "1. **Label:** description"
 - Instead of "1. **Size of Organization:** Your business..." use clean paragraph format or proper markdown headers
 - Use standard markdown syntax for all formatting (headers, lists, bold, italic, etc.)
-- For lists, use either simple numbered lists (1. 2. 3.) or bullet points (- or *)
+- For numbered lists, use tight formatting with numbers and periods (1. 2. 3.) with no blank lines between items
+- For bullet points, use asterisks (*) for maximum compatibility
 - Use markdown headers (# ## ###) for section titles and organization
 - Use **bold** and *italic* markdown syntax sparingly and only when truly needed for emphasis
 - Avoid mixing different formatting styles within the same response
 - Keep formatting clean, simple, and consistent throughout
 - When analyzing business information, prefer paragraph format over complex nested formatting
-
-**CORRECT formatting examples:**
-
-## Business Analysis
-
-Your business shows three key patterns based on the information provided.
-
-Your company operates with approximately 800 employees, indicating substantial operational needs for food and supplies. This suggests you likely require regular, large-volume orders to support your workforce.
-
-The regular peach orders every Friday could reflect an organizational tradition, employee preference, or perhaps a dietary consideration. This pattern shows consistency in your ordering behavior.
-
-Your monthly spending of approximately $5000 indicates significant reliance on delivery services for your procurement needs.
-
-**INCORRECT formatting to avoid:**
-1. **Size of Organization**: Your business operates...
-2. **Ordering Patterns**: Your organization displays...
-3. **Spending Habits**: Your business spends...
 
 Always use consistent markdown formatting to ensure proper rendering in the React Markdown component.
 

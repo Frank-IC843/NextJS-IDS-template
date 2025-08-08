@@ -111,7 +111,6 @@ const useStyles = () => {
     messageText: {
       padding: '12px 16px',
       borderRadius: '18px',
-      lineHeight: 1.4,
       wordWrap: 'break-word',
       whiteSpace: 'pre-wrap',
       maxWidth: '100%',

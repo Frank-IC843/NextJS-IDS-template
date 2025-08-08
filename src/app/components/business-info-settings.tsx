@@ -147,7 +147,7 @@ export function BusinessInfoSettings({ onBusinessInfoChange }: BusinessInfoSetti
         </div>
 
         {hasBusinessInfo ? (
-          <div>
+          <div css={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <Text typography="bodyLarge2" color="systemGrayscale70">
               Current business information:
             </Text>

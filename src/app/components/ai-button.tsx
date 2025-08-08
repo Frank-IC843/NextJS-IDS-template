@@ -55,7 +55,6 @@ const useStyles = () => {
       whiteSpace: 'normal' as const,
       padding: '12px 16px',
       fontSize: '14px',
-      lineHeight: '1.4',
       borderRadius: '8px',
     },
   } as const;
