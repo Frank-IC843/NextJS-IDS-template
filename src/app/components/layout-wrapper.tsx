@@ -1,8 +1,8 @@
 'use client';
 
+import { AIButton } from './ai-button';
 import { Header } from './header';
 import { Sidebar } from './sidebar';
-import { AIButton } from './ai-button';
 
 function useStyles() {
   return {

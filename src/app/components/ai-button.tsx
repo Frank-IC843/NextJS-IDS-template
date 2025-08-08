@@ -11,6 +11,7 @@ import {
 } from '@instacart/ids-customers';
 import { responsive } from '@instacart/ids-core';
 import { ChatInterface } from '@/app/components/chat-interface';
+import { useEffect, useState } from 'react';
 
 const useStyles = () => {
   return {
@@ -66,6 +67,15 @@ export function AIButton() {
     visible: false,
   });
   const disclosure = useModalDisclosure(modal);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <>

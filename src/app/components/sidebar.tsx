@@ -18,7 +18,6 @@ import {
 } from '@instacart/ids-core';
 import { DividerBase } from '@instacart/ids-customers';
 import { MenuItem } from './menu-item';
-import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 type MenuItem = {
@@ -152,16 +151,15 @@ const switchToPersonalMenuItem: MenuItem = {
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [selectedMenuItem, setSelectedMenuItem] = useState('');
   const styles = useStyles();
 
-  // Update selected menu item based on current pathname
-  useEffect(() => {
+  // Calculate selected menu item directly from pathname to avoid hydration mismatch
+  const getSelectedMenuItem = () => {
     const currentMenuItem = Object.entries(menuItemRoutes).find(entry => entry[1] === pathname);
-    if (currentMenuItem && currentMenuItem[0] !== 'Back') {
-      setSelectedMenuItem(currentMenuItem[0]);
-    } else setSelectedMenuItem('');
-  }, [pathname]);
+    return currentMenuItem && currentMenuItem[0] !== 'Back' ? currentMenuItem[0] : '';
+  };
+
+  const selectedMenuItem = getSelectedMenuItem();
 
   const handleMenuItemClick = (item: string) => {
     if (item === 'Back') {
