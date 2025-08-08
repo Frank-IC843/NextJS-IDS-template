@@ -1,12 +1,11 @@
-import { getClient } from '@/lib/apollo-client';
-import { GET_ALL_LINKED_USER_ACCOUNTS } from '@/app/queries';
-import { DashboardClient } from './dashboard-client';
+import { Suspense } from 'react';
+import { DashboardContent } from '@/app/dashboard/dashboard-content';
+import { LoadingOnEnter } from '@/app/components/loading-on-enter';
 
-export default async function Dashboard() {
-  const apolloClient = getClient();
-  const { data } = await apolloClient.query({
-    query: GET_ALL_LINKED_USER_ACCOUNTS,
-  });
-
-  return <DashboardClient userData={data} />;
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<LoadingOnEnter />}>
+      <DashboardContent />
+    </Suspense>
+  );
 }

@@ -11,14 +11,32 @@ function makeClient() {
     uri: '/api/graphql',
     fetchOptions: {
       credentials: 'include',
-      // you can pass additional options that should be passed to `fetch` here,
-      // e.g. Next.js-related `fetch` options regarding caching and revalidation
+      // Next.js-related fetch options for caching and revalidation
       // see https://nextjs.org/docs/app/api-reference/functions/fetch#fetchurl-options
     },
+    // you can override the default `fetchOptions` on a per query basis
+    // via the `context` property on the options passed as a second argument
+    // to an Apollo Client data fetching hook, e.g.:
+    // const { data } = useSuspenseQuery(MY_QUERY, { context: { fetchOptions: { cache: 'no-store' }}});
   });
 
   return new ApolloClient({
-    cache: new InMemoryCache(),
+    // use the `InMemoryCache` from "@apollo/client-integration-nextjs"
+    cache: new InMemoryCache({
+      // Optional: Configure cache policies for better performance
+      typePolicies: {
+        Query: {
+          fields: {
+            getAllLinkedUserAccounts: {
+              // Cache this query for 5 minutes
+              merge(existing, incoming) {
+                return incoming;
+              },
+            },
+          },
+        },
+      },
+    }),
     link: httpLink,
   });
 }

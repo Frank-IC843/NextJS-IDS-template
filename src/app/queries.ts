@@ -1,4 +1,4 @@
-import { gql, useQuery } from '@apollo/client';
+import { gql, useQuery, useSuspenseQuery } from '@apollo/client';
 import { GetAllLinkedUserAccountsQuery } from '@/__generated__/graphql-types';
 
 export const CREATE_USER_SESSION_FROM_CODE = gql`
@@ -63,4 +63,9 @@ export const GET_ALL_LINKED_USER_ACCOUNTS = gql`
 
 export const useGetAllLinkedUserAccounts = () => {
   return useQuery<GetAllLinkedUserAccountsQuery>(GET_ALL_LINKED_USER_ACCOUNTS);
+};
+
+// Suspense version - this is the hook you want to use with Suspense
+export const useSuspenseGetAllLinkedUserAccounts = () => {
+  return useSuspenseQuery<GetAllLinkedUserAccountsQuery>(GET_ALL_LINKED_USER_ACCOUNTS);
 };
