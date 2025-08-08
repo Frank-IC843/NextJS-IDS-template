@@ -29,7 +29,8 @@ function useStyles() {
     },
     main: {
       gridArea: 'main',
-      padding: '0px 40px',
+      paddingLeft: '40px',
+      paddingRight: '80px',
       paddingTop: '24px',
       overflow: 'auto', // Allow main content to scroll if needed
       maxHeight: '100%', // Constrain to grid area
