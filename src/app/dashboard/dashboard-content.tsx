@@ -264,7 +264,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
             <Text typography="headline">Instacart Business Analytics</Text>
           </ModalTitle>
         </ModalHeader>
-        <ChatInterface />
+        {modal.visible && <ChatInterface />}
       </ModalBase>
     </div>
   );
