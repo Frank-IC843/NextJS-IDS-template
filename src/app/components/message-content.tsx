@@ -32,9 +32,8 @@ const MessageTextPart: React.FC<MessageTextPartProps> = ({ content }) => {
         li: ({ children }) => <li style={{ margin: '2px 0', lineHeight: '1.4' }}>{children}</li>,
         p: ({ children, node }) => {
           // Check if this paragraph is inside a list item
-          const parent = node?.parent;
+          const parent = (node as { parent?: { type: string } })?.parent;
           if (parent?.type === 'listItem') {
-            // Always render paragraphs in list items as divs with minimal margin
             return <div style={{ margin: '0' }}>{children}</div>;
           }
           return <p style={{ margin: '8px 0' }}>{children}</p>;
