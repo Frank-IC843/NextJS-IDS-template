@@ -27,9 +27,71 @@ const MessageTextPart: React.FC<MessageTextPartProps> = ({ content }) => {
   return (
     <ReactMarkdown
       components={{
-        ol: ({ children }) => <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>,
-        ul: ({ children }) => <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>,
-        li: ({ children }) => <li style={{ margin: '2px 0', lineHeight: '1.4' }}>{children}</li>,
+        ol: ({ children }) => (
+          <ol
+            style={{
+              margin: '8px 0',
+              paddingLeft: '0',
+              listStyleType: 'none',
+            }}
+          >
+            {children}
+          </ol>
+        ),
+        ul: ({ children }) => (
+          <ul
+            style={{
+              margin: '8px 0',
+              paddingLeft: '0',
+              listStyleType: 'none',
+            }}
+          >
+            {children}
+          </ul>
+        ),
+        li: ({ children, node }) => {
+          // Check if this li is inside an ol (ordered list) or ul (unordered list)
+          const parent = (node as { parent?: { tagName: string } })?.parent;
+          const isOrdered = parent?.tagName === 'ol';
+
+          return (
+            <li
+              style={{
+                margin: '2px 0',
+                lineHeight: '1.4',
+                paddingLeft: '20px',
+                position: 'relative',
+                listStyleType: 'none',
+              }}
+            >
+              {isOrdered && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: '0',
+                    fontWeight: 'normal',
+                    color: 'inherit',
+                  }}
+                >
+                  •
+                </span>
+              )}
+              {!isOrdered && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: '8px',
+                    fontWeight: 'normal',
+                    color: 'inherit',
+                  }}
+                >
+                  •
+                </span>
+              )}
+              {children}
+            </li>
+          );
+        },
         p: ({ children, node }) => {
           // Check if this paragraph is inside a list item
           const parent = (node as { parent?: { type: string } })?.parent;

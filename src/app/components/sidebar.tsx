@@ -43,7 +43,7 @@ const menuItemRoutes: Record<string, string> = {
   'Order guides': '/order-guides',
   Invoicing: '/invoicing',
   'Order approvals': '/order-approvals',
-  'Business settings': '/business-settings',
+  'Business settings': '/settings',
   Back: '/',
 };
 
@@ -164,6 +164,11 @@ export function Sidebar() {
   }, [pathname]);
 
   const handleMenuItemClick = (item: string) => {
+    if (item === 'Back') {
+      router.back();
+      return;
+    }
+
     const route = menuItemRoutes[item];
     if (route) {
       router.push(route);

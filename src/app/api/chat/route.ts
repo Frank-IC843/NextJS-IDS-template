@@ -11,15 +11,21 @@ import { SYSTEM_PROMPT } from './system-prompt';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, stream = false, model = 'gpt-4', ...options } = body;
+    const { messages, stream = false, model = 'gpt-4', businessInfo, ...options } = body;
 
     // Validate required fields
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Messages array is required' }, { status: 400 });
     }
 
+    // Create dynamic system prompt with business information
+    let systemPrompt = SYSTEM_PROMPT;
+    if (businessInfo && businessInfo.trim()) {
+      systemPrompt += `\n\nBUSINESS CONTEXT:\n${businessInfo.trim()}\n\nUse this business context to provide more relevant and personalized insights, recommendations, and analysis. Tailor your responses to this specific business type, industry, and priorities.`;
+    }
+
     // Add system prompt to the beginning of messages
-    const messagesWithSystem = [{ role: 'system', content: SYSTEM_PROMPT }, ...messages];
+    const messagesWithSystem = [{ role: 'system', content: systemPrompt }, ...messages];
 
     // Handle streaming response
     if (stream) {

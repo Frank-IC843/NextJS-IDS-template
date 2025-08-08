@@ -7,6 +7,7 @@ import { keyframes } from '@emotion/react';
 import { PrimaryButton } from '@/app/components/buttons';
 import { MessageContent } from '@/app/components/message-content';
 import { Text } from '@instacart/ids-customers';
+import { useBusinessInfo } from '@/app/components/business-info-settings';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -201,6 +202,7 @@ export function ChatInterface() {
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const styles = useStyles();
+  const businessInfo = useBusinessInfo();
 
   // Focus the input when component mounts
   useEffect(() => {
@@ -262,6 +264,7 @@ export function ChatInterface() {
         body: JSON.stringify({
           messages: [...messages, userMessage],
           stream: true,
+          businessInfo,
         }),
         signal: abortControllerRef.current.signal,
       });
