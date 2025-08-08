@@ -27,7 +27,18 @@ const MessageTextPart: React.FC<MessageTextPartProps> = ({ content }) => {
   return (
     <ReactMarkdown
       components={{
-        p: ({ children }) => <div>{children}</div>,
+        ol: ({ children }) => <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ol>,
+        ul: ({ children }) => <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>{children}</ul>,
+        li: ({ children }) => <li style={{ margin: '2px 0', lineHeight: '1.4' }}>{children}</li>,
+        p: ({ children, node }) => {
+          // Check if this paragraph is inside a list item
+          const parent = node?.parent;
+          if (parent?.type === 'listItem') {
+            // Always render paragraphs in list items as divs with minimal margin
+            return <div style={{ margin: '0' }}>{children}</div>;
+          }
+          return <p style={{ margin: '8px 0' }}>{children}</p>;
+        },
       }}
     >
       {content}
@@ -43,7 +54,8 @@ const MessageChartPart: React.FC<MessageChartPartProps> = ({ content }) => {
 // Utility function to parse message content into structured parts
 const parseMessageContent = (content: string): MessagePart[] => {
   const parts: MessagePart[] = [];
-  const mermaidRegex = /```mermaid\s*\n([\s\S]*?)\n```/g;
+  // Updated regex to be more flexible with whitespace and handle charts in lists
+  const mermaidRegex = /```mermaid\s*\n([\s\S]*?)\n\s*```/g;
 
   let lastIndex = 0;
   let match;
@@ -94,7 +106,6 @@ const parseMessageContent = (content: string): MessagePart[] => {
       key: 'text-0',
     });
   }
-
   return parts;
 };
 

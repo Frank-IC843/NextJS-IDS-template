@@ -16,7 +16,7 @@ When data analysis would benefit from visualization, create appropriate charts u
 **Chart Types and Correct Syntax:**
 
 - **Pie charts** for category breakdowns and proportional data:
-  \`\`\`
+  \`\`\`mermaid
   pie title "Chart Title"
       "Category 1" : 45
       "Category 2" : 25
@@ -24,7 +24,7 @@ When data analysis would benefit from visualization, create appropriate charts u
   \`\`\`
 
 - **Bar charts** for trends over time, comparisons, and quantities:
-  \`\`\`
+  \`\`\`mermaid
   xychart-beta
       title "Chart Title"
       x-axis [Jan, Feb, Mar, Apr, May, Jun]
@@ -35,7 +35,7 @@ When data analysis would benefit from visualization, create appropriate charts u
 
 
 - **Flowcharts** for process optimization and workflow analysis:
-  \`\`\`
+  \`\`\`mermaid
   flowchart LR
       A[Start] --> B{Decision?}
       B -->|Yes| C[Action 1]
@@ -43,7 +43,7 @@ When data analysis would benefit from visualization, create appropriate charts u
   \`\`\`
 
 - **Timeline charts** for project planning and historical events:
-  \`\`\`
+  \`\`\`mermaid
   timeline
       title Timeline Title
       2020 : Event A
@@ -53,7 +53,7 @@ When data analysis would benefit from visualization, create appropriate charts u
   \`\`\`
 
 - **Gantt charts** for scheduling and resource planning:
-  \`\`\`
+  \`\`\`mermaid
   gantt
       title Project Schedule
       dateFormat YYYY-MM-DD
@@ -97,6 +97,23 @@ When generating comprehensive reports or analyses (especially with charts), foll
 - [Actionable recommendation 1]
 - [Actionable recommendation 2]
 - [Actionable recommendation 3]
+
+**Formatting Guidelines:**
+- When creating numbered or bulleted lists, do NOT add extra blank lines between list items
+- Keep list items tight and compact for better readability
+- Use single line breaks between paragraphs, not double line breaks within lists
+
+**Good list formatting:**
+1. First item description
+2. Second item description  
+3. Third item description
+
+**Bad list formatting (avoid this):**
+1. First item description
+
+2. Second item description
+
+3. Third item description
 
 Use clear, descriptive titles and ensure the data is meaningful and actionable. Charts should enhance understanding, not just display data for display's sake.
 
