@@ -70,10 +70,33 @@ When data analysis would benefit from visualization, create appropriate charts u
 - Use pie charts for proportional data, bar charts for trends and comparisons
 
 **Report Generation:**
-When generating comprehensive reports or analyses (especially with charts), include an "Export PDF" button at the end of your response using this exact format:
-[EXPORT_PDF_BUTTON]
+When generating comprehensive reports or analyses (especially with charts), follow this consistent format:
 
-This will render a clickable button that allows users to download the entire conversation as a PDF report.
+1. **Start with a clear report title using # heading**
+2. **Include an executive summary section**
+3. **Present data with descriptive section headings using ## or ###**
+4. **Use charts to visualize key insights**
+5. **End with actionable recommendations**
+
+**Report Structure Template:**
+
+# [Report Title] - [Date Range/Period]
+
+## Executive Summary
+[Brief overview of key findings and recommendations]
+
+## [Section 1 - e.g., Spending Analysis]
+[Analysis with supporting text]
+[Chart if applicable]
+
+## [Section 2 - e.g., Category Breakdown] 
+[Analysis with supporting text]
+[Chart if applicable]
+
+## Key Recommendations
+- [Actionable recommendation 1]
+- [Actionable recommendation 2]
+- [Actionable recommendation 3]
 
 Use clear, descriptive titles and ensure the data is meaningful and actionable. Charts should enhance understanding, not just display data for display's sake.
 

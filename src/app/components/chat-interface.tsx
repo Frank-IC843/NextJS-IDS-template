@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { keyframes } from '@emotion/react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+
 import { PrimaryButton } from '@/app/components/buttons';
 import { MessageContent } from '@/app/components/message-content';
 import { Text } from '@instacart/ids-customers';
@@ -200,97 +199,15 @@ export function ChatInterface() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const styles = useStyles();
 
-  // PDF Export function
-  const handleExportPDF = async () => {
-    if (!chatContainerRef.current) return;
-
-    try {
-      const canvas = await html2canvas(chatContainerRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        removeContainer: true,
-        foreignObjectRendering: false,
-        ignoreElements: element => {
-          // Ignore elements that might cause issues
-          return element.classList?.contains('no-export') || false;
-        },
-        onclone: clonedDoc => {
-          // Fix CSS issues that html2canvas can't handle
-          const styleElement = clonedDoc.createElement('style');
-          styleElement.textContent = `
-            * {
-              color: #000000 !important;
-              background-color: transparent !important;
-            }
-            .chat-container {
-              background-color: #ffffff !important;
-            }
-            /* Override any CSS custom properties that cause issues */
-            :root {
-              --color-text: #000000;
-              --color-background: #ffffff;
-            }
-            /* Fix any color() functions */
-            [style*="color("] {
-              color: #000000 !important;
-            }
-          `;
-          clonedDoc.head.appendChild(styleElement);
-          const clonedElement = clonedDoc.querySelector('[ref="chatContainerRef"]') || clonedDoc.body;
-          if (clonedElement && clonedElement instanceof HTMLElement) {
-            clonedElement.style.color = '#000000';
-            clonedElement.style.backgroundColor = '#ffffff';
-          }
-        },
-      });
-
-      // Create PDF
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      // Calculate dimensions to fit the page
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 30; // Add some top margin
-
-      pdf.addImage(
-        imgData,
-        'PNG',
-        imgX,
-        imgY,
-        imgWidth * ratio,
-        Math.min(imgHeight * ratio, pdfHeight - 40) // Ensure it fits with margins
-      );
-
-      // Add metadata
-      pdf.setProperties({
-        title: 'Instacart Business Chat Report',
-        subject: 'AI-Generated Business Analysis',
-        author: 'Instacart Business Intelligence',
-        keywords: 'report, analysis, business, instacart',
-      });
-
-      // Save the PDF
-      const timestamp = new Date().toISOString().split('T')[0];
-      console.log('PDF generated successfully, downloading...');
-      pdf.save(`instacart-report-${timestamp}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
+  // Focus the input when component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
-  };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -403,13 +320,9 @@ export function ChatInterface() {
         }
       }
     } catch (error) {
-      // Handle abort errors gracefully (user cancelled or component unmounted)
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('Request was cancelled');
         return;
       }
-
-      console.error('Chat error:', error);
 
       setMessages(prev => {
         const newMessages = [...prev];
@@ -472,7 +385,7 @@ export function ChatInterface() {
                         </div>
                       </div>
                     ) : (
-                      <MessageContent content={message.content} onExportPDF={handleExportPDF} />
+                      <MessageContent content={message.content} />
                     )}
                   </div>
                 </div>
@@ -485,6 +398,7 @@ export function ChatInterface() {
 
       <form onSubmit={handleSubmit} css={styles.inputForm}>
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}

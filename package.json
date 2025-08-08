@@ -22,8 +22,6 @@
     "@instacart/ids-customers": "^0.0.902",
     "body-scroll-lock": "4.0.0-beta.0",
     "graphql": "^16.11.0",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.1",
     "mermaid": "^11.9.0",
     "next": "15.4.1",
     "openai": "^5.12.1",

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { PrimaryButton } from '@/app/components/buttons';
 import { MermaidChart } from '@/app/components/mermaid-chart';
 
 interface MessagePart {
@@ -13,12 +12,10 @@ interface MessagePart {
 
 interface MessageContentProps {
   content: string;
-  onExportPDF: () => void;
 }
 
 interface MessageTextPartProps {
   content: string;
-  onExportPDF: () => void;
 }
 
 interface MessageChartPartProps {
@@ -26,25 +23,15 @@ interface MessageChartPartProps {
 }
 
 // Component for rendering text parts of messages
-const MessageTextPart: React.FC<MessageTextPartProps> = ({ content, onExportPDF }) => {
-  const hasExportButton = content.includes('[EXPORT_PDF_BUTTON]');
-  const cleanContent = content.replace(/\[EXPORT_PDF_BUTTON\]/g, '');
-
+const MessageTextPart: React.FC<MessageTextPartProps> = ({ content }) => {
   return (
-    <>
-      <ReactMarkdown
-        components={{
-          p: ({ children }) => <div>{children}</div>,
-        }}
-      >
-        {cleanContent}
-      </ReactMarkdown>
-      {hasExportButton && (
-        <div style={{ marginTop: '16px' }}>
-          <PrimaryButton onClick={onExportPDF}>📄 Export PDF Report</PrimaryButton>
-        </div>
-      )}
-    </>
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => <div>{children}</div>,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
   );
 };
 
@@ -112,7 +99,7 @@ const parseMessageContent = (content: string): MessagePart[] => {
 };
 
 // Main component for rendering message content with mixed text and charts
-export const MessageContent: React.FC<MessageContentProps> = ({ content, onExportPDF }) => {
+export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
   const parts = parseMessageContent(content);
 
   return (
@@ -120,7 +107,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content, onExpor
       {parts.map(part => (
         <div key={part.key}>
           {part.type === 'text' ? (
-            <MessageTextPart content={part.content} onExportPDF={onExportPDF} />
+            <MessageTextPart content={part.content} />
           ) : (
             <MessageChartPart content={part.content} />
           )}
