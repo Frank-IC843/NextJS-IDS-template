@@ -9,7 +9,7 @@ import OpenAI from 'openai';
  */
 export const openai = new OpenAI({
   apiKey: '', // AI Gateway does not need or want an API key
-  baseURL: process.env.OPENAI_BASE_URL || 'https://aigateway.instacart.tools/proxy/instacart-business-ai/openai/v1',
+  baseURL: process.env.OPENAI_BASE_URL || 'https://aigateway.instacart.tools/proxy/instacart-business-ai-dev/openai/v1',
   timeout: 60000,
   maxRetries: 3,
 });
