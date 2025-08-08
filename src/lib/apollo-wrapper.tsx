@@ -7,8 +7,10 @@ import { GRAPHQL_URL } from './constants';
 // have a function to create a client for you
 function makeClient() {
   const httpLink = new HttpLink({
-    uri: GRAPHQL_URL,
+    // Use our proxy route instead of direct GraphQL endpoint
+    uri: '/api/graphql',
     fetchOptions: {
+      credentials: 'include',
       // you can pass additional options that should be passed to `fetch` here,
       // e.g. Next.js-related `fetch` options regarding caching and revalidation
       // see https://nextjs.org/docs/app/api-reference/functions/fetch#fetchurl-options

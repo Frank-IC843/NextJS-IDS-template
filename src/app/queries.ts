@@ -1,4 +1,5 @@
-import { gql } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
+import { GetAllLinkedUserAccountsQuery } from '@/__generated__/graphql-types';
 
 export const CREATE_USER_SESSION_FROM_CODE = gql`
   mutation CreateUserSessionFromVerificationCode(
@@ -25,3 +26,41 @@ export const CREATE_USER_SESSION_FROM_CODE = gql`
     }
   }
 `;
+
+export const GET_ALL_LINKED_USER_ACCOUNTS = gql`
+  query GetAllLinkedUserAccounts {
+    getAllLinkedUserAccounts {
+      id
+      linkedUserAccounts {
+        accountId
+        accountType
+        id
+        userId
+        viewSection {
+          accountTypeDescriptionString
+          accountTypeIconImage {
+            altText
+            templateUrl
+          }
+          accountTypeLabelString
+          accountTypeLoadingBackgroundColorString
+          accountTypeLoadingImage {
+            altText
+            templateUrl
+          }
+          accountTypeEmailString
+          showLogoVariant
+        }
+        businessOrganizationOptional {
+          id
+          name
+          businessCategory
+        }
+      }
+    }
+  }
+`;
+
+export const useGetAllLinkedUserAccounts = () => {
+  return useQuery<GetAllLinkedUserAccountsQuery>(GET_ALL_LINKED_USER_ACCOUNTS);
+};

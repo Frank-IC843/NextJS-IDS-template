@@ -12,6 +12,7 @@ import {
 } from '@instacart/ids-customers';
 import { useTheme, InformationIcon } from '@instacart/ids-core';
 import { useState } from 'react';
+import { useGetAllLinkedUserAccounts } from '../queries';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -82,6 +83,7 @@ const monthOptions = [
 export default function Dashboard() {
   const styles = useStyles();
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
+  const { data, loading, error } = useGetAllLinkedUserAccounts();
 
   return (
     <div css={styles.container}>

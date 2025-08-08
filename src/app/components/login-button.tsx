@@ -2,9 +2,11 @@
 
 import { PrimaryButtonSmall } from './buttons';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export const LoginButton = () => {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async () => {
     console.log('Login button clicked!');
@@ -17,7 +19,7 @@ export const LoginButton = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          identifier: 'frank.su@instacart.com',
+          identifier: 'frank.su+1@fernet.io',
           identifier_type: 'email',
           verification_code: '671415',
         }),
@@ -27,6 +29,7 @@ export const LoginButton = () => {
 
       if (response.ok) {
         console.log('Login successful:', data);
+        router.push('/dashboard');
       } else {
         console.error('Login failed:', data.error);
         alert(`Login failed: ${data.error}`);
