@@ -120,7 +120,7 @@ export function Header() {
           <ChevronDownIcon size="16px" />
         </div>
 
-        <CartButton itemCount={3} css={styles.cartButton} />
+        <CartButton itemCount={0} css={styles.cartButton} />
       </div>
     </header>
   );

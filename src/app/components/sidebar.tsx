@@ -44,6 +44,7 @@ const menuItemRoutes: Record<string, string> = {
   Invoicing: '/invoicing',
   'Order approvals': '/order-approvals',
   'Business settings': '/business-settings',
+  Back: '/',
 };
 
 function useStyles() {

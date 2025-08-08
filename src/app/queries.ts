@@ -1,5 +1,5 @@
-import { gql, useQuery, useSuspenseQuery } from '@apollo/client';
-import { GetAllLinkedUserAccountsQuery } from '@/__generated__/graphql-types';
+import { gql, useQuery } from '@apollo/client';
+import { BusinessOrderMetricsQuery } from '@/__generated__/graphql-types';
 
 export const CREATE_USER_SESSION_FROM_CODE = gql`
   mutation CreateUserSessionFromVerificationCode(
@@ -27,45 +27,47 @@ export const CREATE_USER_SESSION_FROM_CODE = gql`
   }
 `;
 
-export const GET_ALL_LINKED_USER_ACCOUNTS = gql`
-  query GetAllLinkedUserAccounts {
-    getAllLinkedUserAccounts {
+export const BUSINESS_MONTHS_QUERY = gql`
+  query BusinessMonths {
+    businessMonths {
       id
-      linkedUserAccounts {
-        accountId
-        accountType
-        id
-        userId
-        viewSection {
-          accountTypeDescriptionString
-          accountTypeIconImage {
-            altText
-            templateUrl
-          }
-          accountTypeLabelString
-          accountTypeLoadingBackgroundColorString
-          accountTypeLoadingImage {
-            altText
-            templateUrl
-          }
-          accountTypeEmailString
-          showLogoVariant
-        }
-        businessOrganizationOptional {
+      startDate
+      endDate
+      viewSection {
+        labelString
+      }
+    }
+  }
+`;
+
+export const BUSINESS_ORDER_METRICS_QUERY = gql`
+  query BusinessOrderMetrics($startDate: String!, $endDate: String!) {
+    businessOrderMetrics(startDate: $startDate, endDate: $endDate) {
+      startDate
+      endDate
+      ordersPlaced
+      ordersCompleted
+      totalSpendCents
+      totalSavingsCents
+      viewSection {
+        orderMetricCards {
           id
-          name
-          businessCategory
+          cardVariant
+          displayVariant
+          titleString
+          valueString
+          tooltipDisplayVariant
+          tooltipIconVariant
+          tooltipTextString
         }
       }
     }
   }
 `;
 
-export const useGetAllLinkedUserAccounts = () => {
-  return useQuery<GetAllLinkedUserAccountsQuery>(GET_ALL_LINKED_USER_ACCOUNTS);
-};
-
-// Suspense version - this is the hook you want to use with Suspense
-export const useSuspenseGetAllLinkedUserAccounts = () => {
-  return useSuspenseQuery<GetAllLinkedUserAccountsQuery>(GET_ALL_LINKED_USER_ACCOUNTS);
+export const useGetBusinessOrderMetrics = (startDate?: string | null, endDate?: string | null) => {
+  return useQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {
+    variables: { startDate, endDate },
+    skip: !startDate || !endDate,
+  });
 };

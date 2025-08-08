@@ -15,11 +15,13 @@ import {
   useModalDisclosure,
   ModalHeader,
   ModalTitle,
+  LoadingLockupTextBase,
 } from '@instacart/ids-customers';
 import { useTheme, InformationIcon, responsive } from '@instacart/ids-core';
 import { useState } from 'react';
-import { GetAllLinkedUserAccountsQuery } from '@/__generated__/graphql-types';
+import { BusinessMonthsQuery } from '@/__generated__/graphql-types';
 import { ChatInterface } from '@/app/components/chat-interface';
+import { useGetBusinessOrderMetrics } from '../queries';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -68,6 +70,11 @@ const useStyles = () => {
       justifyContent: 'space-between',
       gap: '8px',
       marginBottom: '12px',
+    },
+    cardLoading: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '20px',
     },
     aiButton: {
       width: '64px',
@@ -162,32 +169,32 @@ const useStyles = () => {
   } as const;
 };
 
-const monthOptions = [
-  'This Month (August)',
-  'July (2025)',
-  'June (2025)',
-  'May (2025)',
-  'April (2025)',
-  'March (2025)',
-  'February (2025)',
-  'January (2025)',
-  'December (2024)',
-  'November (2024)',
-  'October (2024)',
-  'September (2024)',
-];
-
 interface DashboardContentProps {
-  data: GetAllLinkedUserAccountsQuery;
+  businessMonthsData: BusinessMonthsQuery;
 }
 
-export function DashboardContent({ data }: DashboardContentProps) {
+export function DashboardContent({ businessMonthsData: { businessMonths } }: DashboardContentProps) {
   const styles = useStyles();
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
+  const [selectedMonth, setSelectedMonth] = useState(businessMonths[0]);
+  const selectedMonthLabel = selectedMonth.viewSection.labelString;
   const modal = useModalState({
     visible: false,
   });
   const disclosure = useModalDisclosure(modal);
+  const { data: orderMetricsData, loading: orderMetricsLoading } = useGetBusinessOrderMetrics(
+    selectedMonth.startDate,
+    selectedMonth.endDate
+  );
+  const { orderMetricCards } = orderMetricsData?.businessOrderMetrics.viewSection ?? {};
+  const ordersCompletedCard = orderMetricCards?.find(card => card.cardVariant === 'ordersCompleted');
+  const totalSpendCard = orderMetricCards?.find(card => card.cardVariant === 'totalSpendCents');
+
+  const orderMetricsLoadingLockup = (
+    <div css={styles.cardLoading}>
+      <LoadingLockupTextBase />
+      <LoadingLockupTextBase styles={{ container: { width: '60%' } }} />
+    </div>
+  );
 
   return (
     <div css={styles.container}>
@@ -196,14 +203,18 @@ export function DashboardContent({ data }: DashboardContentProps) {
         <ButtonBase css={styles.linkButton}>Export</ButtonBase>
       </div>
       <div css={styles.selectContainer}>
-        <Select selectedValue={selectedMonth} styles={styles.selectStyles}>
+        <Select selectedValue={selectedMonthLabel} styles={styles.selectStyles}>
           <SelectButton>
-            <SelectButtonValue>{selectedMonth}</SelectButtonValue>
+            <SelectButtonValue>{selectedMonthLabel}</SelectButtonValue>
           </SelectButton>
           <SelectOptions alignment="left">
-            {monthOptions.map(month => (
-              <SelectOption value={month} key={month} onClick={() => setSelectedMonth(month)}>
-                {month}
+            {businessMonths.map(month => (
+              <SelectOption
+                value={month.viewSection.labelString}
+                key={month.viewSection.labelString}
+                onClick={() => setSelectedMonth(month)}
+              >
+                {month.viewSection.labelString}
               </SelectOption>
             ))}
           </SelectOptions>
@@ -211,24 +222,39 @@ export function DashboardContent({ data }: DashboardContentProps) {
       </div>
       <div css={styles.cardsContainer}>
         <div css={styles.card}>
-          <div css={styles.cardHeader}>
-            <Text typography="bodyLarge2" color="systemGrayscale50">
-              Orders Completed
-            </Text>
-          </div>
-          <Text typography="titleMedium">0</Text>
+          {orderMetricsLoading ? (
+            orderMetricsLoadingLockup
+          ) : (
+            <>
+              <div css={styles.cardHeader}>
+                <Text typography="bodyLarge2" color="systemGrayscale50">
+                  {ordersCompletedCard?.titleString}
+                </Text>
+                <Tooltip title={ordersCompletedCard?.tooltipTextString}>
+                  <InformationIcon color="systemGrayscale30" />
+                </Tooltip>
+              </div>
+              <Text typography="titleMedium">{ordersCompletedCard?.valueString}</Text>
+            </>
+          )}
         </div>
 
         <div css={styles.card}>
-          <div css={styles.cardHeader}>
-            <Text typography="bodyLarge2" color="systemGrayscale50">
-              Total Spend
-            </Text>
-            <Tooltip title="Total amount of money spent during the selected time period by all members across USD and CAD. We'll split this out shortly.">
-              <InformationIcon color="systemGrayscale30" />
-            </Tooltip>
-          </div>
-          <Text typography="titleMedium">$0.00</Text>
+          {orderMetricsLoading ? (
+            orderMetricsLoadingLockup
+          ) : (
+            <>
+              <div css={styles.cardHeader}>
+                <Text typography="bodyLarge2" color="systemGrayscale50">
+                  {totalSpendCard?.titleString}
+                </Text>
+                <Tooltip title={totalSpendCard?.tooltipTextString}>
+                  <InformationIcon color="systemGrayscale30" />
+                </Tooltip>
+              </div>
+              <Text typography="titleMedium">{totalSpendCard?.valueString}</Text>
+            </>
+          )}
         </div>
       </div>
       <Divider />
