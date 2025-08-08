@@ -2,21 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getClient } from '@/lib/apollo-client';
 import { CREATE_USER_SESSION_FROM_CODE } from '@/app/queries';
-import { UsersIdentityType } from '@/__generated__/graphql-types';
+import { UsersAccountTypes, UsersIdentityType } from '@/__generated__/graphql-types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { identifier, verification_code, identifier_type } = await request.json();
+    const { identifier, verification_code } = await request.json();
 
     const client = getClient();
     const { data, errors } = await client.mutate({
       mutation: CREATE_USER_SESSION_FROM_CODE,
       variables: {
         identifier,
-        identifier_type: identifier_type === 'phone' ? UsersIdentityType.PhoneNumber : UsersIdentityType.Email,
+        identifier_type: UsersIdentityType.Email,
         verification_code,
-        accountType: null,
-        linkUserAccounts: false,
+        accountType: UsersAccountTypes.Business,
       },
     });
 
