@@ -7,8 +7,11 @@ import { GRAPHQL_URL } from './constants';
 // have a function to create a client for you
 function makeClient() {
   const httpLink = new HttpLink({
-    // Use our proxy route instead of direct GraphQL endpoint
-    uri: '/api/graphql',
+    // Use proxy route for both SSR and client-side to handle auth properly
+    uri:
+      typeof window === 'undefined'
+        ? GRAPHQL_URL // SSR - absolute URL to our proxy
+        : '/api/graphql', // Client-side - relative URL to our proxy
     fetchOptions: {
       credentials: 'include',
       // Next.js-related fetch options for caching and revalidation

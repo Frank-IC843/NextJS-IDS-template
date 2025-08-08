@@ -13,7 +13,7 @@ import {
 } from '@instacart/ids-customers';
 import { useTheme, InformationIcon } from '@instacart/ids-core';
 import { useState } from 'react';
-import { useSuspenseGetAllLinkedUserAccounts } from '@/app/queries';
+import { GetAllLinkedUserAccountsQuery } from '@/__generated__/graphql-types';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -81,11 +81,13 @@ const monthOptions = [
   'September (2024)',
 ];
 
-export function DashboardContent() {
+interface DashboardContentProps {
+  data: GetAllLinkedUserAccountsQuery;
+}
+
+export function DashboardContent({ data }: DashboardContentProps) {
   const styles = useStyles();
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
-
-  const { data } = useSuspenseGetAllLinkedUserAccounts();
 
   return (
     <div css={styles.container}>
