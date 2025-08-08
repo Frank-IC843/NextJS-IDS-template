@@ -1,17 +1,5 @@
-'use client';
-
-import { LoadingGenericOnEnter } from '@instacart/ids-customers';
+import { LoadingOnEnter } from '@/app/components/loading-on-enter';
 
 export default function Loading() {
-  return (
-    <LoadingGenericOnEnter
-      css={{
-        '& *:focus': {
-          outline: 'none !important',
-          border: 'none !important',
-          boxShadow: 'none !important',
-        },
-      }}
-    />
-  );
+  return <LoadingOnEnter />;
 }
