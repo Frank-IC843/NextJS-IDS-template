@@ -22,11 +22,13 @@
     "@instacart/ids-customers": "^0.0.902",
     "body-scroll-lock": "4.0.0-beta.0",
     "graphql": "^16.11.0",
+    "mermaid": "^11.9.0",
     "next": "15.4.1",
     "openai": "^5.12.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-is": "^19.1.0",
+    "react-markdown": "^10.1.0",
     "react-transition-state": "^2.3.1",
     "reakit": "^1.3.11",
     "reakit-utils": "^0.15.2"

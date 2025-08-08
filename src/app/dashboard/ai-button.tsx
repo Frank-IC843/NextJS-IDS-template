@@ -91,7 +91,7 @@ export function AIButton() {
         styles={{
           modal: {
             [responsive.up('r')]: {
-              width: '750px',
+              width: '1000px',
             },
             position: 'relative',
           },

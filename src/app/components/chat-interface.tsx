@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { keyframes } from '@emotion/react';
+import ReactMarkdown from 'react-markdown';
 import { PrimaryButton } from '@/app/components/buttons';
+import { MermaidChart } from '@/app/components/mermaid-chart';
+import { Text } from '@instacart/ids-customers';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -23,8 +27,7 @@ const useStyles = () => {
     chatContainer: {
       display: 'flex',
       flexDirection: 'column',
-      height: '80vh',
-      maxWidth: '800px',
+      height: '100vh',
       width: '100%',
       border: '1px solid #e0e0e0',
       background: 'white',
@@ -197,6 +200,75 @@ export function ChatInterface() {
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
   const styles = useStyles();
 
+  // Simple function to render message content with inline charts
+  const renderMessageContent = (content: string) => {
+    const parts: Array<{ type: 'text' | 'chart'; content: string; key: string }> = [];
+    const mermaidRegex = /```mermaid\s*\n([\s\S]*?)\n```/g;
+
+    let lastIndex = 0;
+    let match;
+    let partIndex = 0;
+
+    while ((match = mermaidRegex.exec(content)) !== null) {
+      // Add text before the chart
+      if (match.index > lastIndex) {
+        const textContent = content.slice(lastIndex, match.index);
+        if (textContent.trim()) {
+          parts.push({
+            type: 'text',
+            content: textContent,
+            key: `text-${partIndex++}`,
+          });
+        }
+      }
+
+      // Add the chart
+      parts.push({
+        type: 'chart',
+        content: match[1].trim(),
+        key: `chart-${partIndex++}`,
+      });
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text after the last chart
+    if (lastIndex < content.length) {
+      const textContent = content.slice(lastIndex);
+      if (textContent.trim()) {
+        parts.push({
+          type: 'text',
+          content: textContent,
+          key: `text-${partIndex++}`,
+        });
+      }
+    }
+
+    // If no charts found, return all as text
+    if (parts.length === 0) {
+      parts.push({
+        type: 'text',
+        content: content,
+        key: 'text-0',
+      });
+    }
+
+    return parts.map(part => (
+      <div key={part.key}>
+        {part.type === 'text' ? (
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <div>{children}</div>,
+            }}
+          >
+            {part.content}
+          </ReactMarkdown>
+        ) : (
+          <MermaidChart chart={part.content} />
+        )}
+      </div>
+    ));
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -237,6 +309,9 @@ export function ChatInterface() {
     setInput('');
     setIsLoading(true);
 
+    // Use a local variable to accumulate content - this avoids stale closures
+    let assistantContent = '';
+
     try {
       // Add assistant message placeholder
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
@@ -259,7 +334,6 @@ export function ChatInterface() {
       if (!reader) throw new Error('No reader available');
 
       readerRef.current = reader;
-      let assistantContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -286,15 +360,17 @@ export function ChatInterface() {
               const parsed = JSON.parse(data);
               if (parsed.content) {
                 assistantContent += parsed.content;
-                setMessages(prev => {
-                  const newMessages = [...prev];
-                  if (newMessages[newMessages.length - 1]?.role === 'assistant') {
-                    newMessages[newMessages.length - 1] = {
-                      role: 'assistant',
-                      content: assistantContent,
-                    };
-                  }
-                  return newMessages;
+                flushSync(() => {
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    if (newMessages[newMessages.length - 1]?.role === 'assistant') {
+                      newMessages[newMessages.length - 1] = {
+                        role: 'assistant',
+                        content: assistantContent,
+                      };
+                    }
+                    return newMessages;
+                  });
                 });
               }
             } catch (e) {
@@ -342,7 +418,10 @@ export function ChatInterface() {
       <div css={styles.messagesContainer}>
         {messages.length === 0 ? (
           <div css={styles.emptyState}>
-            <p>Ask me about your order patterns, spending trends, or cost optimization opportunities!</p>
+            <Text typography="bodyLarge1" color="systemGrayscale60">
+              Ask me about your order patterns, spending trends, or cost optimization opportunities! Try: &ldquo;Show me
+              my spending by category&rdquo; or &ldquo;Create a monthly trend chart&rdquo;
+            </Text>
           </div>
         ) : (
           messages.map((message, index) => (
@@ -352,14 +431,15 @@ export function ChatInterface() {
             >
               <div css={[styles.messageContent, message.role === 'user' ? styles.userMessageContent : {}]}>
                 <div css={styles.messageRole}>{message.role === 'user' ? '👤' : '🤖'}</div>
-                <div
-                  css={[
-                    styles.messageText,
-                    message.role === 'user' ? styles.userMessageText : styles.assistantMessageText,
-                  ]}
-                >
-                  {message.content ||
-                    (message.role === 'assistant' && isLoading ? (
+                <div>
+                  {/* Render message content with inline charts */}
+                  <div
+                    css={[
+                      styles.messageText,
+                      message.role === 'user' ? styles.userMessageText : styles.assistantMessageText,
+                    ]}
+                  >
+                    {message.role === 'assistant' && isLoading && index === messages.length - 1 && !message.content ? (
                       <div css={styles.loadingContainer}>
                         <span css={styles.thinkingText}>thinking</span>
                         <div css={styles.loadingDots}>
@@ -369,8 +449,9 @@ export function ChatInterface() {
                         </div>
                       </div>
                     ) : (
-                      ''
-                    ))}
+                      renderMessageContent(message.content)
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
