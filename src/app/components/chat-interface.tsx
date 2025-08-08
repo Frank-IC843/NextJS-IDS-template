@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { keyframes } from '@emotion/react';
-import { PrimaryButton, DetrimentalButton } from '@/app/components/buttons';
+import { PrimaryButton } from '@/app/components/buttons';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -26,9 +26,7 @@ const useStyles = () => {
       height: '80vh',
       maxWidth: '800px',
       width: '100%',
-      margin: '0 auto',
       border: '1px solid #e0e0e0',
-      borderRadius: '12px',
       background: 'white',
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       overflow: 'hidden',
@@ -339,19 +337,8 @@ export function ChatInterface() {
     }
   };
 
-  const clearChat = () => {
-    setMessages([]);
-  };
-
   return (
     <div css={styles.chatContainer}>
-      <div css={styles.chatHeader}>
-        <h1 css={styles.chatTitle}>Instacart Business Analytics</h1>
-        <DetrimentalButton onClick={clearChat} css={styles.clearButton}>
-          Clear Chat
-        </DetrimentalButton>
-      </div>
-
       <div css={styles.messagesContainer}>
         {messages.length === 0 ? (
           <div css={styles.emptyState}>

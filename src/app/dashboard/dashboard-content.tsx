@@ -10,8 +10,13 @@ import {
   SelectOption,
   Tooltip,
   Divider,
+  ModalBase,
+  useModalState,
+  useModalDisclosure,
+  ModalHeader,
+  ModalTitle,
 } from '@instacart/ids-customers';
-import { useTheme, InformationIcon } from '@instacart/ids-core';
+import { useTheme, InformationIcon, responsive } from '@instacart/ids-core';
 import { useState } from 'react';
 import { GetAllLinkedUserAccountsQuery } from '@/__generated__/graphql-types';
 import { ChatInterface } from '@/app/components/chat-interface';
@@ -134,27 +139,6 @@ const useStyles = () => {
       display: 'flex',
       flexDirection: 'column',
     },
-    closeButton: {
-      position: 'absolute',
-      top: '12px',
-      right: '12px',
-      background: 'none',
-      border: 'none',
-      fontSize: '28px',
-      cursor: 'pointer',
-      color: '#666',
-      zIndex: 100,
-      width: '36px',
-      height: '36px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: '50%',
-      '&:hover': {
-        backgroundColor: '#f0f0f0',
-        color: '#333',
-      },
-    },
     chatWrapper: {
       flex: 1,
       overflow: 'hidden',
@@ -200,15 +184,10 @@ interface DashboardContentProps {
 export function DashboardContent({ data }: DashboardContentProps) {
   const styles = useStyles();
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0]);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  const handleAiClick = () => {
-    setIsChatOpen(true);
-  };
-
-  const handleCloseChat = () => {
-    setIsChatOpen(false);
-  };
+  const modal = useModalState({
+    visible: false,
+  });
+  const disclosure = useModalDisclosure(modal);
 
   return (
     <div css={styles.container}>
@@ -253,14 +232,13 @@ export function DashboardContent({ data }: DashboardContentProps) {
         </div>
       </div>
       <Divider />
-      {/* AI Chat Button */}
       <div css={styles.aiButtonContainer}>
         <Tooltip
           title="💡 Ask AI about your spending insights"
           placement="left"
           styles={{ container: styles.aiTooltipContainer }}
         >
-          <button css={styles.aiButton} onClick={handleAiClick}>
+          <button css={styles.aiButton} {...disclosure}>
             <svg css={styles.aiIcon} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 1L14.5 8.5L22 11L14.5 13.5L12 21L9.5 13.5L2 11L9.5 8.5L12 1Z" opacity="0.9" />
               <path d="M19 4L20.2 7.8L24 9L20.2 10.2L19 14L17.8 10.2L14 9L17.8 7.8L19 4Z" opacity="0.7" />
@@ -269,20 +247,25 @@ export function DashboardContent({ data }: DashboardContentProps) {
           </button>
         </Tooltip>
       </div>
-
-      {/* Chat Overlay */}
-      {isChatOpen && (
-        <div css={styles.chatOverlay} onClick={handleCloseChat}>
-          <div css={styles.chatModal} onClick={e => e.stopPropagation()}>
-            <button css={styles.closeButton} onClick={handleCloseChat} title="Close chat">
-              ×
-            </button>
-            <div css={styles.chatWrapper}>
-              <ChatInterface />
-            </div>
-          </div>
-        </div>
-      )}
+      <ModalBase
+        modal={modal}
+        aria-label="AI Chat Assistant"
+        styles={{
+          modal: {
+            [responsive.up('r')]: {
+              width: '750px',
+            },
+            position: 'relative',
+          },
+        }}
+      >
+        <ModalHeader hide={modal.hide} accessibleLabels={{ close: 'Close chat' }}>
+          <ModalTitle>
+            <Text typography="headline">Instacart Business Analytics</Text>
+          </ModalTitle>
+        </ModalHeader>
+        <ChatInterface />
+      </ModalBase>
     </div>
   );
 }
