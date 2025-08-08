@@ -30,6 +30,7 @@ const MessageTextPart: React.FC<MessageTextPartProps> = ({ content }) => {
         ol: ({ children }) => <ol style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.2' }}>{children}</ol>,
         li: ({ children }) => <li style={{ margin: '0', padding: '0', lineHeight: '1.2' }}>{children}</li>,
         p: ({ children }) => <p style={{ margin: '0' }}>{children}</p>,
+        h2: ({ children }) => <h2 style={{ margin: '10px 0' }}>{children}</h2>,
       }}
     >
       {content}
