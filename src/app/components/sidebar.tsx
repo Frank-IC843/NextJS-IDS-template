@@ -158,15 +158,9 @@ export function Sidebar() {
   // Update selected menu item based on current pathname
   useEffect(() => {
     const currentMenuItem = Object.entries(menuItemRoutes).find(entry => entry[1] === pathname);
-
-    if (currentMenuItem) {
+    if (currentMenuItem && currentMenuItem[0] !== 'Back') {
       setSelectedMenuItem(currentMenuItem[0]);
-    } else if (pathname === '/') {
-      // Handle home page - you might want to select a default item or none
-      setSelectedMenuItem('');
-    } else {
-      setSelectedMenuItem('');
-    }
+    } else setSelectedMenuItem('');
   }, [pathname]);
 
   const handleMenuItemClick = (item: string) => {
@@ -174,7 +168,6 @@ export function Sidebar() {
     if (route) {
       router.push(route);
     }
-    // The selectedMenuItem will be updated by the useEffect when the route changes
   };
 
   return (
