@@ -15,13 +15,13 @@ import {
   useModalDisclosure,
   ModalHeader,
   ModalTitle,
-  LoadingLockupTextBase,
 } from '@instacart/ids-customers';
-import { useTheme, InformationIcon, responsive } from '@instacart/ids-core';
+import { useTheme, responsive } from '@instacart/ids-core';
 import { useState } from 'react';
 import { BusinessMonthsQuery } from '@/__generated__/graphql-types';
 import { ChatInterface } from '@/app/components/chat-interface';
 import { useGetBusinessOrderMetrics } from '../queries';
+import { MetricCard } from '@/app/components/metric-card';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -56,25 +56,6 @@ const useStyles = () => {
       display: 'flex',
       gap: '16px',
       marginTop: '8px',
-    },
-    card: {
-      border: `1px solid ${theme.colors.systemGrayscale20}`,
-      borderRadius: '8px',
-      flex: 1,
-      maxWidth: '403px',
-      padding: '16px',
-    },
-    cardHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '8px',
-      marginBottom: '12px',
-    },
-    cardLoading: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '20px',
     },
     aiButton: {
       width: '64px',
@@ -189,13 +170,6 @@ export function DashboardContent({ businessMonthsData: { businessMonths } }: Das
   const ordersCompletedCard = orderMetricCards?.find(card => card.cardVariant === 'ordersCompleted');
   const totalSpendCard = orderMetricCards?.find(card => card.cardVariant === 'totalSpendCents');
 
-  const orderMetricsLoadingLockup = (
-    <div css={styles.cardLoading}>
-      <LoadingLockupTextBase />
-      <LoadingLockupTextBase styles={{ container: { width: '60%' } }} />
-    </div>
-  );
-
   return (
     <div css={styles.container}>
       <div css={styles.header}>
@@ -221,41 +195,18 @@ export function DashboardContent({ businessMonthsData: { businessMonths } }: Das
         </Select>
       </div>
       <div css={styles.cardsContainer}>
-        <div css={styles.card}>
-          {orderMetricsLoading ? (
-            orderMetricsLoadingLockup
-          ) : (
-            <>
-              <div css={styles.cardHeader}>
-                <Text typography="bodyLarge2" color="systemGrayscale50">
-                  {ordersCompletedCard?.titleString}
-                </Text>
-                <Tooltip title={ordersCompletedCard?.tooltipTextString}>
-                  <InformationIcon color="systemGrayscale30" />
-                </Tooltip>
-              </div>
-              <Text typography="titleMedium">{ordersCompletedCard?.valueString}</Text>
-            </>
-          )}
-        </div>
-
-        <div css={styles.card}>
-          {orderMetricsLoading ? (
-            orderMetricsLoadingLockup
-          ) : (
-            <>
-              <div css={styles.cardHeader}>
-                <Text typography="bodyLarge2" color="systemGrayscale50">
-                  {totalSpendCard?.titleString}
-                </Text>
-                <Tooltip title={totalSpendCard?.tooltipTextString}>
-                  <InformationIcon color="systemGrayscale30" />
-                </Tooltip>
-              </div>
-              <Text typography="titleMedium">{totalSpendCard?.valueString}</Text>
-            </>
-          )}
-        </div>
+        <MetricCard
+          title={ordersCompletedCard?.titleString}
+          value={ordersCompletedCard?.valueString}
+          tooltipText={ordersCompletedCard?.tooltipTextString}
+          isLoading={orderMetricsLoading}
+        />
+        <MetricCard
+          title={totalSpendCard?.titleString}
+          value={totalSpendCard?.valueString}
+          tooltipText={totalSpendCard?.tooltipTextString}
+          isLoading={orderMetricsLoading}
+        />
       </div>
       <Divider />
       <div css={styles.aiButtonContainer}>
