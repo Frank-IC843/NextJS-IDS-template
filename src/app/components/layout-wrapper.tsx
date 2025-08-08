@@ -2,6 +2,7 @@
 
 import { Header } from './header';
 import { Sidebar } from './sidebar';
+import { AIButton } from './ai-button';
 
 function useStyles() {
   return {
@@ -50,6 +51,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
         <Sidebar />
       </div>
       <main css={styles.main}>{children}</main>
+      <AIButton />
     </div>
   );
 }

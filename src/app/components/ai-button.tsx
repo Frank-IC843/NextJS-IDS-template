@@ -52,7 +52,6 @@ const useStyles = () => {
       minWidth: '275px',
       maxWidth: '350px',
       whiteSpace: 'normal' as const,
-      textAlign: 'center' as const,
       padding: '12px 16px',
       fontSize: '14px',
       lineHeight: '1.4',
@@ -72,7 +71,7 @@ export function AIButton() {
     <>
       <div css={styles.aiButtonContainer}>
         <Tooltip
-          title="💡 Ask AI about your spending insights"
+          title="💡 Ask AI about your spending insights, or ask about any other question you have about your business."
           placement="left"
           styles={{ container: styles.aiTooltipContainer }}
         >

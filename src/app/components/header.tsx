@@ -117,7 +117,7 @@ export function Header() {
           <Text color="systemGrayscale00" typography="bodyLarge2" css={styles.locationText}>
             94105
           </Text>
-          <ChevronDownIcon size="16px" />
+          <ChevronDownIcon size="16px" color="systemGrayscale00" />
         </div>
 
         <CartButton itemCount={0} css={styles.cartButton} />

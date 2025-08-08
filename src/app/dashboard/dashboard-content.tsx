@@ -16,7 +16,6 @@ import { BusinessMonthsQuery } from '@/__generated__/graphql-types';
 
 import { useGetBusinessOrderMetrics } from '../queries';
 import { MetricCard } from '@/app/components/metric-card';
-import { AIButton } from './ai-button';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -111,7 +110,6 @@ export function DashboardContent({ businessMonthsData: { businessMonths } }: Das
         />
       </div>
       <Divider />
-      <AIButton />
     </div>
   );
 }

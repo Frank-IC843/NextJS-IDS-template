@@ -83,7 +83,6 @@ const useStyles = () => {
     example: {
       fontSize: '12px',
       color: '#666',
-      fontStyle: 'italic',
       marginTop: '8px',
     },
   } as const;
@@ -185,7 +184,7 @@ export function BusinessInfoSettings({ onBusinessInfoChange }: BusinessInfoSetti
           <TextAreaFixed
             value={tempInfo}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTempInfo(e.target.value)}
-            placeholder="Describe your business type, size, industry, key priorities, seasonal patterns, or any other context that would help the AI provide better insights..."
+            placeholder="Describe your business to give the AI more context about your business."
           />
 
           <Text typography="bodyMedium2" color="systemGrayscale60">
