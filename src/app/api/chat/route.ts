@@ -1,12 +1,11 @@
 import { type NextRequest } from 'next/server';
 import { streamText, generateText, type ModelMessage } from 'ai';
-import { gpt4, gpt4Turbo, gpt35Turbo, gpt4_1 } from '@/lib/ai-sdk-config';
+import { gpt4_1 } from '@/lib/ai-sdk-config';
 import { SYSTEM_PROMPT } from './system-prompt';
 
 interface ChatRequestBody {
   messages: ModelMessage[];
   stream?: boolean;
-  model?: 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo';
   businessInfo?: string;
   temperature?: number;
   max_tokens?: number;
@@ -52,7 +51,7 @@ const DEFAULT_OPTIONS = {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as ChatRequestBody;
-    const { messages, stream = false, model = 'gpt-4', businessInfo, ...userOptions } = body;
+    const { messages, stream = false, businessInfo, ...userOptions } = body;
 
     // Merge user options with defaults
     const options = { ...DEFAULT_OPTIONS, ...userOptions };
@@ -110,6 +109,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const modelInstance = gpt4_1;
+
     // Handle regular completion
     const result = await generateText({
       model: modelInstance,
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
             total_tokens: result.usage.totalTokens,
           }
         : undefined,
-      model,
+      model: modelInstance,
     });
   } catch (error) {
     // Handle specific error types
