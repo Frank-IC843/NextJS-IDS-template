@@ -79,11 +79,21 @@ export function AIButton() {
   return (
     <>
       <div css={styles.aiButtonContainer}>
-        <Tooltip
-          title="💡 Ask AI about your spending insights, or ask about any other question you have about your business."
-          placement="left"
-          styles={{ container: styles.aiTooltipContainer }}
-        >
+        {!modal.visible ? (
+          <Tooltip
+            title="💡 Ask AI about your spending insights, or ask about any other question you have about your business."
+            placement="left"
+            styles={{ container: styles.aiTooltipContainer }}
+          >
+            <button css={styles.aiButton} {...disclosure}>
+              <svg css={styles.aiIcon} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1L14.5 8.5L22 11L14.5 13.5L12 21L9.5 13.5L2 11L9.5 8.5L12 1Z" opacity="0.9" />
+                <path d="M19 4L20.2 7.8L24 9L20.2 10.2L19 14L17.8 10.2L14 9L17.8 7.8L19 4Z" opacity="0.7" />
+                <path d="M5 16L6.2 19.8L10 21L6.2 22.2L5 26L3.8 22.2L0 21L3.8 19.8L5 16Z" opacity="0.6" />
+              </svg>
+            </button>
+          </Tooltip>
+        ) : (
           <button css={styles.aiButton} {...disclosure}>
             <svg css={styles.aiIcon} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 1L14.5 8.5L22 11L14.5 13.5L12 21L9.5 13.5L2 11L9.5 8.5L12 1Z" opacity="0.9" />
@@ -91,7 +101,7 @@ export function AIButton() {
               <path d="M5 16L6.2 19.8L10 21L6.2 22.2L5 26L3.8 22.2L0 21L3.8 19.8L5 16Z" opacity="0.6" />
             </svg>
           </button>
-        </Tooltip>
+        )}
       </div>
       <ModalBase
         modal={modal}
