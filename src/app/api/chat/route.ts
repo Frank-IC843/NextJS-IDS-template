@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server';
 import { streamText, generateText, type ModelMessage } from 'ai';
-import { gpt4, gpt4Turbo, gpt35Turbo } from '@/lib/ai-sdk-config';
+import { gpt4, gpt4Turbo, gpt35Turbo, gpt4_1 } from '@/lib/ai-sdk-config';
 import { SYSTEM_PROMPT } from './system-prompt';
 
 interface ChatRequestBody {
@@ -49,18 +49,6 @@ const DEFAULT_OPTIONS = {
   presence_penalty: 0.1, // Slight penalty to avoid redundancy
 };
 
-// Model selection helper
-const getModel = (modelName: string) => {
-  switch (modelName) {
-    case 'gpt-4-turbo':
-      return gpt4Turbo;
-    case 'gpt-3.5-turbo':
-      return gpt35Turbo;
-    default:
-      return gpt4;
-  }
-};
-
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as ChatRequestBody;
@@ -80,13 +68,10 @@ export async function POST(request: NextRequest) {
       systemPrompt += `\n\nBUSINESS CONTEXT:\n${businessInfo.trim()}\n\nUse this business context to provide more relevant and personalized insights, recommendations, and analysis. Tailor your responses to this specific business type, industry, and priorities.`;
     }
 
-    // Select the appropriate model
-    const modelInstance = getModel(model);
-
     // Handle streaming response
     if (stream) {
       const result = await streamText({
-        model: modelInstance,
+        model: gpt4_1,
         system: systemPrompt,
         messages,
         temperature: options.temperature,
