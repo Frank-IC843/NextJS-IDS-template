@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
-import { useBusinessInfo } from '@/app/components/business-info-settings';
+import { useBusinessInfo } from '@/app/settings/business-info-settings';
 
 export interface Message {
   role: 'user' | 'assistant';

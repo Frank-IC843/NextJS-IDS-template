@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { PrimaryButton } from '@/app/components/buttons';
+import { PrimaryButton } from '@/app/components/ui/buttons';
 
 interface ChatInputProps {
   input: string;

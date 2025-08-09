@@ -17,7 +17,7 @@ import {
   TimeIcon,
 } from '@instacart/ids-core';
 import { DividerBase } from '@instacart/ids-customers';
-import { MenuItem } from './menu-item';
+import { MenuItem } from '@/app/components/layout/menu-item';
 import { useRouter, usePathname } from 'next/navigation';
 
 type MenuItem = {

@@ -3,3 +3,4 @@ alwaysApply: true
 ---
 
 Alwas use yarn to install, not npm
+Always use aliased imports

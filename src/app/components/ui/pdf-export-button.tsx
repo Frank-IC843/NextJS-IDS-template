@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { PrimaryButton } from '@/app/components/buttons';
-import { usePdfExport } from './use-pdf-export';
+import { PrimaryButton } from '@/app/components/ui/buttons';
+import { usePdfExport } from '@/app/hooks/use-pdf-export';
 
 interface PdfExportButtonProps {
   content: string;

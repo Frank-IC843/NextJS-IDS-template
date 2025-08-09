@@ -2,10 +2,10 @@
 
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { MermaidChart } from '@/app/components/mermaid-chart';
-import { PrimaryButton } from '@/app/components/buttons';
-import { usePdfExport } from './use-pdf-export';
-import { useChatContext } from './chat-context';
+import { MermaidChart } from '@/app/components/visualization/mermaid-chart';
+import { PrimaryButton } from '@/app/components/ui/buttons';
+import { usePdfExport } from '@/app/hooks/use-pdf-export';
+import { useChatContext } from '@/app/components/chat/chat-context';
 
 interface MessagePart {
   type: 'text' | 'chart' | 'button';

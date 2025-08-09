@@ -1,6 +1,6 @@
 'use client';
 
-import { PrimaryButtonSmall } from './buttons';
+import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@apollo/client';

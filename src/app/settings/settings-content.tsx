@@ -1,7 +1,7 @@
 'use client';
 
 import { Text } from '@instacart/ids-customers';
-import { BusinessInfoSettings } from '@/app/components/business-info-settings';
+import { BusinessInfoSettings } from '@/app/settings/business-info-settings';
 
 const useStyles = () => {
   return {

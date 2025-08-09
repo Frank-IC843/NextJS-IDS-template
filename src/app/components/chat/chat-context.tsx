@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
-import type { Message } from './use-chat';
+import type { Message } from '@/app/components/chat/use-chat';
 
 interface ChatContextType {
   messages: Message[];

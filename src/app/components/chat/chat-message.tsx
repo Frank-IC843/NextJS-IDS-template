@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { MessageContent } from '@/app/components/message-content';
-import type { Message } from '@/app/components/use-chat';
+import { MessageContent } from '@/app/components/chat/message-content';
+import type { Message } from '@/app/components/chat/use-chat';
 
 interface ChatMessageProps {
   message: Message;

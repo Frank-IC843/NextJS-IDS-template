@@ -2,9 +2,9 @@
 
 import React, { useRef, useEffect } from 'react';
 import { Text } from '@instacart/ids-customers';
-import { ChatMessage } from '@/app/components/chat-message';
-import { ChatProvider } from '@/app/components/chat-context';
-import type { Message } from '@/app/components/use-chat';
+import { ChatMessage } from '@/app/components/chat/chat-message';
+import { ChatProvider } from '@/app/components/chat/chat-context';
+import type { Message } from '@/app/components/chat/use-chat';
 
 interface ChatMessagesProps {
   messages: Message[];

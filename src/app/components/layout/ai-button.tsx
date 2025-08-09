@@ -10,7 +10,7 @@ import {
   ModalTitle,
 } from '@instacart/ids-customers';
 import { responsive } from '@instacart/ids-core';
-import { ChatInterface } from '@/app/components/chat-interface';
+import { ChatInterface } from '@/app/components/chat/chat-interface';
 import { useEffect, useState } from 'react';
 
 const useStyles = () => {

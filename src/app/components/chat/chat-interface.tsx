@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { ChatMessages } from '@/app/components/chat-messages';
-import { ChatInput } from '@/app/components/chat-input';
-import { useChat } from '@/app/components/use-chat';
-import { ErrorBoundary } from '@/app/components/error-boundary';
+import { ChatMessages } from '@/app/components/chat/chat-messages';
+import { ChatInput } from '@/app/components/chat/chat-input';
+import { useChat } from '@/app/components/chat/use-chat';
+import { ErrorBoundary } from '@/app/components/ui/error-boundary';
 
 const useStyles = () => {
   return {

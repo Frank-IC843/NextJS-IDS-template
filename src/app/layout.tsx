@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ClientProviders } from './providers';
 import './globals.css';
-import { LayoutWrapper } from './components/layout-wrapper';
+import { LayoutWrapper } from '@/app/components/layout/layout-wrapper';
 
 export const metadata: Metadata = {
   title: 'AI Chat Assistant - Instacart',
