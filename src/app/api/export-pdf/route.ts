@@ -2,6 +2,127 @@ import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import { marked } from 'marked';
 
+// Helper function to decode HTML entities
+function decodeHtmlEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&quot;': '"',
+    '&apos;': "'",
+    '&lt;': '<',
+    '&gt;': '>',
+    '&amp;': '&',
+  };
+
+  return text.replace(/&[#\w]+;/g, entity => {
+    return entities[entity] || entity;
+  });
+}
+
+// Helper function to process Mermaid blocks using Puppeteer
+async function processMermaidBlocks(html: string): Promise<string> {
+  // Extract mermaid code blocks
+  const mermaidBlocks: { code: string; placeholder: string }[] = [];
+  let processedHtml = html;
+
+  // Find all mermaid code blocks
+  const mermaidRegex = /<pre><code(?:\s+class="language-mermaid")?>([\s\S]*?)<\/code><\/pre>/g;
+  let match;
+  let blockIndex = 0;
+
+  while ((match = mermaidRegex.exec(html)) !== null) {
+    const code = match[1].trim();
+
+    // Check if this looks like mermaid syntax
+    const mermaidKeywords = [
+      'graph',
+      'pie',
+      'flowchart',
+      'gantt',
+      'timeline',
+      'sequenceDiagram',
+      'classDiagram',
+      'stateDiagram',
+    ];
+    const isMermaid =
+      match[0].includes('class="language-mermaid"') || mermaidKeywords.some(keyword => code.startsWith(keyword));
+
+    if (isMermaid) {
+      const placeholder = `__MERMAID_BLOCK_${blockIndex}__`;
+      // Decode HTML entities in the mermaid code
+      const decodedCode = decodeHtmlEntities(code);
+
+      mermaidBlocks.push({ code: decodedCode, placeholder });
+      processedHtml = processedHtml.replace(match[0], placeholder);
+      blockIndex++;
+    }
+  }
+
+  // If no mermaid blocks found, return original HTML
+  if (mermaidBlocks.length === 0) {
+    return html;
+  }
+
+  // Launch Puppeteer to render mermaid diagrams
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
+
+  try {
+    const page = await browser.newPage();
+
+    // Set up a page with mermaid
+    await page.setContent(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+      </head>
+      <body>
+        <div id="container"></div>
+        <script>
+          mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose'
+          });
+        </script>
+      </body>
+      </html>
+    `);
+
+    // Render each mermaid block to SVG
+    for (let i = 0; i < mermaidBlocks.length; i++) {
+      const block = mermaidBlocks[i];
+
+      try {
+        const svg = await page.evaluate(
+          async (code: string, id: number) => {
+            const mermaidWindow = window as typeof window & {
+              mermaid: { render: (id: string, code: string) => Promise<{ svg: string }> };
+            };
+            const { svg } = await mermaidWindow.mermaid.render(`mermaid-${id}`, code);
+            return svg;
+          },
+          block.code,
+          i
+        );
+
+        // Replace placeholder with rendered SVG
+        const svgDiv = `<div class="mermaid-rendered" style="text-align: center; margin: 20px 0;">${svg}</div>`;
+        processedHtml = processedHtml.replace(block.placeholder, svgDiv);
+      } catch (error) {
+        console.error(`Failed to render mermaid block ${i}:`, error);
+        // Fallback to original code block
+        processedHtml = processedHtml.replace(block.placeholder, `<pre><code>${block.code}</code></pre>`);
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+
+  return processedHtml;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { content, title = 'Chat Export' } = await req.json();
@@ -10,8 +131,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    // Convert markdown content to HTML (Mermaid will be handled by Puppeteer)
-    const messageHtml = marked(content);
+    // Convert markdown content to HTML and handle Mermaid blocks properly
+    let messageHtml = await marked(content);
+
+    // Use a proper library to handle Mermaid conversion
+    messageHtml = await processMermaidBlocks(messageHtml);
 
     // Create complete HTML document with styling
     const htmlContent = `
@@ -21,7 +145,6 @@ export async function POST(req: NextRequest) {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title}</title>
-        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -110,15 +233,19 @@ export async function POST(req: NextRequest) {
             font-weight: 600;
           }
           
-          /* Mermaid diagrams */
-          .mermaid, .mermaid-chart {
+          /* Mermaid diagrams - pre-rendered SVGs */
+          .mermaid-rendered {
             text-align: center;
             margin: 20px 0;
             page-break-inside: avoid;
-          }
-          .mermaid svg, .mermaid-chart svg {
             max-width: 100%;
-            height: auto;
+            overflow: hidden;
+          }
+          .mermaid-rendered svg {
+            max-width: 100% !important;
+            max-height: 400px !important;
+            height: auto !important;
+            width: auto !important;
           }
           
           /* Print optimizations */
@@ -135,17 +262,24 @@ export async function POST(req: NextRequest) {
         </style>
       </head>
       <body>
-        <header style="margin-bottom: 40px; border-bottom: 2px solid #eaecef; padding-bottom: 20px;">
-          <h1 style="margin: 0; color: #0969da;">${title}</h1>
-          <p style="margin: 8px 0 0 0; color: #656d76; font-size: 14px;">
-            Exported on ${new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </p>
+        <header style="margin-bottom: 40px; border-bottom: 2px solid #eaecef; padding-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <img 
+              src="https://www.instacart.com/image-server/x24/www.instacart.com/assets/beetstrap/brand/2022/instacart-business-logo-dark@3x-d16b19c9060685d040461f6e9a3c29e615b79792b566e74b9258f135db349c96.png" 
+              alt="Instacart Business" 
+              style="height: 32px; margin-bottom: 16px;"
+            />
+            <h1 style="margin: 0; color: #0969da; font-size: 28px;">${title}</h1>
+            <p style="margin: 8px 0 0 0; color: #656d76; font-size: 14px;">
+              Generated on ${new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          </div>
         </header>
         
         <main>
@@ -155,14 +289,6 @@ export async function POST(req: NextRequest) {
         <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eaecef; text-align: center; color: #656d76; font-size: 12px;">
           Generated from Chat Interface
         </footer>
-        
-        <script>
-          mermaid.initialize({ 
-            startOnLoad: true,
-            theme: 'default',
-            securityLevel: 'loose'
-          });
-        </script>
       </body>
       </html>
     `;
@@ -185,20 +311,6 @@ export async function POST(req: NextRequest) {
     await page.setContent(htmlContent, {
       waitUntil: 'networkidle0',
       timeout: 30000,
-    });
-
-    // Wait for Mermaid charts to render
-    await page.evaluate(() => {
-      return new Promise<void>(resolve => {
-        if (typeof (window as typeof window & { mermaid?: unknown }).mermaid !== 'undefined') {
-          // Wait a bit for mermaid to process
-          setTimeout(() => {
-            resolve();
-          }, 2000);
-        } else {
-          resolve();
-        }
-      });
     });
 
     // Generate PDF with optimized settings

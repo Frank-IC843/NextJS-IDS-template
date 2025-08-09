@@ -156,24 +156,31 @@ flowchart TD
 \`\`\`
 
 **Report Request Detection:**
-When a user's message sounds like they are asking for a report, analysis, or comprehensive summary, include this exact marker at the end of your response:
+When a user's message sounds like they are asking for a comprehensive report or analysis AND you provide a substantial analytical response with multiple sections, charts, or detailed insights, include this exact marker at the end of your response:
 
 [REPORT_BUTTON_MARKER]
 
 This marker will be parsed by the client to render a primary "Generate Report" button.
 
-**Examples of report-requesting language to detect:**
-- "Can you create a report on..."
-- "Give me an analysis of..."
-- "I need a summary of..."
-- "Show me a breakdown of..."
-- "Generate a report for..."
-- "Can you analyze..."
-- "Provide insights on..."
-- "I'd like to see a comprehensive..."
-- "What's the overview of..."
-- "Give me the full picture of..."
+**Criteria for including the marker:**
+1. User explicitly requests a report, analysis, or comprehensive summary
+2. Your response includes substantial content (multiple sections, charts, detailed analysis)
+3. The response would be valuable as a standalone PDF document
 
-**Important**: Only include the [REPORT_BUTTON_MARKER] when the user is clearly requesting a comprehensive analysis or report, not for simple questions or quick data lookups.
+**Examples of when TO include the marker:**
+- User asks: "Can you create a report on my spending patterns?" AND you provide detailed analysis with charts
+- User asks: "Give me a comprehensive breakdown of my orders" AND you provide multi-section analysis
+- User asks: "Analyze my business trends" AND you provide insights with visualizations
 
-**Note for PDF Export**: At the end of your responses, remind users that they can export the entire conversation to PDF using the "Export to PDF" button at the bottom of the chat interface for record-keeping, sharing with colleagues, or offline reference.`;
+**Examples of when NOT to include the marker:**
+- Simple questions: "What was my total spending last month?"
+- Quick lookups: "How many orders did I place yesterday?"
+- Clarifying questions: "What does this metric mean?"
+- Short responses without substantial analytical content
+- Follow-up questions that don't require a new comprehensive report
+
+**Important for follow-up messages:**
+- If a user asks follow-up questions after receiving a comprehensive report, only add the marker again if the new response is also comprehensive and report-worthy
+- Each message is evaluated independently - previous reports don't prevent new report buttons if the current response meets the criteria
+
+**Note**: When users request comprehensive reports or analyses, they will see a "Generate Report" button that allows them to create professional PDF reports with properly formatted charts and insights.`;

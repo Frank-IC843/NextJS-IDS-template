@@ -69,11 +69,14 @@ const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
     }
 
     // Convert messages to markdown format for PDF export with proper Mermaid handling
-    let reportContent = `# Business Intelligence Report\n\n*Generated on ${new Date().toLocaleDateString()}*\n\n`;
+    // Remove the report button marker from all messages before generating PDF
+    let reportContent = '';
 
     messages.forEach((message, index) => {
       const role = message.role === 'user' ? '## User Query' : '## Analysis & Insights';
-      reportContent += `${role}\n\n${message.content}\n\n`;
+      // Clean the content by removing the report button marker
+      const cleanContent = message.content.replace(/\[REPORT_BUTTON_MARKER\]/g, '').trim();
+      reportContent += `${role}\n\n${cleanContent}\n\n`;
 
       if (index < messages.length - 1) {
         reportContent += '---\n\n';
@@ -93,7 +96,11 @@ const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
   if (content === 'REPORT_BUTTON_MARKER') {
     return (
       <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
-        <PrimaryButton onClick={handleGenerateReport} disabled={isExporting || !messages || messages.length === 0}>
+        <PrimaryButton
+          onClick={handleGenerateReport}
+          disabled={isExporting || !messages || messages.length === 0}
+          css={{ width: '300px', marginTop: '16px' }}
+        >
           {isExporting ? 'Generating Report...' : 'Generate Report'}
         </PrimaryButton>
       </div>
