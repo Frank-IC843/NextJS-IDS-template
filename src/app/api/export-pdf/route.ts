@@ -2,127 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import { marked } from 'marked';
 
-// Helper function to decode HTML entities
-function decodeHtmlEntities(text: string): string {
-  const entities: Record<string, string> = {
-    '&quot;': '"',
-    '&apos;': "'",
-    '&lt;': '<',
-    '&gt;': '>',
-    '&amp;': '&',
-  };
-
-  return text.replace(/&[#\w]+;/g, entity => {
-    return entities[entity] || entity;
-  });
-}
-
-// Helper function to process Mermaid blocks using Puppeteer
-async function processMermaidBlocks(html: string): Promise<string> {
-  // Extract mermaid code blocks
-  const mermaidBlocks: { code: string; placeholder: string }[] = [];
-  let processedHtml = html;
-
-  // Find all mermaid code blocks
-  const mermaidRegex = /<pre><code(?:\s+class="language-mermaid")?>([\s\S]*?)<\/code><\/pre>/g;
-  let match;
-  let blockIndex = 0;
-
-  while ((match = mermaidRegex.exec(html)) !== null) {
-    const code = match[1].trim();
-
-    // Check if this looks like mermaid syntax
-    const mermaidKeywords = [
-      'graph',
-      'pie',
-      'flowchart',
-      'gantt',
-      'timeline',
-      'sequenceDiagram',
-      'classDiagram',
-      'stateDiagram',
-    ];
-    const isMermaid =
-      match[0].includes('class="language-mermaid"') || mermaidKeywords.some(keyword => code.startsWith(keyword));
-
-    if (isMermaid) {
-      const placeholder = `__MERMAID_BLOCK_${blockIndex}__`;
-      // Decode HTML entities in the mermaid code
-      const decodedCode = decodeHtmlEntities(code);
-
-      mermaidBlocks.push({ code: decodedCode, placeholder });
-      processedHtml = processedHtml.replace(match[0], placeholder);
-      blockIndex++;
-    }
-  }
-
-  // If no mermaid blocks found, return original HTML
-  if (mermaidBlocks.length === 0) {
-    return html;
-  }
-
-  // Launch Puppeteer to render mermaid diagrams
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
-
-  try {
-    const page = await browser.newPage();
-
-    // Set up a page with mermaid
-    await page.setContent(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-      </head>
-      <body>
-        <div id="container"></div>
-        <script>
-          mermaid.initialize({ 
-            startOnLoad: false,
-            theme: 'default',
-            securityLevel: 'loose'
-          });
-        </script>
-      </body>
-      </html>
-    `);
-
-    // Render each mermaid block to SVG
-    for (let i = 0; i < mermaidBlocks.length; i++) {
-      const block = mermaidBlocks[i];
-
-      try {
-        const svg = await page.evaluate(
-          async (code: string, id: number) => {
-            const mermaidWindow = window as typeof window & {
-              mermaid: { render: (id: string, code: string) => Promise<{ svg: string }> };
-            };
-            const { svg } = await mermaidWindow.mermaid.render(`mermaid-${id}`, code);
-            return svg;
-          },
-          block.code,
-          i
-        );
-
-        // Replace placeholder with rendered SVG
-        const svgDiv = `<div class="mermaid-rendered" style="text-align: center; margin: 20px 0;">${svg}</div>`;
-        processedHtml = processedHtml.replace(block.placeholder, svgDiv);
-      } catch (error) {
-        console.error(`Failed to render mermaid block ${i}:`, error);
-        // Fallback to original code block
-        processedHtml = processedHtml.replace(block.placeholder, `<pre><code>${block.code}</code></pre>`);
-      }
-    }
-  } finally {
-    await browser.close();
-  }
-
-  return processedHtml;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const { content, title = 'Chat Export' } = await req.json();
@@ -131,11 +10,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    // Convert markdown content to HTML and handle Mermaid blocks properly
-    let messageHtml = await marked(content);
-
-    // Use a proper library to handle Mermaid conversion
-    messageHtml = await processMermaidBlocks(messageHtml);
+    // Convert markdown content to HTML - let Puppeteer handle Mermaid rendering
+    const messageHtml = await marked(content);
 
     // Create complete HTML document with styling
     const htmlContent = `
@@ -145,6 +21,7 @@ export async function POST(req: NextRequest) {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title}</title>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -233,15 +110,15 @@ export async function POST(req: NextRequest) {
             font-weight: 600;
           }
           
-          /* Mermaid diagrams - pre-rendered SVGs */
-          .mermaid-rendered {
+          /* Mermaid diagrams */
+          .mermaid {
             text-align: center;
             margin: 20px 0;
             page-break-inside: avoid;
             max-width: 100%;
             overflow: hidden;
           }
-          .mermaid-rendered svg {
+          .mermaid svg {
             max-width: 100% !important;
             max-height: 400px !important;
             height: auto !important;
@@ -289,6 +166,45 @@ export async function POST(req: NextRequest) {
         <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eaecef; text-align: center; color: #656d76; font-size: 12px;">
           Generated from Chat Interface
         </footer>
+        
+        <script>
+          // Convert code blocks with mermaid content to mermaid divs
+          document.addEventListener('DOMContentLoaded', function() {
+            const codeBlocks = document.querySelectorAll('pre code');
+            const mermaidKeywords = ['graph', 'pie', 'flowchart', 'gantt', 'timeline', 'sequenceDiagram', 'classDiagram', 'stateDiagram'];
+            
+            codeBlocks.forEach(codeBlock => {
+              const content = codeBlock.textContent || '';
+              const isExplicitMermaid = codeBlock.className.includes('language-mermaid');
+              const startsWithMermaidKeyword = mermaidKeywords.some(keyword => content.trim().startsWith(keyword));
+              
+              if (isExplicitMermaid || startsWithMermaidKeyword) {
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.className = 'mermaid';
+                mermaidDiv.textContent = content;
+                codeBlock.parentElement.replaceWith(mermaidDiv);
+              }
+            });
+            
+            // Initialize mermaid after converting code blocks
+            mermaid.initialize({ 
+              startOnLoad: false,
+              theme: 'default',
+              securityLevel: 'loose',
+              maxTextSize: 90000,
+              flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+              },
+              pie: {
+                useMaxWidth: true
+              }
+            });
+            
+            // Render all mermaid diagrams
+            mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+          });
+        </script>
       </body>
       </html>
     `;
