@@ -8,9 +8,43 @@ interface MermaidChartProps {
   className?: string;
 }
 
+const useStyles = () => {
+  return {
+    container: {
+      textAlign: 'center' as const,
+      margin: '16px 0',
+      padding: '16px',
+      background: '#fff',
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      overflow: 'auto',
+      minHeight: '100px',
+    },
+    errorContainer: {
+      color: '#dc3545',
+      padding: '16px',
+      border: '1px solid #dc3545',
+      borderRadius: '8px',
+      background: '#f8d7da',
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      maxWidth: '100%',
+      overflowWrap: 'break-word' as const,
+    },
+    errorCode: {
+      marginTop: '8px',
+      background: '#fff',
+      padding: '8px',
+      borderRadius: '4px',
+      overflowX: 'auto' as const,
+    },
+  } as const;
+};
+
 export function MermaidChart({ chart, className }: MermaidChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
+  const styles = useStyles();
 
   useLayoutEffect(() => {
     // Initialize mermaid only once
@@ -49,52 +83,29 @@ export function MermaidChart({ chart, className }: MermaidChartProps) {
         } catch (error) {
           if (chartRef.current) {
             const errorMessage = error instanceof Error ? error.message : 'Invalid chart syntax';
-            chartRef.current.innerHTML = `
-              <div style="
-                color: #dc3545; 
-                padding: 16px; 
-                border: 1px solid #dc3545; 
-                border-radius: 8px; 
-                background: #f8d7da;
-                font-family: monospace;
-                font-size: 14px;
-                max-width: 100%;
-                overflow-wrap: break-word;
-              ">
+            // Using dangerouslySetInnerHTML for error display to avoid complex DOM manipulation
+            const errorHtml = `
+              <div css="${JSON.stringify(styles.errorContainer)}">
                 <strong>Chart Error:</strong><br/>
                 ${errorMessage}<br/><br/>
                 <details>
                   <summary>Chart Code (click to expand)</summary>
-                  <pre style="margin-top: 8px; background: #fff; padding: 8px; border-radius: 4px; overflow-x: auto;">${chart}</pre>
+                  <pre css="${JSON.stringify(styles.errorCode)}">${chart}</pre>
                 </details>
               </div>
             `;
+            chartRef.current.innerHTML = errorHtml;
           }
         }
       };
 
       renderChart();
     }
-  }, [chart]);
+  }, [chart, styles]);
 
   if (!chart || !chart.trim()) {
     return null;
   }
 
-  return (
-    <div
-      ref={chartRef}
-      className={className}
-      style={{
-        textAlign: 'center',
-        margin: '16px 0',
-        padding: '16px',
-        background: '#fff',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        overflow: 'auto',
-        minHeight: '100px',
-      }}
-    />
-  );
+  return <div ref={chartRef} className={className} css={styles.container} />;
 }

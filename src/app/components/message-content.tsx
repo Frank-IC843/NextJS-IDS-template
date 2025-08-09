@@ -29,15 +29,49 @@ interface MessageButtonPartProps {
   content: string;
 }
 
+const useStyles = () => {
+  return {
+    markdownList: {
+      margin: '0',
+      paddingLeft: '20px',
+      lineHeight: '1.2',
+    },
+    markdownListItem: {
+      margin: '0',
+      padding: '0',
+      lineHeight: '1.2',
+    },
+    markdownParagraph: {
+      margin: '0',
+    },
+    markdownHeading: {
+      margin: '10px 0',
+    },
+    buttonContainer: {
+      margin: '16px 0',
+      display: 'flex',
+      justifyContent: 'flex-start',
+    },
+    reportButton: {
+      width: '300px',
+      marginTop: '16px',
+    },
+  } as const;
+};
+
 // Component for rendering text parts of messages
 const MessageTextPart: React.FC<MessageTextPartProps> = ({ content }) => {
+  const styles = useStyles();
+
   return (
     <ReactMarkdown
       components={{
-        ol: ({ children }) => <ol style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.2' }}>{children}</ol>,
-        li: ({ children }) => <li style={{ margin: '0', padding: '0', lineHeight: '1.2' }}>{children}</li>,
-        p: ({ children }) => <p style={{ margin: '0' }}>{children}</p>,
-        h2: ({ children }) => <h2 style={{ margin: '10px 0' }}>{children}</h2>,
+        ol: ({ children }) => <ol css={styles.markdownList}>{children}</ol>,
+        ul: ({ children }) => <ul css={styles.markdownList}>{children}</ul>,
+        li: ({ children }) => <li css={styles.markdownListItem}>{children}</li>,
+        p: ({ children }) => <p css={styles.markdownParagraph}>{children}</p>,
+        h2: ({ children }) => <h2 css={styles.markdownHeading}>{children}</h2>,
+        h3: ({ children }) => <h3 css={styles.markdownHeading}>{children}</h3>,
       }}
     >
       {content}
@@ -52,24 +86,27 @@ const MessageChartPart: React.FC<MessageChartPartProps> = ({ content }) => {
 
 // Component for rendering button parts of messages
 const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
+  const styles = useStyles();
   const { messages } = useChatContext();
   const { exportToPdf, isExporting } = usePdfExport({
     onSuccess: () => {
-      console.log('Report PDF generated successfully');
+      // Report PDF generated successfully
     },
     onError: error => {
-      console.error('Failed to generate report PDF:', error);
+      // Handle PDF generation error - could show a toast notification here
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to generate report PDF:', error);
+      }
     },
   });
 
   const handleGenerateReport = () => {
     if (!messages || messages.length === 0) {
-      console.error('No messages available for report generation');
+      // No messages available for report generation
       return;
     }
 
     // Convert messages to markdown format for PDF export with proper Mermaid handling
-    // Remove the report button marker from all messages before generating PDF
     let reportContent = '';
 
     messages.forEach((message, index) => {
@@ -100,11 +137,11 @@ const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
 
   if (content === 'REPORT_BUTTON_MARKER') {
     return (
-      <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+      <div css={styles.buttonContainer}>
         <PrimaryButton
           onClick={handleGenerateReport}
           disabled={isExporting || !messages || messages.length === 0}
-          css={{ width: '300px', marginTop: '16px' }}
+          css={styles.reportButton}
         >
           {isExporting ? 'Generating Report...' : 'Generate Report'}
         </PrimaryButton>
@@ -187,7 +224,7 @@ const parseMessageContent = (content: string): MessagePart[] => {
     parts.push({
       type: 'button',
       content: 'REPORT_BUTTON_MARKER',
-      key: `button-${partIndex++}`,
+      key: `button-${partIndex}`,
     });
   }
 

@@ -4,6 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import { ChatMessages } from '@/app/components/chat-messages';
 import { ChatInput } from '@/app/components/chat-input';
 import { useChat } from '@/app/components/use-chat';
+import { ErrorBoundary } from '@/app/components/error-boundary';
 
 const useStyles = () => {
   return {
@@ -34,10 +35,12 @@ export function ChatInterface() {
   }, [messages]);
 
   return (
-    <div css={styles.chatContainer}>
-      <ChatMessages messages={messages} isLoading={isLoading} />
-      <div ref={messagesEndRef} />
-      <ChatInput input={input} setInput={setInput} onSubmit={handleSubmit} isLoading={isLoading} />
-    </div>
+    <ErrorBoundary>
+      <div css={styles.chatContainer}>
+        <ChatMessages messages={messages} isLoading={isLoading} />
+        <div ref={messagesEndRef} />
+        <ChatInput input={input} setInput={setInput} onSubmit={handleSubmit} isLoading={isLoading} />
+      </div>
+    </ErrorBoundary>
   );
 }

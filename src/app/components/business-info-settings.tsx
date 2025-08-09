@@ -11,6 +11,7 @@ import {
   ModalTitle,
   TextAreaFixed,
 } from '@instacart/ids-customers';
+import { useLocalStorage } from '@/app/hooks/useLocalStorage';
 
 const useStyles = () => {
   return {
@@ -97,16 +98,14 @@ interface BusinessInfoSettingsProps {
 
 export function BusinessInfoSettings({ onBusinessInfoChange }: BusinessInfoSettingsProps) {
   const styles = useStyles();
-  const [businessInfo, setBusinessInfo] = useState('');
-  const [tempInfo, setTempInfo] = useState('');
+  const [businessInfo, setBusinessInfo] = useLocalStorage(BUSINESS_INFO_KEY, '');
+  const [tempInfo, setTempInfo] = useState(businessInfo);
   const modal = useModalState({ visible: false });
 
-  // Load business info from localStorage on mount
+  // Initialize tempInfo when businessInfo changes
   useEffect(() => {
-    const savedInfo = localStorage.getItem(BUSINESS_INFO_KEY) || '';
-    setBusinessInfo(savedInfo);
-    setTempInfo(savedInfo);
-  }, []);
+    setTempInfo(businessInfo);
+  }, [businessInfo]);
 
   // Notify parent component of changes
   useEffect(() => {
@@ -120,7 +119,6 @@ export function BusinessInfoSettings({ onBusinessInfoChange }: BusinessInfoSetti
 
   const handleSave = () => {
     setBusinessInfo(tempInfo);
-    localStorage.setItem(BUSINESS_INFO_KEY, tempInfo);
     modal.hide();
   };
 
@@ -208,12 +206,6 @@ export function BusinessInfoSettings({ onBusinessInfoChange }: BusinessInfoSetti
 
 // Hook to get business information
 export function useBusinessInfo(): string {
-  const [businessInfo, setBusinessInfo] = useState('');
-
-  useEffect(() => {
-    const savedInfo = localStorage.getItem(BUSINESS_INFO_KEY) || '';
-    setBusinessInfo(savedInfo);
-  }, []);
-
+  const [businessInfo] = useLocalStorage(BUSINESS_INFO_KEY, '');
   return businessInfo;
 }
