@@ -1,7 +1,8 @@
 'use client';
 
-import { Text, Tooltip, LoadingLockupTextBase } from '@instacart/ids-customers';
+import { Text, Tooltip } from '@instacart/ids-customers';
 import { useTheme, InformationIcon } from '@instacart/ids-core';
+import { useSuspenseBusinessOrderMetrics } from '@/app/queries';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -29,37 +30,30 @@ const useStyles = () => {
 };
 
 interface MetricCardProps {
-  title?: string;
-  value?: string;
-  tooltipText?: string;
-  isLoading?: boolean;
+  startDate: string;
+  endDate: string;
+  cardVariant: string;
 }
 
-export function MetricCard({ title, value, tooltipText, isLoading }: MetricCardProps) {
+export function MetricCard({ startDate, endDate, cardVariant }: MetricCardProps) {
   const styles = useStyles();
+  const { orderMetricCards } =
+    useSuspenseBusinessOrderMetrics(startDate, endDate).data?.businessOrderMetrics.viewSection ?? {};
+  const card = orderMetricCards?.find(card => card.cardVariant === cardVariant);
 
-  const loadingContent = (
-    <div css={styles.cardLoading}>
-      <LoadingLockupTextBase />
-      <LoadingLockupTextBase styles={{ container: { width: '60%' } }} />
-    </div>
-  );
-
-  const cardContent = (
-    <>
+  return (
+    <div css={styles.card}>
       <div css={styles.cardHeader}>
         <Text typography="bodyLarge2" color="systemGrayscale50">
-          {title}
+          {card?.titleString}
         </Text>
-        {tooltipText && (
-          <Tooltip title={tooltipText}>
+        {card?.tooltipTextString && (
+          <Tooltip title={card.tooltipTextString}>
             <InformationIcon color="systemGrayscale30" />
           </Tooltip>
         )}
       </div>
-      <Text typography="titleMedium">{value}</Text>
-    </>
+      <Text typography="titleMedium">{card?.valueString}</Text>
+    </div>
   );
-
-  return <div css={styles.card}>{isLoading ? loadingContent : cardContent}</div>;
 }

@@ -1,4 +1,4 @@
-import { gql, useQuery } from '@apollo/client';
+import { gql, useQuery, useSuspenseQuery } from '@apollo/client';
 import { BusinessOrderMetricsQuery } from '@/__generated__/graphql-types';
 
 export const CREATE_USER_SESSION_FROM_CODE = gql`
@@ -69,5 +69,11 @@ export const useGetBusinessOrderMetrics = (startDate?: string | null, endDate?: 
   return useQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {
     variables: { startDate, endDate },
     skip: !startDate || !endDate,
+  });
+};
+
+export const useSuspenseBusinessOrderMetrics = (startDate: string, endDate: string) => {
+  return useSuspenseQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {
+    variables: { startDate, endDate },
   });
 };
