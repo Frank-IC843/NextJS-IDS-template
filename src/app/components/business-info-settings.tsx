@@ -99,10 +99,10 @@ interface BusinessInfoSettingsProps {
 export function BusinessInfoSettings({ onBusinessInfoChange }: BusinessInfoSettingsProps) {
   const styles = useStyles();
   const [businessInfo, setBusinessInfo] = useLocalStorage(BUSINESS_INFO_KEY, '');
-  const [tempInfo, setTempInfo] = useState(businessInfo);
+  const [tempInfo, setTempInfo] = useState('');
   const modal = useModalState({ visible: false });
 
-  // Initialize tempInfo when businessInfo changes
+  // Initialize tempInfo when businessInfo changes (after hydration)
   useEffect(() => {
     setTempInfo(businessInfo);
   }, [businessInfo]);

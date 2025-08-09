@@ -8,21 +8,39 @@ import { useState, useEffect } from 'react';
  */
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
   // State to store our value
-  const [storedValue, setStoredValue] = useState<T>(() => {
+  // Initialize with initialValue to avoid hydration mismatch
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+
+  // Handle hydration after component mounts
+  useEffect(() => {
     if (typeof window === 'undefined') {
-      return initialValue;
+      return;
     }
 
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      if (item !== null) {
+        // Special handling for strings - they might be stored as plain text or JSON
+        if (typeof initialValue === 'string') {
+          // First, try to use it as a plain string
+          setStoredValue(item as T);
+        } else {
+          // For non-string types, parse as JSON
+          try {
+            setStoredValue(JSON.parse(item));
+          } catch {
+            // If parsing fails for non-string types, reset to initial value
+            setStoredValue(initialValue);
+            window.localStorage.removeItem(key);
+          }
+        }
+      }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error(`Error loading localStorage key "${key}":`, error);
       }
-      return initialValue;
     }
-  });
+  }, [key, initialValue]);
 
   // Return a wrapped version of useState's setter function that persists to localStorage
   const setValue = (value: T | ((val: T) => T)) => {
@@ -33,7 +51,13 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
       setStoredValue(valueToStore);
 
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        // For strings, store them as plain text
+        if (typeof valueToStore === 'string') {
+          window.localStorage.setItem(key, valueToStore as string);
+        } else {
+          // For other types, stringify them
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        }
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
