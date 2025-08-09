@@ -191,17 +191,18 @@ export function createPdfTemplate({ title, logoBase64, messageHtml }: PdfTemplat
         /* Professional Mermaid chart styling */
         .mermaid {
           text-align: center;
-          margin: 25px 0 30px 0;
+          margin: 15px auto 20px auto;
           page-break-inside: avoid;
           background: #fcfcfc;
           border: 1px solid #e2e8f0;
           border-radius: 6px;
-          padding: 20px;
+          padding: 12px;
+          max-width: 500px;
         }
         
         .mermaid svg {
-          max-width: 100% !important;
-          max-height: 350px !important;
+          max-width: 90% !important;
+          max-height: 250px !important;
           height: auto !important;
           width: auto !important;
         }
