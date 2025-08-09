@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
-import { renderToString } from 'react-dom/server';
-import { MessageContent } from '@/app/components/message-content';
+import { marked } from 'marked';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,8 +10,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    // Render React component to HTML string
-    const messageHtml = renderToString(await MessageContent({ content }));
+    // Convert markdown content to HTML (Mermaid will be handled by Puppeteer)
+    const messageHtml = marked(content);
 
     // Create complete HTML document with styling
     const htmlContent = `
@@ -22,6 +21,7 @@ export async function POST(req: NextRequest) {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title}</title>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -111,9 +111,14 @@ export async function POST(req: NextRequest) {
           }
           
           /* Mermaid diagrams */
-          .mermaid {
+          .mermaid, .mermaid-chart {
             text-align: center;
             margin: 20px 0;
+            page-break-inside: avoid;
+          }
+          .mermaid svg, .mermaid-chart svg {
+            max-width: 100%;
+            height: auto;
           }
           
           /* Print optimizations */
@@ -150,6 +155,14 @@ export async function POST(req: NextRequest) {
         <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eaecef; text-align: center; color: #656d76; font-size: 12px;">
           Generated from Chat Interface
         </footer>
+        
+        <script>
+          mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+          });
+        </script>
       </body>
       </html>
     `;
@@ -172,6 +185,20 @@ export async function POST(req: NextRequest) {
     await page.setContent(htmlContent, {
       waitUntil: 'networkidle0',
       timeout: 30000,
+    });
+
+    // Wait for Mermaid charts to render
+    await page.evaluate(() => {
+      return new Promise<void>(resolve => {
+        if (typeof (window as typeof window & { mermaid?: unknown }).mermaid !== 'undefined') {
+          // Wait a bit for mermaid to process
+          setTimeout(() => {
+            resolve();
+          }, 2000);
+        } else {
+          resolve();
+        }
+      });
     });
 
     // Generate PDF with optimized settings

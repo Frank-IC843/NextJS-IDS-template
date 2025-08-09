@@ -47,8 +47,8 @@ export function MermaidChart({ chart, className }: MermaidChartProps) {
             chartRef.current.innerHTML = svg;
           }
         } catch (error) {
-          console.error('Mermaid rendering error:', error);
           if (chartRef.current) {
+            const errorMessage = error instanceof Error ? error.message : 'Invalid chart syntax';
             chartRef.current.innerHTML = `
               <div style="
                 color: #dc3545; 
@@ -58,8 +58,15 @@ export function MermaidChart({ chart, className }: MermaidChartProps) {
                 background: #f8d7da;
                 font-family: monospace;
                 font-size: 14px;
+                max-width: 100%;
+                overflow-wrap: break-word;
               ">
-                <strong>Chart Error:</strong> ${error instanceof Error ? error.message : 'Invalid chart syntax'}
+                <strong>Chart Error:</strong><br/>
+                ${errorMessage}<br/><br/>
+                <details>
+                  <summary>Chart Code (click to expand)</summary>
+                  <pre style="margin-top: 8px; background: #fff; padding: 8px; border-radius: 4px; overflow-x: auto;">${chart}</pre>
+                </details>
               </div>
             `;
           }

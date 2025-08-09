@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { IconButton } from '@instacart/ids-customers';
-import { ReceiptIcon } from '@instacart/ids-core';
+import { PrimaryButton } from '@/app/components/buttons';
 import { usePdfExport } from './use-pdf-export';
 
 interface PdfExportButtonProps {
@@ -37,8 +36,8 @@ export function PdfExportButton({
   const buttonText = isExporting ? 'Exporting...' : (children as string) || 'Export PDF';
 
   return (
-    <IconButton onPress={handleExport} disabled={isDisabled} icon={ReceiptIcon} accessibleLabel="Export PDF">
+    <PrimaryButton onPress={handleExport} disabled={isDisabled} css={{ maxWidth: 'fit-content' }}>
       {buttonText}
-    </IconButton>
+    </PrimaryButton>
   );
 }

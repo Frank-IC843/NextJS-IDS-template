@@ -14,9 +14,10 @@ const useStyles = () => {
   return {
     message: {
       display: 'flex',
-      maxWidth: '80%',
+      maxWidth: '85%',
       flexShrink: 0,
       width: 'fit-content',
+      marginBottom: '4px',
     },
     userMessage: {
       alignSelf: 'flex-end',
@@ -34,28 +35,45 @@ const useStyles = () => {
       flexDirection: 'row-reverse',
     },
     messageRole: {
-      fontSize: '1.5rem',
+      width: '32px',
+      height: '32px',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '16px',
       flexShrink: 0,
+      marginTop: '2px',
+    },
+    userAvatar: {
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    },
+    assistantAvatar: {
+      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     },
     messageText: {
-      padding: '12px 16px',
-      borderRadius: '18px',
+      padding: '14px 18px',
+      borderRadius: '20px',
       wordWrap: 'break-word',
       whiteSpace: 'pre-wrap',
       maxWidth: '100%',
       overflowWrap: 'break-word',
       minWidth: 0,
       width: 'fit-content',
+      lineHeight: '1.5',
+      fontSize: '15px',
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
     },
     userMessageText: {
-      background: '#007bff',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
-      borderBottomRightRadius: '4px',
+      borderBottomRightRadius: '6px',
     },
     assistantMessageText: {
-      background: '#f1f3f5',
-      color: '#333',
-      borderBottomLeftRadius: '4px',
+      background: '#ffffff',
+      color: '#374151',
+      border: '1px solid #e5e7eb',
+      borderBottomLeftRadius: '6px',
     },
   } as const;
 };
@@ -68,7 +86,9 @@ export function ChatMessage({ message, isLoading = false, isLastMessage = false 
   return (
     <div css={[styles.message, isUser ? styles.userMessage : styles.assistantMessage]}>
       <div css={[styles.messageContent, isUser ? styles.userMessageContent : {}]}>
-        <div css={styles.messageRole}>{isUser ? '👤' : '🤖'}</div>
+        <div css={[styles.messageRole, isUser ? styles.userAvatar : styles.assistantAvatar]}>
+          {isUser ? '👤' : '🤖'}
+        </div>
         <div>
           <div css={[styles.messageText, isUser ? styles.userMessageText : styles.assistantMessageText]}>
             {showLoading ? <ChatMessageLoading /> : <MessageContent content={message.content} />}

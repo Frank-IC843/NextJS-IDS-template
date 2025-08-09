@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Text } from '@instacart/ids-customers';
 import { ChatMessage } from '@/app/components/chat-message';
 import type { Message } from '@/app/components/use-chat';
@@ -15,26 +15,65 @@ const useStyles = () => {
     messagesContainer: {
       flex: 1,
       overflowY: 'auto',
-      padding: '20px',
+      padding: '24px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '16px',
+      gap: '20px',
       minHeight: 0,
       maxHeight: '100%',
+      // Custom scrollbar styling
+      '&::-webkit-scrollbar': {
+        width: '6px',
+      },
+      '&::-webkit-scrollbar-track': {
+        background: 'transparent',
+      },
+      '&::-webkit-scrollbar-thumb': {
+        background: '#d1d5db',
+        borderRadius: '3px',
+      },
+      '&::-webkit-scrollbar-thumb:hover': {
+        background: '#9ca3af',
+      },
     },
     emptyState: {
       display: 'flex',
+      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       height: '100%',
-      color: '#666',
-      fontSize: '1.1rem',
+      textAlign: 'center',
+      padding: '40px 20px',
+    },
+    emptyStateIcon: {
+      fontSize: '48px',
+      marginBottom: '16px',
+      opacity: 0.6,
+    },
+    emptyStateTitle: {
+      fontSize: '18px',
+      fontWeight: 600,
+      color: '#374151',
+      marginBottom: '8px',
+    },
+    emptyStateText: {
+      maxWidth: '400px',
+      lineHeight: '1.5',
     },
   } as const;
 };
 
 export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
   const styles = useStyles();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   return (
     <div css={styles.messagesContainer}>
@@ -46,14 +85,17 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
           </Text>
         </div>
       ) : (
-        messages.map((message, index) => (
-          <ChatMessage
-            key={index}
-            message={message}
-            isLoading={isLoading}
-            isLastMessage={index === messages.length - 1}
-          />
-        ))
+        <>
+          {messages.map((message, index) => (
+            <ChatMessage
+              key={index}
+              message={message}
+              isLoading={isLoading}
+              isLastMessage={index === messages.length - 1}
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </>
       )}
     </div>
   );

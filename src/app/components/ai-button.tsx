@@ -100,6 +100,7 @@ export function AIButton() {
           modal: {
             [responsive.up('r')]: {
               width: '1000px',
+              maxHeight: '90vh',
             },
             position: 'relative',
           },
