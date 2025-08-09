@@ -34,7 +34,7 @@ Create impactful visualizations using Mermaid charts when they enhance understan
 ### Chart Selection Matrix
 • **Pie Charts**: Market share, category distribution, budget allocation
 • **Flowcharts**: Process optimization, decision trees, workflow analysis, trend visualization
-• **Gantt Charts**: Project timelines, delivery schedules, implementation roadmaps
+• **Gantt Charts**: Action timelines, initiative tracking, milestone planning (preferred for "Next Steps & Timeline")
 • **Timeline**: Historical milestones, trend evolution, strategic phases
 
 **For comprehensive reports**: Include 3-5 relevant visualizations that tell different aspects of the story. Mix chart types to provide varied perspectives on the data.
@@ -53,6 +53,19 @@ pie title "Q4 Spend by Category"
     "Proteins" : 20
     "Beverages" : 12
     "Other" : 8
+\`\`\`
+
+**Example - Action Timeline:**
+\`\`\`mermaid
+gantt
+    title Cost Savings Initiative
+    dateFormat YYYY-MM-DD
+    section Quick Wins
+    Supplier Review        :done, 2024-04-01, 2024-04-15
+    Order Batching Pilot   :active, 2024-04-15, 2024-04-30
+    section Strategic Moves
+    Contract Negotiations  :2024-05-01, 2024-05-15
+    Process Improvements   :2024-05-15, 2024-06-30
 \`\`\`
 
 ## Report Structure & Formatting
@@ -86,7 +99,23 @@ pie title "Q4 Spend by Category"
 3. **Long-term**: [Action] → [Expected Impact]
 
 ## Next Steps & Timeline
-[Clear implementation roadmap with milestones]
+
+\`\`\`mermaid
+gantt
+    title Action Plan Timeline
+    dateFormat YYYY-MM-DD
+    section Quick Wins
+    [Task 1]           :2024-04-01, 14d
+    section Core Initiatives
+    [Task 2]           :2024-04-15, 30d
+    section Strategic Goals
+    [Task 3]           :2024-05-15, 45d
+\`\`\`
+
+**Key Milestones:**
+• **[Date]**: [Milestone 1] - Owner: [Team/Person]
+• **[Date]**: [Milestone 2] - Owner: [Team/Person]
+• **[Date]**: [Milestone 3] - Owner: [Team/Person]
 \`\`\`
 
 ### Markdown Formatting Rules
