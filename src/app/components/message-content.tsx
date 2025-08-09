@@ -73,10 +73,15 @@ const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
     let reportContent = '';
 
     messages.forEach((message, index) => {
-      const role = message.role === 'user' ? '## User Query' : '## Analysis & Insights';
+      const role = message.role === 'user' ? '## User Query' : '';
       // Clean the content by removing the report button marker
       const cleanContent = message.content.replace(/\[REPORT_BUTTON_MARKER\]/g, '').trim();
-      reportContent += `${role}\n\n${cleanContent}\n\n`;
+
+      if (role) {
+        reportContent += `${role}\n\n${cleanContent}\n\n`;
+      } else {
+        reportContent += `${cleanContent}\n\n`;
+      }
 
       if (index < messages.length - 1) {
         reportContent += '---\n\n';

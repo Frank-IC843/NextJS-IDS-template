@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import { marked } from 'marked';
+import fs from 'fs';
+import path from 'path';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +14,18 @@ export async function POST(req: NextRequest) {
 
     // Convert markdown content to HTML - let Puppeteer handle Mermaid rendering
     const messageHtml = await marked(content);
+
+    // Convert local image to base64 for Puppeteer
+    let logoBase64 = '';
+    try {
+      const imagePath = path.join(process.cwd(), 'public', 'images', 'instacart-business.png');
+      const imageBuffer = fs.readFileSync(imagePath);
+      logoBase64 = `data:image/png;base64,${imageBuffer.toString('base64')}`;
+    } catch (error) {
+      console.warn('Could not load local image, using fallback', error);
+      logoBase64 =
+        'https://www.instacart.com/image-server/x24/www.instacart.com/assets/beetstrap/brand/2022/instacart-business-logo-dark@3x-d16b19c9060685d040461f6e9a3c29e615b79792b566e74b9258f135db349c96.png';
+    }
 
     // Create complete HTML document with styling
     const htmlContent = `
@@ -25,128 +39,232 @@ export async function POST(req: NextRequest) {
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
+            line-height: 1.5;
+            color: #2c3e50;
             max-width: 800px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px;
             background: #fff;
+            font-size: 11pt;
           }
           
-          h1, h2, h3, h4, h5, h6 {
-            margin-top: 24px;
-            margin-bottom: 16px;
+          /* Professional heading hierarchy */
+          h1 {
+            font-size: 18pt;
             font-weight: 600;
-            line-height: 1.25;
+            color: #2d3748;
+            margin: 25px 0 15px 0;
+            page-break-after: avoid;
           }
           
-          h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-          h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-          h3 { font-size: 1.25em; }
+          /* Main title with full-width underline */
+          h1.main-title {
+            font-size: 24pt;
+            font-weight: 700;
+            color: #0969da;
+            margin: 30px -20px 20px -20px;
+            padding: 0 20px 8px 20px;
+            border-bottom: 2px solid #3182ce;
+          }
           
-          p { margin-bottom: 16px; }
+          h2 {
+            font-size: 14pt;
+            font-weight: 600;
+            color: #4a5568;
+            margin: 20px 0 12px 0;
+            page-break-after: avoid;
+          }
           
+          h3 {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #6b7280;
+            margin: 16px 0 8px 0;
+            page-break-after: avoid;
+          }
+          
+          h4 {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #718096;
+            margin: 15px 0 10px 0;
+          }
+          
+          /* Professional paragraph spacing */
+          p {
+            margin: 0 0 12px 0;
+            text-align: justify;
+            orphans: 2;
+            widows: 2;
+          }
+          
+          /* Executive summary styling */
+          h2:first-of-type + ul,
+          h2:first-of-type + p + ul {
+            background: #f7fafc;
+            border-left: 4px solid #3182ce;
+            padding: 15px 20px;
+            margin: 15px 0 25px 0;
+            border-radius: 0 4px 4px 0;
+          }
+          
+          /* Professional list styling */
           ul, ol {
-            margin-bottom: 16px;
-            padding-left: 2em;
+            margin: 12px 0 18px 0;
+            padding-left: 25px;
           }
           
           li {
-            margin-bottom: 0.25em;
+            margin-bottom: 6px;
+            line-height: 1.4;
           }
           
+          /* Strong emphasis for key terms */
+          strong {
+            color: #2d3748;
+            font-weight: 600;
+          }
+          
+          /* Horizontal rules for section breaks */
+          hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 30px 0;
+            page-break-after: avoid;
+          }
+          
+          /* Code styling */
           code {
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            font-size: 85%;
+            background-color: #edf2f7;
+            border-radius: 3px;
+            font-size: 10pt;
             margin: 0;
-            padding: 0.2em 0.4em;
+            padding: 2px 4px;
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            color: #d53f8c;
           }
           
           pre {
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            font-size: 85%;
-            line-height: 1.45;
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 10pt;
+            line-height: 1.4;
             overflow: auto;
-            padding: 16px;
-            margin-bottom: 16px;
+            padding: 12px;
+            margin: 15px 0;
+            page-break-inside: avoid;
           }
           
           pre code {
             background-color: transparent;
             border: 0;
-            display: inline;
-            line-height: inherit;
-            margin: 0;
-            max-width: auto;
-            overflow: visible;
+            color: #2d3748;
             padding: 0;
-            word-wrap: normal;
           }
           
+          /* Professional blockquote */
           blockquote {
-            border-left: 4px solid #dfe2e5;
-            color: #6a737d;
-            margin: 0 0 16px 0;
-            padding: 0 1em;
+            border-left: 4px solid #3182ce;
+            background: #f7fafc;
+            color: #4a5568;
+            margin: 15px 0;
+            padding: 12px 20px;
+            font-style: italic;
+            border-radius: 0 4px 4px 0;
           }
           
+          /* Professional table styling */
           table {
             border-collapse: collapse;
-            margin-bottom: 16px;
+            margin: 20px 0;
             width: 100%;
+            font-size: 10pt;
+            page-break-inside: avoid;
           }
           
           table th,
           table td {
-            border: 1px solid #dfe2e5;
-            padding: 6px 13px;
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            text-align: left;
           }
           
           table th {
-            background-color: #f6f8fa;
+            background-color: #edf2f7;
             font-weight: 600;
+            color: #2d3748;
           }
           
-          /* Mermaid diagrams */
+          table tr:nth-child(even) {
+            background-color: #f7fafc;
+          }
+          
+          /* Professional Mermaid chart styling */
           .mermaid {
             text-align: center;
-            margin: 20px 0;
+            margin: 25px 0 30px 0;
             page-break-inside: avoid;
-            max-width: 100%;
-            overflow: hidden;
+            background: #fcfcfc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
           }
+          
           .mermaid svg {
             max-width: 100% !important;
-            max-height: 400px !important;
+            max-height: 350px !important;
             height: auto !important;
             width: auto !important;
           }
           
-          /* Print optimizations */
+          /* Professional print optimizations */
           @media print {
-            body { margin: 0; }
-            h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
-            pre, blockquote { page-break-inside: avoid; }
+            body { 
+              margin: 0; 
+              font-size: 10pt;
+            }
+            h1, h2, h3, h4, h5, h6 { 
+              page-break-after: avoid;
+              page-break-inside: avoid;
+            }
+            .mermaid, pre, blockquote, table { 
+              page-break-inside: avoid; 
+            }
+            ul, ol {
+              page-break-before: avoid;
+            }
+            li {
+              page-break-inside: avoid;
+            }
           }
           
-          /* Page break utilities */
-          .page-break-before { page-break-before: always; }
-          .page-break-after { page-break-after: always; }
-          .page-break-inside-avoid { page-break-inside: avoid; }
+          /* Section spacing utilities */
+          .section-break {
+            margin-top: 35px;
+            page-break-before: avoid;
+          }
+          
+          /* Recommendation section styling */
+          h2:contains("Recommendations") + h3,
+          h2:contains("recommendations") + h3 {
+            color: #2b6cb0;
+            background: #ebf8ff;
+            padding: 8px 15px;
+            border-radius: 4px;
+            border-left: 4px solid #3182ce;
+          }
         </style>
       </head>
       <body>
-        <header style="margin-bottom: 40px; border-bottom: 2px solid #eaecef; padding-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+        <header style="margin-bottom: 40px; padding-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
           <div>
             <img 
-              src="https://www.instacart.com/image-server/x24/www.instacart.com/assets/beetstrap/brand/2022/instacart-business-logo-dark@3x-d16b19c9060685d040461f6e9a3c29e615b79792b566e74b9258f135db349c96.png" 
+              src="${logoBase64}" 
               alt="Instacart Business" 
               style="height: 32px; margin-bottom: 16px;"
             />
-            <h1 style="margin: 0; color: #0969da; font-size: 28px;">${title}</h1>
+            <h1 class="main-title" style="margin: 0; color: #0969da; font-size: 28px;">${title}</h1>
             <p style="margin: 8px 0 0 0; color: #656d76; font-size: 14px;">
               Generated on ${new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -229,27 +347,31 @@ export async function POST(req: NextRequest) {
       timeout: 30000,
     });
 
-    // Generate PDF with optimized settings
+    // Generate PDF with professional settings
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '1in',
-        right: '1in',
-        bottom: '1in',
-        left: '1in',
+        top: '0.8in',
+        right: '0.75in',
+        bottom: '0.8in',
+        left: '0.75in',
       },
       displayHeaderFooter: true,
       headerTemplate: `
-        <div style="font-size: 10px; color: #656d76; width: 100%; text-align: center;">
+        <div style="font-size: 9px; color: #718096; width: 100%; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding-top: 10px;">
           ${title}
         </div>
       `,
       footerTemplate: `
-        <div style="font-size: 10px; color: #656d76; width: 100%; text-align: center;">
-          Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+        <div style="font-size: 9px; color: #718096; width: 100%; display: flex; justify-content: space-between; align-items: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 10px 20px;">
+          <span>Instacart Business Analytics</span>
+          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+          <span>${new Date().toLocaleDateString()}</span>
         </div>
       `,
+      preferCSSPageSize: false,
+      scale: 0.9,
     });
 
     await browser.close();

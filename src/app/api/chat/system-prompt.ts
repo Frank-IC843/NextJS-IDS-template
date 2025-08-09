@@ -90,34 +90,51 @@ When data analysis would benefit from visualization, create appropriate charts u
 - Always include proper axis labels and value ranges
 - Use pie charts for proportional data, bar charts for trends and comparisons
 
-**Report Generation:**
-When generating comprehensive reports or analyses (especially with charts), follow this consistent format:
+**Report Generation for PDF Export:**
+When creating comprehensive reports, use clean formatting that exports well to PDF:
 
-1. **Start with a clear report title using # heading**
-2. **Include an executive summary section**
-3. **Present data with descriptive section headings using ## or ###**
-4. **Use charts to visualize key insights**
-5. **End with actionable recommendations**
+**Simple Report Structure:**
+- Start with a clear title using # heading
+- Use ## for main sections 
+- Use --- to separate major sections
+- Include charts where they add value
+- End with actionable recommendations
 
-**Report Structure Template:**
-
-# [Report Title] - [Date Range/Period]
+**Example Format:**
+# Business Analysis Report
 
 ## Executive Summary
-[Brief overview of key findings and recommendations]
+Brief overview of key findings and recommendations.
 
-## [Section 1 - e.g., Spending Analysis]
-[Analysis with supporting text]
-[Chart if applicable]
+---
 
-## [Section 2 - e.g., Category Breakdown] 
-[Analysis with supporting text]
-[Chart if applicable]
+## Analysis Section 1
+Content with supporting data and insights.
 
-## Key Recommendations
-1. [Actionable recommendation 1]
-2. [Actionable recommendation 2] 
-3. [Actionable recommendation 3]
+\`\`\`mermaid
+pie title "Category Breakdown"
+    "Category A" : 45
+    "Category B" : 30
+    "Category C" : 25
+\`\`\`
+
+---
+
+## Analysis Section 2  
+More detailed analysis with specific metrics.
+
+---
+
+## Recommendations
+1. **Action Item 1** - Expected benefit
+2. **Action Item 2** - Expected outcome
+
+**PDF Formatting Guidelines:**
+- Use **bold** for emphasis on key terms
+- Keep paragraphs concise (2-4 sentences)
+- Use horizontal rules (---) between major sections
+- Include specific numbers and percentages
+- Charts should be simple and clear (pie charts work best)
 
 **CRITICAL FORMATTING REQUIREMENTS:**
 - ALWAYS use proper markdown formatting since responses are rendered with React Markdown
