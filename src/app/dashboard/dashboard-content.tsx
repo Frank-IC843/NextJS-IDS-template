@@ -1,19 +1,11 @@
 'use client';
 
-import {
-  Text,
-  ButtonBase,
-  Select,
-  SelectButton,
-  SelectButtonValue,
-  SelectOptions,
-  SelectOption,
-  Divider,
-} from '@instacart/ids-customers';
+import { Text, ButtonBase, Divider } from '@instacart/ids-customers';
 import { useTheme } from '@instacart/ids-core';
 import { useState } from 'react';
 import { BusinessMonthsQuery } from '@/__generated__/graphql-types';
 import { OrderMetrics } from './order-metrics';
+import { MonthSelector } from './month-selector';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -54,7 +46,6 @@ interface DashboardContentProps {
 export function DashboardContent({ businessMonthsData: { businessMonths } }: DashboardContentProps) {
   const styles = useStyles();
   const [selectedMonth, setSelectedMonth] = useState(businessMonths[0]);
-  const selectedMonthLabel = selectedMonth.viewSection.labelString;
 
   return (
     <div css={styles.container}>
@@ -62,23 +53,13 @@ export function DashboardContent({ businessMonthsData: { businessMonths } }: Das
         <Text typography="headline">Dashboard</Text>
         <ButtonBase css={styles.linkButton}>Export</ButtonBase>
       </div>
-      <div css={styles.selectContainer} suppressHydrationWarning>
-        <Select selectedValue={selectedMonthLabel} styles={styles.selectStyles}>
-          <SelectButton>
-            <SelectButtonValue>{selectedMonthLabel}</SelectButtonValue>
-          </SelectButton>
-          <SelectOptions alignment="left">
-            {businessMonths.map(month => (
-              <SelectOption
-                value={month.viewSection.labelString}
-                key={month.viewSection.labelString}
-                onClick={() => setSelectedMonth(month)}
-              >
-                {month.viewSection.labelString}
-              </SelectOption>
-            ))}
-          </SelectOptions>
-        </Select>
+      <div css={styles.selectContainer}>
+        <MonthSelector
+          businessMonths={businessMonths}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          styles={styles.selectStyles}
+        />
       </div>
       <OrderMetrics startDate={selectedMonth.startDate ?? ''} endDate={selectedMonth.endDate ?? ''} />
       <Divider />
