@@ -48,7 +48,7 @@ export function MetricCard({ startDate, endDate, cardVariant }: MetricCardProps)
           {card?.titleString}
         </Text>
         {card?.tooltipTextString && (
-          <Tooltip title={card.tooltipTextString}>
+          <Tooltip title={card.tooltipTextString} suppressHydrationWarning>
             <InformationIcon color="systemGrayscale30" />
           </Tooltip>
         )}

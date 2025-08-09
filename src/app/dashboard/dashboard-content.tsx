@@ -62,7 +62,7 @@ export function DashboardContent({ businessMonthsData: { businessMonths } }: Das
         <Text typography="headline">Dashboard</Text>
         <ButtonBase css={styles.linkButton}>Export</ButtonBase>
       </div>
-      <div css={styles.selectContainer}>
+      <div css={styles.selectContainer} suppressHydrationWarning>
         <Select selectedValue={selectedMonthLabel} styles={styles.selectStyles}>
           <SelectButton>
             <SelectButtonValue>{selectedMonthLabel}</SelectButtonValue>
