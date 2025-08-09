@@ -3,9 +3,12 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { MermaidChart } from '@/app/components/mermaid-chart';
+import { PrimaryButton } from '@/app/components/buttons';
+import { usePdfExport } from './use-pdf-export';
+import { useChatContext } from './chat-context';
 
 interface MessagePart {
-  type: 'text' | 'chart';
+  type: 'text' | 'chart' | 'button';
   content: string;
   key: string;
 }
@@ -19,6 +22,10 @@ interface MessageTextPartProps {
 }
 
 interface MessageChartPartProps {
+  content: string;
+}
+
+interface MessageButtonPartProps {
   content: string;
 }
 
@@ -43,9 +50,73 @@ const MessageChartPart: React.FC<MessageChartPartProps> = ({ content }) => {
   return <MermaidChart chart={content} />;
 };
 
+// Component for rendering button parts of messages
+const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
+  const { messages } = useChatContext();
+  const { exportToPdf, isExporting } = usePdfExport({
+    onSuccess: () => {
+      console.log('Report PDF generated successfully');
+    },
+    onError: error => {
+      console.error('Failed to generate report PDF:', error);
+    },
+  });
+
+  const handleGenerateReport = () => {
+    if (!messages || messages.length === 0) {
+      console.error('No messages available for report generation');
+      return;
+    }
+
+    // Convert messages to markdown format for PDF export with proper Mermaid handling
+    let reportContent = `# Business Intelligence Report\n\n*Generated on ${new Date().toLocaleDateString()}*\n\n`;
+
+    messages.forEach((message, index) => {
+      const role = message.role === 'user' ? '## User Query' : '## Analysis & Insights';
+      reportContent += `${role}\n\n${message.content}\n\n`;
+
+      if (index < messages.length - 1) {
+        reportContent += '---\n\n';
+      }
+    });
+
+    const title = 'Business Intelligence Report';
+    const filename = `business_report_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    exportToPdf({
+      content: reportContent,
+      title,
+      filename,
+    });
+  };
+
+  if (content === 'REPORT_BUTTON_MARKER') {
+    return (
+      <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-start' }}>
+        <PrimaryButton onClick={handleGenerateReport} disabled={isExporting || !messages || messages.length === 0}>
+          {isExporting ? 'Generating Report...' : 'Generate Report'}
+        </PrimaryButton>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 // Utility function to parse message content into structured parts
 const parseMessageContent = (content: string): MessagePart[] => {
   const parts: MessagePart[] = [];
+
+  // First, check for and extract report button marker
+  const reportButtonRegex = /\[REPORT_BUTTON_MARKER\]/g;
+  let contentWithoutButton = content;
+  let hasReportButton = false;
+
+  if (reportButtonRegex.test(content)) {
+    hasReportButton = true;
+    contentWithoutButton = content.replace(reportButtonRegex, '').trim();
+  }
+
   // Updated regex to be more flexible with whitespace and handle charts in lists
   const mermaidRegex = /```mermaid\s*\n([\s\S]*?)\n\s*```/g;
 
@@ -56,10 +127,10 @@ const parseMessageContent = (content: string): MessagePart[] => {
   // Reset regex lastIndex to ensure fresh start
   mermaidRegex.lastIndex = 0;
 
-  while ((match = mermaidRegex.exec(content)) !== null) {
+  while ((match = mermaidRegex.exec(contentWithoutButton)) !== null) {
     // Add text before the chart
     if (match.index > lastIndex) {
-      const textContent = content.slice(lastIndex, match.index);
+      const textContent = contentWithoutButton.slice(lastIndex, match.index);
       if (textContent.trim()) {
         parts.push({
           type: 'text',
@@ -79,8 +150,8 @@ const parseMessageContent = (content: string): MessagePart[] => {
   }
 
   // Add remaining text after the last chart
-  if (lastIndex < content.length) {
-    const textContent = content.slice(lastIndex);
+  if (lastIndex < contentWithoutButton.length) {
+    const textContent = contentWithoutButton.slice(lastIndex);
     if (textContent.trim()) {
       parts.push({
         type: 'text',
@@ -91,13 +162,23 @@ const parseMessageContent = (content: string): MessagePart[] => {
   }
 
   // If no charts found, return all as text
-  if (parts.length === 0) {
+  if (parts.length === 0 && contentWithoutButton.trim()) {
     parts.push({
       type: 'text',
-      content: content,
+      content: contentWithoutButton,
       key: 'text-0',
     });
   }
+
+  // Add report button at the end if detected
+  if (hasReportButton) {
+    parts.push({
+      type: 'button',
+      content: 'REPORT_BUTTON_MARKER',
+      key: `button-${partIndex++}`,
+    });
+  }
+
   return parts;
 };
 
@@ -111,9 +192,11 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
         <div key={part.key}>
           {part.type === 'text' ? (
             <MessageTextPart content={part.content} />
-          ) : (
+          ) : part.type === 'chart' ? (
             <MessageChartPart content={part.content} />
-          )}
+          ) : part.type === 'button' ? (
+            <MessageButtonPart content={part.content} />
+          ) : null}
         </div>
       ))}
     </>

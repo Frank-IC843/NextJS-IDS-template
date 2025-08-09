@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Text } from '@instacart/ids-customers';
 import { ChatMessage } from '@/app/components/chat-message';
+import { ChatProvider } from '@/app/components/chat-context';
 import type { Message } from '@/app/components/use-chat';
 
 interface ChatMessagesProps {
@@ -76,27 +77,29 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
   }, [messages]);
 
   return (
-    <div css={styles.messagesContainer}>
-      {messages.length === 0 ? (
-        <div css={styles.emptyState}>
-          <Text typography="bodyLarge1" color="systemGrayscale60">
-            Ask me about your order patterns, spending trends, or cost optimization opportunities! Try: &ldquo;Show me
-            my spending by category&rdquo; or &ldquo;Create a monthly trend chart&rdquo;
-          </Text>
-        </div>
-      ) : (
-        <>
-          {messages.map((message, index) => (
-            <ChatMessage
-              key={index}
-              message={message}
-              isLoading={isLoading}
-              isLastMessage={index === messages.length - 1}
-            />
-          ))}
-          <div ref={messagesEndRef} />
-        </>
-      )}
-    </div>
+    <ChatProvider messages={messages}>
+      <div css={styles.messagesContainer}>
+        {messages.length === 0 ? (
+          <div css={styles.emptyState}>
+            <Text typography="bodyLarge1" color="systemGrayscale60">
+              Ask me about your order patterns, spending trends, or cost optimization opportunities! Try: &ldquo;Show me
+              my spending by category&rdquo; or &ldquo;Create a monthly trend chart&rdquo;
+            </Text>
+          </div>
+        ) : (
+          <>
+            {messages.map((message, index) => (
+              <ChatMessage
+                key={index}
+                message={message}
+                isLoading={isLoading}
+                isLastMessage={index === messages.length - 1}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+    </ChatProvider>
   );
 }
