@@ -1,4 +1,4 @@
-import { LoginButton } from './components/login-button';
+import { LoginButton } from '@/app/components/layout/login-button';
 
 export default function Home() {
   return (
