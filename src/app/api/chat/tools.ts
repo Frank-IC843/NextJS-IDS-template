@@ -2,10 +2,19 @@ import 'server-only';
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import demoOrderSummaries from '../../../../tmp/business-order-summaries-2025-09-04T20-27-45-629Z.json';
 import { getClient } from '@/lib/apollo-client';
 import { BusinessOrderMetricsQuery } from '@/__generated__/graphql-types';
 import { BUSINESS_ORDER_METRICS_QUERY, CREATE_ORDER_GUIDE_MUTATION } from '@/app/queries';
+
+// Lazy load demo data only when needed to avoid memory bloat
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let demoOrderSummaries: any = null;
+async function getDemoOrderSummaries() {
+  if (!demoOrderSummaries) {
+    demoOrderSummaries = await import('../../../../tmp/business-order-summaries-2025-09-04T20-27-45-629Z.json');
+  }
+  return demoOrderSummaries;
+}
 
 /**
  * Type-safe result types for tool responses
@@ -160,8 +169,9 @@ export const tools = {
       try {
         // Always use the full demo data regardless of input dates
         // The demo data covers 2025-07-04 to 2025-09-04
+        const demoData = await getDemoOrderSummaries();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const demoNodes = (demoOrderSummaries as any).result.nodes;
+        const demoNodes = (demoData as any).result.nodes;
 
         // Apply pagination
         const startIndex = input.after ? parseInt(input.after, 10) : 0;
@@ -254,6 +264,9 @@ export const tools = {
             .sort((a, b) => b.orderCount - a.orderCount)
             .slice(0, 30); // Only top 30 products
 
+          // Clear product map early to free memory
+          productMap.clear();
+
           // Get top retailers
           const topRetailers = Array.from(retailerMap.entries())
             .map(([id, data]) => ({
@@ -265,6 +278,9 @@ export const tools = {
             .sort((a, b) => b.orderCount - a.orderCount)
             .slice(0, 5);
 
+          // Clear retailer map to free memory
+          retailerMap.clear();
+
           return {
             success: true,
             data: {
@@ -274,7 +290,7 @@ export const tools = {
               summary: {
                 dateRange: `${input.startDate} to ${input.endDate}`,
                 totalOrders: connection.nodes.length,
-                totalProducts: productMap.size,
+                totalProducts: topProducts.length, // Use topProducts length instead of map size
               },
             },
           } satisfies ToolResult<{

@@ -13,6 +13,9 @@ interface UseChatOptions {
   onError?: (error: string) => void;
 }
 
+// Limit message history to prevent memory bloat
+const MAX_MESSAGE_HISTORY = 20; // Keep only last 20 messages
+
 export function useChat({ onError }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -53,7 +56,16 @@ export function useChat({ onError }: UseChatOptions = {}) {
     abortControllerRef.current = new AbortController();
 
     const userMessage: Message = { role: 'user', content: messageContent.trim() };
-    setMessages(prev => [...prev, userMessage]);
+
+    // Apply message limit to prevent memory bloat
+    setMessages(prev => {
+      const updated = [...prev, userMessage];
+      // Keep only the last MAX_MESSAGE_HISTORY messages
+      if (updated.length > MAX_MESSAGE_HISTORY) {
+        return updated.slice(-MAX_MESSAGE_HISTORY);
+      }
+      return updated;
+    });
     setIsLoading(true);
 
     // Use a local variable to accumulate content - this avoids stale closures
@@ -63,11 +75,14 @@ export function useChat({ onError }: UseChatOptions = {}) {
       // Add assistant message placeholder
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
+      // Only send recent messages to API to reduce token usage
+      const messagesToSend = [...messages, userMessage].slice(-10); // Last 10 messages max
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: messagesToSend,
           stream: true,
           businessInfo,
         }),

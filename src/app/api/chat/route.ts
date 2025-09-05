@@ -91,16 +91,16 @@ export async function POST(request: NextRequest) {
     const readable = new ReadableStream({
       async start(controller) {
         try {
-          let totalText = '';
+          let charCount = 0; // Only track count, not content
 
           // Stream all text parts (includes text after tool execution)
           for await (const textPart of result.textStream) {
-            totalText += textPart;
+            charCount += textPart.length;
             const data = JSON.stringify({ content: textPart });
             controller.enqueue(encoder.encode(`data: ${data}\n\n`));
           }
 
-          console.log('[Stream] Completed, total text:', totalText.length, 'chars');
+          console.log('[Stream] Completed, total chars:', charCount);
 
           // Signal stream completion
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
