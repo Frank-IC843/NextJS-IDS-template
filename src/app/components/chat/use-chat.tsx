@@ -129,7 +129,8 @@ export function useChat({ onError }: UseChatOptions = {}) {
                 // Check if this message indicates an order guide was created (only emit once)
                 // Looking for exact format: ✅ Order guide "NAME" has been created successfully!
                 if (!orderGuideCreatedEmitted) {
-                  const successPattern = /✅ Order guide [""]([^""]+)[""] has been created successfully!/g;
+                  // Handle both straight quotes (") and curly quotes ("")
+                  const successPattern = /✅ Order guide [""]([^"""]+)[""] has been created successfully!/g;
                   const matches = [...assistantContent.matchAll(successPattern)];
 
                   if (matches.length > 0) {
@@ -146,6 +147,11 @@ export function useChat({ onError }: UseChatOptions = {}) {
                       console.log('Order guide creation event emitted for:', guideName);
                     });
                     orderGuideCreatedEmitted = true; // Mark as emitted
+                  } else {
+                    // Debug log to see what we're actually getting
+                    if (assistantContent.includes('has been created successfully')) {
+                      console.log('Success message detected but pattern did not match. Content:', assistantContent);
+                    }
                   }
                 }
 

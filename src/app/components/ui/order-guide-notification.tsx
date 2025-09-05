@@ -44,7 +44,7 @@ export function OrderGuideNotifications() {
       style={{
         position: 'fixed',
         bottom: '24px',
-        left: '15%',
+        left: '8%',
         transform: 'translateX(-50%)',
         zIndex: 10000,
         animation: isExiting

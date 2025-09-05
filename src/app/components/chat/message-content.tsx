@@ -149,11 +149,7 @@ const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
   if (content === 'REPORT_BUTTON_MARKER') {
     return (
       <div css={styles.buttonContainer}>
-        <PrimaryButton
-          onClick={handleGenerateReport}
-          disabled={isExporting || !messages || messages.length === 0}
-          css={styles.reportButton}
-        >
+        <PrimaryButton onClick={handleGenerateReport} css={styles.reportButton} loading={isExporting}>
           {isExporting ? 'Generating Report...' : 'Generate Report'}
         </PrimaryButton>
       </div>

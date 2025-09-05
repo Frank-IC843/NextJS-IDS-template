@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server';
 import { streamText, stepCountIs, type CoreMessage } from 'ai';
 import { gpt4_1 } from '@/lib/ai-sdk-config';
-import { TEST_ORDER_GUIDE_SYSTEM_PROMPT } from './system-prompt';
+import { SYSTEM_PROMPT } from './system-prompt';
 import { tools } from './tools';
 
 interface ChatRequestBody {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Use streamText with proper tool configuration
     const result = await streamText({
       model: gpt4_1,
-      system: TEST_ORDER_GUIDE_SYSTEM_PROMPT,
+      system: SYSTEM_PROMPT,
       messages,
       tools,
       toolChoice: 'auto',
