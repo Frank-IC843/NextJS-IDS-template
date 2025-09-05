@@ -76,7 +76,7 @@ export function ListingCard({ orderGuide }: Props) {
           </Text>
         </ModalContent>
         <ModalFooter styles={{ footer: { display: 'flex', gap: '12px', flexDirection: 'column' } }}>
-          <DetrimentalButton onPress={handleDelete} loading={loading} disabled={loading}>
+          <DetrimentalButton onPress={handleDelete} loading={loading}>
             Delete
           </DetrimentalButton>
           <SecondaryButton>Cancel</SecondaryButton>
