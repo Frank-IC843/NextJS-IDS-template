@@ -3,282 +3,176 @@ import 'server-only';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { getClient } from '@/lib/apollo-client';
-import {
-  BUSINESS_MONTHS_QUERY,
-  BUSINESS_ORDER_METRICS_QUERY,
-  BUSINESS_ORDER_SUMMARIES_CONNECTION_QUERY,
-} from '@/app/queries';
-import { BusinessOrderSummaryOrderBy } from '@/__generated__/graphql-types';
-import { readFile } from 'fs/promises';
+import { CREATE_ORDER_GUIDE_MUTATION } from '@/app/queries';
+import type { CreateOrderGuideMutation } from '@/__generated__/graphql-types';
 
 /**
- * Tools exposed to the LLM for fetching business data via GraphQL.
- * These wrap Apollo Client calls so the model can request data on demand.
+ * Type-safe result types for tool responses
  */
-export const graphqlTools = {
-  // businessMonths: tool({
-  //   description:
-  //     'Fetch available business months in the past 12 months and their display labels for reporting.',
-  //   inputSchema: z.object({}).describe('No parameters required.'),
-  //   execute: async (_input, { toolCallId }) => {
-  //     console.log('[AI Tool] businessMonths START', { toolCallId });
-  //     try {
-  //       const client = getClient();
-  //       const { data } = await client.query({
-  //         query: BUSINESS_MONTHS_QUERY,
-  //         fetchPolicy: 'no-cache',
-  //       });
-  //       const result = data?.businessMonths ?? [];
-  //       console.log('[AI Tool] businessMonths RESULT', {
-  //         toolCallId,
-  //         result,
-  //         count: Array.isArray(result) ? result.length : 0,
-  //         sample: Array.isArray(result) ? result[0] : undefined,
-  //       });
-  //       return result;
-  //     } catch (error) {
-  //       console.error('[AI Tool] businessMonths ERROR', { toolCallId, error });
-  //       throw error;
-  //     }
-  //   },
-  // }),
-  businessOrderMetrics: tool({
+type ToolSuccessResult<T> = {
+  success: true;
+  data: T;
+};
+
+type ToolErrorResult = {
+  success: false;
+  error: string;
+  errorType?: string;
+};
+
+type ToolResult<T> = ToolSuccessResult<T> | ToolErrorResult;
+
+/**
+ * AI SDK tools for business operations via GraphQL.
+ * Follows Vercel AI SDK best practices for tool implementation.
+ */
+export const tools = {
+  /**
+   * Creates a new business order guide with specified products
+   */
+  createBusinessOrderGuide: tool({
     description:
-      'Fetch business order metrics and metric cards for a given date range.',
+      'Create a new business order guide to organize and save frequently ordered products from a specific retailer. ' +
+      'Order guides help streamline reordering by grouping products together.',
+
     inputSchema: z
       .object({
-        startDate: z
+        name: z
           .string()
-          .describe('Inclusive start date in YYYY-MM-DD format.'),
-        endDate: z
+          .min(1, 'Name is required')
+          .max(100, 'Name must be 100 characters or less')
+          .describe('The name of the order guide (e.g., "Weekly Essentials", "Office Supplies")'),
+
+        retailerId: z
           .string()
-          .describe('Inclusive end date in YYYY-MM-DD format.'),
+          .min(1, 'Retailer ID is required')
+          .describe('The ID of the retailer this order guide is for'),
+
+        description: z
+          .string()
+          .max(500, 'Description must be 500 characters or less')
+          .optional()
+          .describe('Optional description of what this order guide is for'),
+
+        imageUrl: z
+          .string()
+          .url('Must be a valid URL')
+          .optional()
+          .describe('Optional URL to an image representing this order guide'),
+
+        productIds: z
+          .array(z.string())
+          .optional()
+          .describe('Optional array of product IDs to include in this order guide'),
       })
-      .describe('Date range to compute metrics over.'),
-    execute: async ({ startDate, endDate }, { toolCallId }) => {
-      console.log('[AI Tool] businessOrderMetrics START', {
+      .describe('Parameters for creating a new business order guide'),
+
+    execute: async (input, context) => {
+      const { toolCallId } = context;
+
+      console.log('[AI Tool] createBusinessOrderGuide START', {
         toolCallId,
-        params: { startDate, endDate },
+        input: {
+          ...input,
+          productCount: input.productIds?.length ?? 0,
+        },
       });
+
       try {
         const client = getClient();
-        const { data } = await client.query({
-          query: BUSINESS_ORDER_METRICS_QUERY,
-          variables: { startDate, endDate },
-          fetchPolicy: 'no-cache',
-        });
-        const result = data?.businessOrderMetrics ?? null;
-        // Compress payload to essential fields only
-        const compressed = result
-          ? {
-              startDate: result.startDate,
-              endDate: result.endDate,
-              ordersCompleted: result.ordersCompleted,
-              totalSpendCents: result.totalSpendCents,
-              viewSection: {
-                orderMetricCards: (result.viewSection?.orderMetricCards ?? []).map((card: any) => ({
-                  id: card.id,
-                  titleString: card.titleString,
-                  valueString: card.valueString,
-                })),
-              },
-            }
-          : null;
-        console.log('[AI Tool] businessOrderMetrics RESULT', {
-          toolCallId,
-          hasResult: Boolean(result),
-          cardsCount: result?.viewSection?.orderMetricCards?.length ?? 0,
-        });
-        return { ok: true, data: compressed } as const;
-      } catch (error) {
-        console.error('[AI Tool] businessOrderMetrics ERROR', {
-          toolCallId,
-          params: { startDate, endDate },
-          error,
-        });
-        return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' } as const;
-      }
-    },
-  }),
 
-  businessOrderSummariesConnection: tool({
-    description:
-      'Fetch paginated business order summaries within a date range, including member and summary info with order item collection.',
-    inputSchema: z
-      .object({
-        orderBy: z
-          .string()
-          .optional()
-          .describe('Ordering for summaries. One of: itemCountAsc, itemCountDesc, orderTotalCentsAsc, orderTotalCentsDesc, placedAtAsc, placedAtDesc.'),
-        startDate: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/u, 'startDate must be YYYY-MM-DD')
-          .describe('Inclusive start date in YYYY-MM-DD format.'),
-        endDate: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/u, 'endDate must be YYYY-MM-DD')
-          .describe('Inclusive end date in YYYY-MM-DD format.'),
-        first: z
-          .number()
-          .int()
-          .positive()
-          .max(50, 'first cannot exceed 50')
-          .describe('Number of items to fetch.'),
-        after: z
-          .string()
-          .optional()
-          .describe('Cursor for pagination.'),
-      })
-      .describe('Parameters for fetching order summaries connection.'),
-    execute: async ({ orderBy, startDate, endDate, first, after }, { toolCallId }) => {
-      console.log('[AI Tool] businessOrderSummariesConnection START', {
-        toolCallId,
-        params: { orderBy, startDate, endDate, first, after },
-      });
-      try {
-        // Coerce orderBy string to GraphQL enum value (case-insensitive)
-        const ORDER_BY_MAP: Record<string, BusinessOrderSummaryOrderBy> = {
-          itemcountasc: BusinessOrderSummaryOrderBy.ItemCountAsc,
-          itemcountdesc: BusinessOrderSummaryOrderBy.ItemCountDesc,
-          ordertotalcentsasc: BusinessOrderSummaryOrderBy.OrderTotalCentsAsc,
-          ordertotalcentsdesc: BusinessOrderSummaryOrderBy.OrderTotalCentsDesc,
-          placedatasc: BusinessOrderSummaryOrderBy.PlacedAtAsc,
-          placedatdesc: BusinessOrderSummaryOrderBy.PlacedAtDesc,
-        };
-        let mappedOrderBy: BusinessOrderSummaryOrderBy | undefined;
-        if (orderBy) {
-          const key = orderBy.replace(/[ _-]/g, '').toLowerCase();
-          mappedOrderBy = ORDER_BY_MAP[key];
-          if (!mappedOrderBy) {
-            const valid = Object.values(BusinessOrderSummaryOrderBy).join(', ');
-            return { ok: false, error: `Invalid orderBy: ${orderBy}. Valid: ${valid}` } as const;
+        // Execute the GraphQL mutation
+        const { data } = await client.mutate<CreateOrderGuideMutation>({
+          mutation: CREATE_ORDER_GUIDE_MUTATION,
+          variables: {
+            name: input.name,
+            retailerId: input.retailerId,
+            description: input.description,
+            imageUrl: input.imageUrl,
+            productIds: input.productIds,
+          },
+        });
+
+        const result = data?.createBusinessOrderGuide;
+
+        // Handle the discriminated union response
+        if (result && '__typename' in result) {
+          if (result.__typename === 'BusinessCreateOrderGuideSuccessResponse') {
+            console.log('[AI Tool] createBusinessOrderGuide SUCCESS', {
+              toolCallId,
+              orderGuideId: result.orderGuideId,
+            });
+
+            return {
+              success: true,
+              data: {
+                orderGuideId: result.orderGuideId,
+                name: input.name,
+                retailerId: input.retailerId,
+                description: input.description,
+                productCount: input.productIds?.length ?? 0,
+              },
+            } satisfies ToolResult<{
+              orderGuideId: string;
+              name: string;
+              retailerId: string;
+              description?: string;
+              productCount: number;
+            }>;
+          }
+
+          if (result.__typename === 'BusinessCreateOrderGuideError') {
+            console.error('[AI Tool] createBusinessOrderGuide BUSINESS_ERROR', {
+              toolCallId,
+              errorType: result.errorType,
+            });
+
+            return {
+              success: false,
+              error: `Failed to create order guide: ${result.errorType}`,
+              errorType: result.errorType,
+            } satisfies ToolResult<never>;
           }
         }
 
-        const client = getClient();
-        const { data } = await client.query({
-          query: BUSINESS_ORDER_SUMMARIES_CONNECTION_QUERY,
-          variables: { orderBy: mappedOrderBy, startDate, endDate, first, after },
-          fetchPolicy: 'no-cache',
-        });
-        const result = data?.businessOrderSummariesConnection ?? null;
-        // Compress and truncate payload to avoid context overflow
-        const totalNodes = result?.nodes?.length ?? 0;
-        const nodesCap = Math.min(totalNodes, 20);
-        const itemsPerNodeCap = 12;
-        const nodes = (result?.nodes ?? []).slice(0, nodesCap).map((n: any) => {
-          const os = n.orderSummary;
-          const items = os?.orderItemCollection?.orderItems ?? [];
-          const retailer = os?.retailer;
-          return {
-            placedAtUtc: os?.orderPlacedAtUtc ?? null,
-            itemCount: os?.itemCount ?? null,
-            orderTotalCents: os?.orderTotalCents ?? null,
-            retailer: {
-              name: retailer?.name ?? null,
-              slug: retailer?.slug ?? null,
-              logo: retailer?.logoImage?.templateUrl ?? null,
-            },
-            items: items.slice(0, itemsPerNodeCap).map((oi: any) => {
-              const base = oi?.item ?? oi?.currentItem;
-              const prod = base?.basketProduct;
-              const vs = base?.viewSection;
-              return {
-                name: base?.name ?? null,
-                quantity: oi?.selectedQuantityValue ?? oi?.pickedQuantityValue ?? null,
-                customerPriceString: vs?.customerPriceString ?? null,
-                productId: prod?.id ?? null,
-                imageUrl: prod?.imageUrl ?? vs?.primaryImage?.url ?? null,
-              };
-            }),
-          };
-        });
-
-        const compressed = {
-          pageInfo: result?.pageInfo
-            ? { hasNextPage: Boolean(result.pageInfo.hasNextPage), endCursor: result.pageInfo.endCursor ?? null }
-            : null,
-          nodes,
-          meta: {
-            nodesReturned: nodes.length,
-            nodesTotal: totalNodes,
-            itemsPerNodeCap,
-          },
-        };
-
-        console.log('[AI Tool] businessOrderSummariesConnection RESULT', {
+        // Unexpected response format
+        console.error('[AI Tool] createBusinessOrderGuide UNEXPECTED_RESPONSE', {
           toolCallId,
-          hasResult: Boolean(result),
-          nodesCount: nodes.length,
-          pageInfo: compressed.pageInfo,
-          truncated: totalNodes > nodesCap,
+          result,
         });
-        return { ok: true, data: compressed } as const;
+
+        return {
+          success: false,
+          error: 'Unexpected response format from server',
+        } satisfies ToolResult<never>;
       } catch (error) {
-        console.error('[AI Tool] businessOrderSummariesConnection ERROR', {
+        console.error('[AI Tool] createBusinessOrderGuide ERROR', {
           toolCallId,
-          params: { orderBy, startDate, endDate, first, after },
-          error,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
         });
-        // Fallback to saved local JSON so LLM can still respond (compress as well)
-        try {
-          const fallbackPath = '/Users/limingkang/NextJS-IDS-template/tmp/business-order-summaries-2025-09-04T20-27-45-629Z.json';
-          const fileContent = await readFile(fallbackPath, 'utf8');
-          const parsed = JSON.parse(fileContent);
-          const connection = parsed?.result ?? parsed;
 
-          const totalNodes = connection?.nodes?.length ?? 0;
-          const nodesCap = Math.min(totalNodes, 20);
-          const itemsPerNodeCap = 12;
-          const nodes = (connection?.nodes ?? []).slice(0, nodesCap).map((n: any) => {
-            const os = n?.orderSummary;
-            const items = os?.orderItemCollection?.orderItems ?? [];
-            const retailer = os?.retailer;
-            return {
-              placedAtUtc: os?.orderPlacedAtUtc ?? null,
-              itemCount: os?.itemCount ?? null,
-              orderTotalCents: os?.orderTotalCents ?? null,
-              retailer: {
-                name: retailer?.name ?? null,
-                slug: retailer?.slug ?? null,
-                logo: retailer?.logoImage?.templateUrl ?? null,
-              },
-              items: items.slice(0, itemsPerNodeCap).map((oi: any) => {
-                const base = oi?.item ?? oi?.currentItem;
-                const prod = base?.basketProduct;
-                const vs = base?.viewSection;
-                return {
-                  name: base?.name ?? null,
-                  quantity: oi?.selectedQuantityValue ?? oi?.pickedQuantityValue ?? null,
-                  customerPriceString: vs?.customerPriceString ?? null,
-                  productId: prod?.id ?? null,
-                  imageUrl: prod?.imageUrl ?? vs?.primaryImage?.url ?? null,
-                };
-              }),
-            };
-          });
+        // Parse GraphQL errors if available
+        let errorMessage = 'Failed to create order guide';
+        if (error instanceof Error) {
+          errorMessage = error.message;
 
-          const compressed = {
-            pageInfo: connection?.pageInfo
-              ? { hasNextPage: Boolean(connection.pageInfo.hasNextPage), endCursor: connection.pageInfo.endCursor ?? null }
-              : null,
-            nodes,
-            meta: {
-              nodesReturned: nodes.length,
-              nodesTotal: totalNodes,
-              itemsPerNodeCap,
-              fallback: true,
-            },
-          };
+          // Check for network errors
+          if (error.message.includes('Network error')) {
+            errorMessage = 'Network error: Unable to reach the server';
+          }
 
-          console.warn('[AI Tool] businessOrderSummariesConnection FALLBACK_USED', { toolCallId, fallbackPath, nodes: nodes.length });
-          return { ok: true, data: compressed, fallback: true as const } as const;
-        } catch (fallbackErr) {
-          console.error('[AI Tool] businessOrderSummariesConnection FALLBACK_FAILED', { toolCallId, fallbackErr });
-          return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' } as const;
+          // Check for GraphQL validation errors
+          if (error.message.includes('GraphQL error')) {
+            errorMessage = `Validation error: ${error.message}`;
+          }
         }
+
+        return {
+          success: false,
+          error: errorMessage,
+        } satisfies ToolResult<never>;
       }
     },
   }),
 };
-

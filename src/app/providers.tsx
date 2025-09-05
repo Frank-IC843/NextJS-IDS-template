@@ -36,7 +36,6 @@ const defaultTheme = {
 
 function getBusinessThemeOverrides(): ThemeOverrides {
   // Simple color variants for each button
-  const primaryColors = createButtonColors('#553A7A'); // Perfect purple (30% lighter than #10004A)
   const secondaryColors = createButtonColors(coreTheme.colors.brandBusinessBlueberry); // Bright blue
   const detrimentalColors = createButtonColors('#DC2626'); // Red
 
@@ -50,15 +49,6 @@ function getBusinessThemeOverrides(): ThemeOverrides {
         disabledBorderColor: '#C7C8CD',
       },
       buttonPrimary: {
-        // Dark purple solid button (matches header)
-        color: primaryColors.base, // #553A7A
-        hoverColor: primaryColors.hover,
-        pressColor: primaryColors.press,
-        textColor: '#FFFFFF',
-        disabledColor: '#B8A5C9', // Muted purple - maintains brand identity
-        disabledTextColor: '#FFFFFF', // Keep white text for contrast
-      },
-      buttonSecondary: {
         // Bright blue solid button
         color: secondaryColors.base, // #6672FA
         hoverColor: secondaryColors.hover,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { GRAPHQL_URL } from '@/lib/constants';
+import { GRAPHQL_ENDPOINTS } from '@/lib/constants';
 
 /**
  * GraphQL Proxy Route
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward the request to the GraphQL server
-    const response = await fetch(GRAPHQL_URL, {
+    const response = await fetch(GRAPHQL_ENDPOINTS.hackathonStg, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,20 +45,21 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    // Return the GraphQL response
-    return NextResponse.json(data, {
+    // Create the response
+    const nextResponse = NextResponse.json(data, {
       status: response.status,
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
+    // Forward any set-cookie headers from the GraphQL server
     const setCookieHeader = response.headers.get('set-cookie');
     if (setCookieHeader) {
-      nextRes.headers.set('set-cookie', setCookieHeader);
+      nextResponse.headers.set('set-cookie', setCookieHeader);
     }
 
-    return nextRes;
+    return nextResponse;
   } catch (error) {
     console.error('GraphQL proxy error:', error);
     return NextResponse.json({ errors: [{ message: 'Internal server error' }] }, { status: 500 });

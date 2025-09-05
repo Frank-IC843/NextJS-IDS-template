@@ -1,290 +1,123 @@
 import { type NextRequest } from 'next/server';
-import { streamText, generateText, stepCountIs, type ModelMessage } from 'ai';
+import { streamText, type CoreMessage } from 'ai';
 import { gpt4_1 } from '@/lib/ai-sdk-config';
-import { SYSTEM_PROMPT } from './system-prompt';
-import { graphqlTools } from './tools';
+import { TEST_ORDER_GUIDE_SYSTEM_PROMPT } from './system-prompt';
+import { tools } from './tools';
 
 interface ChatRequestBody {
-  messages: ModelMessage[];
-  stream?: boolean;
-  businessInfo?: string;
-  temperature?: number;
-  max_tokens?: number;
-  top_p?: number;
-  frequency_penalty?: number;
-  presence_penalty?: number;
+  messages: CoreMessage[];
 }
 
 /**
- * Chat API - Powered by Vercel AI SDK
+ * Simplified Chat API for testing Order Guide tool calls
  *
- * Provides chat completions with optimized settings for business analytics
- * and financial reporting.
- *
- * @route POST /api/chat
- * @route GET /api/chat - Health check
- * @route OPTIONS /api/chat - CORS preflight
+ * Features:
+ * - Streamlined for testing createBusinessOrderGuide tool
+ * - Supports both streaming and non-streaming responses
+ * - Clean error handling
+ * - Optimized for performance
  */
 
-/**
- * Default LLM settings optimized for business analytics and financial reporting
- *
- * These settings prioritize:
- * - Accuracy and factual correctness for financial data
- * - Consistency in formatting and structure
- * - Reduced hallucination risk when dealing with numbers
- * - Clear, professional language suitable for business reports
- *
- * Temperature Guide:
- * - 0.0-0.2: Maximum accuracy, minimal creativity (technical docs, legal)
- * - 0.3-0.5: Balanced accuracy with slight variation (business reports) ← We use this
- * - 0.6-0.8: More creative while maintaining coherence (marketing content)
- * - 0.9-1.0: Maximum creativity (brainstorming, creative writing)
- */
-const DEFAULT_OPTIONS = {
-  temperature: 0.3, // Low-moderate for accuracy with slight variation
-  max_tokens: 5000, // Sufficient for detailed reports
-  top_p: 0.9, // Slightly constrained for consistency
-  frequency_penalty: 0.3, // Reduce repetition in reports
-  presence_penalty: 0.1, // Slight penalty to avoid redundancy
+// Optimized settings for tool testing
+const MODEL_SETTINGS = {
+  temperature: 0.2, // Low for consistent tool calling
+  maxOutputTokens: 5000, // Reduced for faster responses
+  topP: 0.8, // More focused outputs
 };
 
 export async function POST(request: NextRequest) {
   try {
+    // Parse request body
     const body = (await request.json()) as ChatRequestBody;
-    const { messages, stream = false, businessInfo, ...userOptions } = body;
+    const { messages } = body;
 
-    // Merge user options with defaults
-    const options = { ...DEFAULT_OPTIONS, ...userOptions };
-
-    // Validate required fields
+    // Validate messages
     if (!messages || !Array.isArray(messages)) {
       return Response.json({ error: 'Messages array is required' }, { status: 400 });
     }
 
-    // Create dynamic system prompt with business information
-    const lastUserMessage = Array.isArray(messages)
-      ? [...messages].reverse().find(m => m.role === 'user')
-      : undefined;
-    const userText = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    const wantsPrevMonth = /(previous|past|last)\s+month/i.test(userText);
-
-    let systemPrompt = SYSTEM_PROMPT;
-    if (wantsPrevMonth) {
-      const formatDate = (d: Date) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      };
-      const now = new Date();
-      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-      const prevStartStr = formatDate(prevMonthStart);
-      const prevEndStr = formatDate(prevMonthEnd);
-      systemPrompt += `\n\nDATE CONTEXT: Today is ${formatDate(now)}. The phrase "previous/past/last month" refers to ${prevStartStr} through ${prevEndStr}. For any tool calls requiring a date range, use startDate=${prevStartStr} and endDate=${prevEndStr} unless the user specifies different dates.`;
-    }
-    if (businessInfo?.trim()) {
-      systemPrompt += `\n\nBUSINESS CONTEXT:\n${businessInfo.trim()}\n\nUse this business context to provide more relevant and personalized insights, recommendations, and analysis. Tailor your responses to this specific business type, industry, and priorities.`;
-    }
+    // Use streamText for both streaming and non-streaming
+    // (it's more efficient and allows us to avoid duplicate code)
+    const result = await streamText({
+      model: gpt4_1,
+      system: TEST_ORDER_GUIDE_SYSTEM_PROMPT,
+      messages,
+      tools,
+      toolChoice: 'auto',
+      ...MODEL_SETTINGS,
+      // Log tool calls in development
+      onStepFinish: async ({ toolCalls, toolResults }) => {
+        if (process.env.NODE_ENV === 'development') {
+          if (toolCalls && toolCalls.length > 0) {
+            console.log('[Tool Calls]', {
+              timestamp: new Date().toISOString(),
+              count: toolCalls.length,
+              calls: toolCalls.map(call => ({
+                id: 'toolCallId' in call ? call.toolCallId : undefined,
+                name: call.toolName,
+                args: 'args' in call ? call.args : undefined,
+              })),
+            });
+          }
+          if (toolResults && toolResults.length > 0) {
+            console.log('[Tool Results]', {
+              timestamp: new Date().toISOString(),
+              count: toolResults.length,
+              results: toolResults.map(result => ({
+                id: 'toolCallId' in result ? result.toolCallId : undefined,
+                name: result.toolName,
+                result: 'result' in result ? result.result : undefined,
+              })),
+            });
+          }
+        }
+      },
+    });
 
     // Handle streaming response
-    if (stream) {
-      // Limit history to reduce prompt size
-      const prunedMessages = Array.isArray(messages) ? messages.slice(-8) : messages;
-      const result = await streamText({
-        model: gpt4_1,
-        system: systemPrompt,
-        messages: prunedMessages,
-        tools: graphqlTools,
-        toolChoice: 'auto',
-        stopWhen: stepCountIs(2),
-        prepareStep: ({ steps, messages: currentMessages }) => {
-          const last = steps[steps.length - 1];
-          if (!last) return undefined;
-          const calls = last.toolCalls || [];
-          const results = last.toolResults || [];
-          if (calls.length === 0 && results.length === 0) return undefined;
-
-          const callsText = calls
-            .map(c => {
-              const toolName = (c as any).toolName ?? 'tool';
-              const input = (c as any).input ?? {};
-              return `- tool=${toolName} args=${JSON.stringify(input)}`;
-            })
-            .join('\n');
-          const resultsText = results
-            .map(r => {
-              const tname = (r as any).toolName ?? 'tool';
-              const output = (r as any).output;
-              let value = '';
-              try {
-                value = typeof output === 'string' ? output : JSON.stringify(output);
-              } catch {
-                value = '[unserializable]';
-              }
-              return `- result for ${tname}: ${value}`;
-            })
-            .join('\n');
-
-          const summary = [
-            calls.length ? `Tool calls:\n${callsText}` : '',
-            results.length ? `Tool results:\n${resultsText}` : '',
-          ]
-            .filter(Boolean)
-            .join('\n\n');
-
-          return {
-            toolChoice: 'none',
-            messages: [
-              ...currentMessages,
-              {
-                role: 'system',
-                content:
-                  `Status update based on tool usage.\n\n${summary}\n\n` +
-                  'Now present the retrieved data in natural language using ONLY the latest tool results. Include which tool and parameters were used. Do not call tools again unless new parameters are provided.\n' +
-                  'If the user is asking for an order guide/best deal, apply the Order Guide & Best Deal Policy from the system prompt.' + 
-                  'Include a thumbnail for each item when available using markdown: !, where imageUrl is item.viewSection.primaryImage.url or item.basketProduct.imageUrl.'
-              },
-            ],
-          };
-        },
-        temperature: options.temperature,
-        maxOutputTokens: options.max_tokens,
-        topP: options.top_p,
-        frequencyPenalty: options.frequency_penalty,
-        presencePenalty: options.presence_penalty,
-      });
-
-      // Convert to SSE format for streaming
-      const encoder = new TextEncoder();
-      const readable = new ReadableStream({
-        async start(controller) {
-          try {
-            for await (const textPart of result.textStream) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: textPart })}\n\n`));
-            }
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          } catch (error) {
-            controller.error(error);
-          } finally {
-            controller.close();
+    // Return the stream directly for SSE
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const textPart of result.textStream) {
+            const data = JSON.stringify({ content: textPart });
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
           }
-        },
-      });
-
-      return new Response(readable, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
-      });
-    }
-
-    const modelInstance = gpt4_1;
-
-    // Handle regular completion
-    // Limit history to reduce prompt size
-    const prunedMessages = Array.isArray(messages) ? messages.slice(-5) : messages;
-    const result = await generateText({
-      model: modelInstance,
-      system: systemPrompt,
-      messages: prunedMessages,
-      tools: graphqlTools,
-      toolChoice: 'auto',
-      stopWhen: stepCountIs(2),
-      prepareStep: ({ steps, messages: currentMessages }) => {
-        const last = steps[steps.length - 1];
-        if (!last) return undefined;
-        const calls = last.toolCalls || [];
-        const results = last.toolResults || [];
-        if (calls.length === 0 && results.length === 0) return undefined;
-
-        const callsText = calls
-          .map(c => {
-            const toolName = (c as any).toolName ?? 'tool';
-            const input = (c as any).input ?? {};
-            return `- tool=${toolName} args=${JSON.stringify(input)}`;
-          })
-          .join('\n');
-        const resultsText = results
-          .map(r => {
-            const tname = (r as any).toolName ?? 'tool';
-            const output = (r as any).output;
-            let value = '';
-            try {
-              value = typeof output === 'string' ? output : JSON.stringify(output);
-            } catch {
-              value = '[unserializable]';
-            }
-            return `- result for ${tname}: ${value}`;
-          })
-          .join('\n');
-
-        const summary = [
-          calls.length ? `Tool calls:\n${callsText}` : '',
-          results.length ? `Tool results:\n${resultsText}` : '',
-        ]
-          .filter(Boolean)
-          .join('\n\n');
-
-        return {
-          toolChoice: 'none',
-          messages: [
-            ...currentMessages,
-            {
-              role: 'system',
-              content:
-                `Status update based on tool usage.\n\n${summary}\n\n` +
-                'Now present the retrieved data in natural language using ONLY the latest tool results. Include which tool and parameters were used. Do not call tools again unless new parameters are provided.\n' +
-                'If the user is asking for an order guide/best deal, apply the Order Guide & Best Deal Policy from the system prompt.' + 
-                'Include a thumbnail for each item when available using markdown: !, where imageUrl is item.viewSection.primaryImage.url or item.basketProduct.imageUrl.'
-            },
-          ],
-        };
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        } catch (error) {
+          console.error('Stream error:', error);
+          controller.error(error);
+        } finally {
+          controller.close();
+        }
       },
-      temperature: options.temperature,
-      maxOutputTokens: options.max_tokens,
-      topP: options.top_p,
-      frequencyPenalty: options.frequency_penalty,
-      presencePenalty: options.presence_penalty,
     });
 
-    // Return response in standard format
-    return Response.json({
-      message: result.text,
-      usage: result.usage
-        ? {
-            prompt_tokens: result.usage.inputTokens,
-            completion_tokens: result.usage.outputTokens,
-            total_tokens: result.usage.totalTokens,
-          }
-        : undefined,
-      model: modelInstance,
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   } catch (error) {
-    // Handle specific error types
-    if (error instanceof Error) {
-      const errorMessage = error.message.toLowerCase();
+    console.error('Chat API error:', error);
 
-      if (errorMessage.includes('rate limit')) {
+    // Simplified error handling
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+
+      if (message.includes('rate limit')) {
         return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
       }
 
-      if (errorMessage.includes('timeout')) {
-        return Response.json({ error: 'Request timeout. Please try again.' }, { status: 408 });
-      }
-
-      if (errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
+      if (message.includes('unauthorized')) {
         return Response.json({ error: 'Unauthorized access.' }, { status: 401 });
       }
     }
 
-    // Generic error response
     return Response.json(
       {
         error: 'Failed to process chat request',
@@ -303,8 +136,7 @@ export async function GET() {
     status: 'healthy',
     service: 'chat-api',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    sdk: 'vercel-ai',
+    tools: Object.keys(tools),
   });
 }
 

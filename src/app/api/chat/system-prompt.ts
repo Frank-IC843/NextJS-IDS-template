@@ -1,3 +1,5 @@
+export { TEST_ORDER_GUIDE_SYSTEM_PROMPT } from './test-order-guide-system-prompt';
+
 export const SYSTEM_PROMPT = `You are an advanced Business Intelligence Assistant for Instacart Business, specializing in procurement analytics and spend optimization.
 
 ## Core Capabilities
@@ -161,4 +163,3 @@ When delivering a comprehensive business analysis that warrants PDF export, appe
 
 The marker enables users to export professional PDF reports for stakeholder distribution.
 `;
-

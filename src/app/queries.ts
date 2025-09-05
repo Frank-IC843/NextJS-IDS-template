@@ -1,10 +1,5 @@
 import { gql, useQuery, useSuspenseQuery } from '@apollo/client';
 import { BusinessOrderMetricsQuery } from '@/__generated__/graphql-types';
-import {
-  MEMBER_FRAGMENT,
-  ORDER_SUMMARY_FRAGMENT,
-  ORDER_SUMMARY_WITH_MEMBER_FRAGMENT,
-} from '@/app/graphql/fragments';
 
 export const CREATE_USER_SESSION_FROM_CODE = gql`
   mutation CreateUserSessionFromVerificationCode(
@@ -54,18 +49,6 @@ export const BUSINESS_ORDER_METRICS_QUERY = gql`
       ordersCompleted
       totalSpendCents
       totalSavingsCents
-      viewSection {
-        orderMetricCards {
-          id
-          cardVariant
-          displayVariant
-          titleString
-          valueString
-          tooltipDisplayVariant
-          tooltipIconVariant
-          tooltipTextString
-        }
-      }
     }
   }
 `;
@@ -153,7 +136,138 @@ export const BUSINESS_ORDER_SUMMARIES_CONNECTION_QUERY = gql`
       customerPriceString
     }
   }
-`
+`;
+
+const ORDER_GUIDE_FRAGMENT = gql`
+  fragment OrderGuide on BusinessOrderGuide {
+    id
+    description
+    imageUrl
+    name
+    productIds
+    retailerId
+    viewSection {
+      card {
+        actions {
+          ctaColor
+          ctaString
+          navigateToUrlCtaAction {
+            openInNewTab
+            url
+          }
+        }
+        content {
+          retailerIconImage {
+            templateUrl
+            altText
+          }
+          retailerIconBackgroundColorHexString
+          subtitleString
+          summaryString
+          unavailableSummaryString
+        }
+        trackingProperties
+      }
+    }
+  }
+`;
+
+export const ORDER_GUIDES_CONNECTION_QUERY = gql`
+  query OrderGuidesConnection(
+    $orderBy: BusinessOrderGuidesOrderBy
+    $filters: BusinessOrderGuidesFilters
+    $after: String
+    $first: Int
+  ) {
+    businessOrderGuidesConnection(orderBy: $orderBy, filters: $filters, after: $after, first: $first) {
+      nodes {
+        ...OrderGuide
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+      }
+    }
+  }
+  ${ORDER_GUIDE_FRAGMENT}
+`;
+
+export const CREATE_ORDER_GUIDE_MUTATION = gql`
+  mutation CreateOrderGuide(
+    $name: String!
+    $retailerId: ID!
+    $description: String
+    $imageUrl: String
+    $productIds: [ID!]
+  ) {
+    createBusinessOrderGuide(
+      name: $name
+      retailerId: $retailerId
+      description: $description
+      imageUrl: $imageUrl
+      productIds: $productIds
+    ) {
+      ... on BusinessCreateOrderGuideSuccessResponse {
+        orderGuideId
+      }
+      ... on BusinessCreateOrderGuideError {
+        errorType
+      }
+    }
+  }
+`;
+
+export const DELETE_ORDER_GUIDE_MUTATION = gql`
+  mutation DeleteOrderGuide($orderGuideId: ID!) {
+    deleteBusinessOrderGuide(orderGuideId: $orderGuideId) {
+      ... on BusinessDeleteOrderGuideSuccessResponse {
+        id
+      }
+      ... on BusinessDeleteOrderGuideError {
+        errorType
+      }
+    }
+  }
+`;
+
+const USER_LOCATION_FRAGMENT = gql`
+  fragment UserLocationFields on UsersUserLocation {
+    addressId
+    zoneId
+    postalCode
+    coordinates {
+      latitude
+      longitude
+    }
+    viewSection {
+      trackingProperties
+      shoppingInString
+    }
+    zone {
+      timeZoneName
+    }
+  }
+`;
+
+export const GET_LAST_USER_LOCATION = gql`
+  query GetLastUserLocation {
+    lastUserLocation {
+      ...UserLocationFields
+    }
+  }
+  ${USER_LOCATION_FRAGMENT}
+`;
+
+export const SHOP_ITEMS_QUERY = gql`
+  query ShopItems($productIds: [ID!]!, $shopId: ID!) {
+    shopItems(productIds: $productIds, shopId: $shopId) {
+      id
+      productId
+    }
+  }
+`;
 
 export const useGetBusinessOrderMetrics = (startDate?: string | null, endDate?: string | null) => {
   return useQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {
