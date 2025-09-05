@@ -31,7 +31,6 @@ function getBusinessThemeOverrides(): ThemeOverrides {
         radiusStandard: 999,
         radiusSmall: 999,
         radiusCompact: 999,
-        disabledBorderColor: '#C7C8CD',
       },
     },
   };
@@ -46,7 +45,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <ApolloWrapper>
       <IdsProvider
-        themeOverrides={getBusinessThemeOverrides()}
+        //themeOverrides={getBusinessThemeOverrides()}
         routing={{
           navigate: router.push,
         }}

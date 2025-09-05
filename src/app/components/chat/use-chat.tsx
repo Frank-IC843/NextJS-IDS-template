@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useBusinessInfo } from '@/app/settings/business-info-settings';
+import { orderGuideEvents } from '@/lib/order-guide-events';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -70,6 +71,7 @@ export function useChat({ onError }: UseChatOptions = {}) {
 
     // Use a local variable to accumulate content - this avoids stale closures
     let assistantContent = '';
+    let orderGuideCreatedEmitted = false; // Track if we've emitted the event
 
     try {
       // Add assistant message placeholder
@@ -123,6 +125,30 @@ export function useChat({ onError }: UseChatOptions = {}) {
               const parsed = JSON.parse(data);
               if (parsed.content) {
                 assistantContent += parsed.content;
+
+                // Check if this message indicates an order guide was created (only emit once)
+                // Looking for exact format: ✅ Order guide "NAME" has been created successfully!
+                if (!orderGuideCreatedEmitted) {
+                  const successPattern = /✅ Order guide [""]([^""]+)[""] has been created successfully!/g;
+                  const matches = [...assistantContent.matchAll(successPattern)];
+
+                  if (matches.length > 0) {
+                    // Emit events for all created guides (in case of batch creation)
+                    matches.forEach(match => {
+                      const guideName = match[1];
+                      orderGuideEvents.emit({
+                        type: 'order-guide-created',
+                        data: {
+                          name: guideName,
+                        },
+                        timestamp: Date.now(),
+                      });
+                      console.log('Order guide creation event emitted for:', guideName);
+                    });
+                    orderGuideCreatedEmitted = true; // Mark as emitted
+                  }
+                }
+
                 flushSync(() => {
                   setMessages(prev => {
                     const newMessages = [...prev];

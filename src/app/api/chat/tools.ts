@@ -375,9 +375,18 @@ export const tools = {
             success: true,
             data: {
               orderGuideId: result.orderGuideId,
+              name,
+              retailerId,
+              description,
               message: `✅ Order guide "${name}" has been created successfully!`,
             },
-          } satisfies ToolResult<{ orderGuideId: string; message: string }>;
+          } satisfies ToolResult<{
+            orderGuideId: string;
+            name: string;
+            retailerId: string;
+            description?: string;
+            message: string;
+          }>;
         } else if (result?.__typename === 'BusinessCreateOrderGuideError') {
           return {
             success: false,
