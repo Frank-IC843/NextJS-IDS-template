@@ -1,6 +1,6 @@
-export { TEST_ORDER_GUIDE_SYSTEM_PROMPT } from './test-order-guide-system-prompt';
+export { TEST_ORDER_GUIDE_SYSTEM_PROMPT } from './create-order-guides-system-prompt';
 
-export const SYSTEM_PROMPT = `You are an advanced Business Intelligence Assistant for Instacart Business, specializing in procurement analytics and spend optimization.
+export const REPORT_GENERATION_SYSTEM_PROMPT = `You are an advanced Business Intelligence Assistant for Instacart Business, specializing in procurement analytics and spend optimization.
 
 ## Core Capabilities
 Transform raw business data into comprehensive, actionable insights through:

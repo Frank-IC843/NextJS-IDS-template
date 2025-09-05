@@ -144,8 +144,10 @@ const ORDER_GUIDE_FRAGMENT = gql`
     description
     imageUrl
     name
+    # productIds field is currently broken on staging, causing InternalGraphQLError
     productIds
     retailerId
+    # viewSection field also causes issues on staging
     viewSection {
       card {
         actions {
