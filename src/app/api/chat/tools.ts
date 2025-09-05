@@ -5,7 +5,7 @@ import { z } from 'zod';
 import demoOrderSummaries from '../../../../tmp/business-order-summaries-2025-09-04T20-27-45-629Z.json';
 import { getClient } from '@/lib/apollo-client';
 import { BusinessOrderMetricsQuery } from '@/__generated__/graphql-types';
-import { BUSINESS_ORDER_METRICS_QUERY } from '@/app/queries';
+import { BUSINESS_ORDER_METRICS_QUERY, CREATE_ORDER_GUIDE_MUTATION } from '@/app/queries';
 
 /**
  * Type-safe result types for tool responses
@@ -186,8 +186,25 @@ export const tools = {
           });
 
           // COMPRESSED: Only aggregate essential data for order guide creation
-          const productMap = new Map<string, any>();
-          const retailerMap = new Map<string, any>();
+          const productMap = new Map<
+            string,
+            {
+              productId: string;
+              name: string;
+              retailerId: string;
+              retailerName: string;
+              price: string;
+              orderCount: number;
+            }
+          >();
+          const retailerMap = new Map<
+            string,
+            {
+              name: string;
+              orderCount: number;
+              totalCents: number;
+            }
+          >();
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           connection.nodes.forEach((order: any) => {
@@ -199,8 +216,10 @@ export const tools = {
               retailerMap.set(retailerId, { name: retailerName, orderCount: 0, totalCents: 0 });
             }
             const retailerData = retailerMap.get(retailerId);
-            retailerData.orderCount++;
-            retailerData.totalCents += order.orderSummary?.orderTotalCents || 0;
+            if (retailerData) {
+              retailerData.orderCount++;
+              retailerData.totalCents += order.orderSummary?.orderTotalCents || 0;
+            }
 
             // Track product frequency
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -222,7 +241,10 @@ export const tools = {
                     orderCount: 0,
                   });
                 }
-                productMap.get(key).orderCount++;
+                const productData = productMap.get(key);
+                if (productData) {
+                  productData.orderCount++;
+                }
               }
             });
           });
@@ -291,6 +313,72 @@ export const tools = {
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Failed to fetch order summaries',
+        } satisfies ToolResult<never>;
+      }
+    },
+  }),
+
+  /**
+   * Creates an order guide with specified products
+   */
+  createOrderGuide: tool({
+    description:
+      'Create an order guide with specified products. Use this ONLY after the user has confirmed they want to create the order guide.',
+
+    inputSchema: z
+      .object({
+        name: z.string().describe('Name of the order guide'),
+
+        retailerId: z.string().describe('Retailer ID for the order guide (e.g., "5" for Costco)'),
+
+        description: z.string().optional().describe('Description of what the guide contains'),
+
+        productIds: z.array(z.string()).describe('Array of product IDs to include in the guide'),
+      })
+      .describe('Parameters for creating an order guide'),
+
+    execute: async ({ name, retailerId, description, productIds }) => {
+      try {
+        // Import the mutation here to avoid circular dependencies
+        const client = getClient();
+
+        const { data } = await client.mutate({
+          mutation: CREATE_ORDER_GUIDE_MUTATION,
+          variables: {
+            name,
+            retailerId,
+            description,
+            productIds,
+          },
+        });
+
+        const result = data?.createBusinessOrderGuide;
+
+        if (result?.__typename === 'BusinessCreateOrderGuideSuccessResponse') {
+          return {
+            success: true,
+            data: {
+              orderGuideId: result.orderGuideId,
+              message: `✅ Order guide "${name}" has been created successfully!`,
+            },
+          } satisfies ToolResult<{ orderGuideId: string; message: string }>;
+        } else if (result?.__typename === 'BusinessCreateOrderGuideError') {
+          return {
+            success: false,
+            error: `Failed to create order guide: ${result.errorType}`,
+            errorType: result.errorType,
+          } satisfies ToolResult<never>;
+        } else {
+          return {
+            success: false,
+            error: 'Unexpected response from server',
+          } satisfies ToolResult<never>;
+        }
+      } catch (error) {
+        console.error('Error creating order guide:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to create order guide',
         } satisfies ToolResult<never>;
       }
     },

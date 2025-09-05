@@ -6,19 +6,10 @@ import { MermaidChart } from '@/app/components/visualization/mermaid-chart';
 import { PrimaryButton } from '@/app/components/ui/buttons';
 import { usePdfExport } from '@/app/hooks/use-pdf-export';
 import { useChatContext } from '@/app/components/chat/chat-context';
-import { useCreateOrderGuide } from '@/app/components/chat/order-guide-button-handler';
-
 interface MessagePart {
-  type: 'text' | 'chart' | 'button' | 'orderGuideButtons';
+  type: 'text' | 'chart' | 'button';
   content: string;
   key: string;
-}
-
-interface OrderGuideSuggestion {
-  name: string;
-  retailerId: string;
-  description: string;
-  productIds: string[];
 }
 
 interface MessageContentProps {
@@ -172,74 +163,6 @@ const MessageButtonPart: React.FC<MessageButtonPartProps> = ({ content }) => {
   return null;
 };
 
-// Component for rendering order guide creation buttons
-const MessageOrderGuideButtons: React.FC<{ content: string }> = ({ content }) => {
-  const { createOrderGuide } = useCreateOrderGuide();
-  const [buttonStates, setButtonStates] = React.useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({});
-
-  let suggestions: OrderGuideSuggestion[] = [];
-  try {
-    const parsed = JSON.parse(content);
-    suggestions = parsed.suggestions || [];
-  } catch (e) {
-    console.error('Failed to parse order guide suggestions:', e);
-    return null;
-  }
-
-  const handleCreateGuide = async (suggestion: OrderGuideSuggestion, index: number) => {
-    const buttonKey = `guide-${index}`;
-    setButtonStates(prev => ({ ...prev, [buttonKey]: 'loading' }));
-
-    try {
-      await createOrderGuide({
-        name: suggestion.name,
-        retailerId: suggestion.retailerId,
-        description: suggestion.description,
-        productIds: suggestion.productIds,
-      });
-      setButtonStates(prev => ({ ...prev, [buttonKey]: 'success' }));
-    } catch (error) {
-      console.error('Failed to create order guide:', error);
-      setButtonStates(prev => ({ ...prev, [buttonKey]: 'error' }));
-      setTimeout(() => {
-        setButtonStates(prev => ({ ...prev, [buttonKey]: 'idle' }));
-      }, 3000);
-    }
-  };
-
-  if (suggestions.length === 0) return null;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-      {suggestions.map((suggestion, index) => {
-        const buttonKey = `guide-${index}`;
-        const state = buttonStates[buttonKey] || 'idle';
-
-        return (
-          <PrimaryButton
-            key={buttonKey}
-            onClick={() => handleCreateGuide(suggestion, index)}
-            disabled={state === 'loading' || state === 'success'}
-            style={{
-              width: '100%',
-              maxWidth: '400px',
-              backgroundColor: state === 'success' ? '#4CAF50' : state === 'error' ? '#f44336' : undefined,
-            }}
-          >
-            {state === 'loading'
-              ? '⏳ Creating...'
-              : state === 'success'
-                ? `✅ ${suggestion.name} Created!`
-                : state === 'error'
-                  ? '❌ Failed - Try Again'
-                  : `✨ Create "${suggestion.name}"`}
-          </PrimaryButton>
-        );
-      })}
-    </div>
-  );
-};
-
 // Utility function to parse message content into structured parts
 const parseMessageContent = (content: string): MessagePart[] => {
   const parts: MessagePart[] = [];
@@ -253,19 +176,6 @@ const parseMessageContent = (content: string): MessagePart[] => {
     hasReportButton = true;
     contentWithoutButton = content.replace(reportButtonRegex, '').trim();
   }
-
-  // Check for and extract order guide suggestions marker
-  const orderGuideRegex = /\[ORDER_GUIDE_SUGGESTIONS_MARKER\]([\s\S]*?)\[\/ORDER_GUIDE_SUGGESTIONS_MARKER\]/g;
-  let orderGuideSuggestions = '';
-  let hasOrderGuides = false;
-
-  const orderGuideMatch = orderGuideRegex.exec(contentWithoutButton);
-  if (orderGuideMatch) {
-    hasOrderGuides = true;
-    orderGuideSuggestions = orderGuideMatch[1].trim();
-    contentWithoutButton = contentWithoutButton.replace(orderGuideRegex, '').trim();
-  }
-
   // Updated regex to be more flexible with whitespace and handle charts in lists
   const mermaidRegex = /```mermaid\s*\n([\s\S]*?)\n\s*```/g;
 
@@ -318,16 +228,6 @@ const parseMessageContent = (content: string): MessagePart[] => {
       key: 'text-0',
     });
   }
-
-  // Add order guide buttons if detected
-  if (hasOrderGuides && orderGuideSuggestions) {
-    parts.push({
-      type: 'orderGuideButtons',
-      content: orderGuideSuggestions,
-      key: `order-guides-${partIndex++}`,
-    });
-  }
-
   // Add report button at the end if detected
   if (hasReportButton) {
     parts.push({
@@ -354,8 +254,6 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
             <MessageChartPart content={part.content} />
           ) : part.type === 'button' ? (
             <MessageButtonPart content={part.content} />
-          ) : part.type === 'orderGuideButtons' ? (
-            <MessageOrderGuideButtons content={part.content} />
           ) : null}
         </div>
       ))}

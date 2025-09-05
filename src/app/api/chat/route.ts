@@ -12,7 +12,8 @@ interface ChatRequestBody {
  * Chat API for Order Guide Tool Testing
  *
  * Implements Vercel AI SDK best practices for tool calling:
- * - Uses maxSteps to control execution flow
+ * - Uses stepCountIs(5) to support interactive multi-step flows
+ * - Allows AI to analyze, present suggestions, wait for confirmation, and create guides
  * - Ensures AI always responds after tool calls
  * - Provides proper streaming support
  * - Includes comprehensive error handling
@@ -42,7 +43,9 @@ export async function POST(request: NextRequest) {
       messages,
       tools,
       toolChoice: 'auto',
-      stopWhen: stepCountIs(2), // Allow: 1) tool call, 2) text response after tool
+      stopWhen: stepCountIs(5), // Allow multiple steps for interactive flow:
+      // 1) Analyze data with tools, 2) Present suggestions, 3) User confirmation,
+      // 4) Create order guides with tool, 5) Confirm creation
       temperature: MODEL_SETTINGS.temperature,
       maxOutputTokens: MODEL_SETTINGS.maxOutputTokens,
       topP: MODEL_SETTINGS.topP,
