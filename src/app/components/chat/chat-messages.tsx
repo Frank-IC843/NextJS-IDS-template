@@ -82,8 +82,9 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
         {messages.length === 0 ? (
           <div css={styles.emptyState}>
             <Text typography="bodyLarge1" color="systemGrayscale60">
-              Ask me about your order patterns, spending trends, or cost optimization opportunities! Try: &ldquo;Show me
-              my spending by category&rdquo; or &ldquo;Create a monthly trend chart&rdquo;
+              Need help coming up with an order guide? Ask me about your order patterns, or anything else you want to
+              know about your business! Try: &ldquo;Show me my spending by category&rdquo; or &ldquo;Create a monthly
+              trend chart&rdquo;
             </Text>
           </div>
         ) : (

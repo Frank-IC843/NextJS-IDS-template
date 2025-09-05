@@ -6,12 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@apollo/client';
 import { CREATE_USER_SESSION_FROM_CODE } from '@/app/queries';
 import { UsersAccountTypes, UsersIdentityType } from '@/__generated__/graphql-types';
-import { useShop } from '@/app/contexts/shop-context';
 
 export const LoginButton = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { fetchUserLocationAndShop } = useShop();
 
   const [createUserSession] = useMutation(CREATE_USER_SESSION_FROM_CODE, {
     onCompleted: async data => {
@@ -19,7 +17,6 @@ export const LoginButton = () => {
       if (result?.token) {
         console.log('Login successful:', result);
         // Fetch user location and shop after successful login
-        fetchUserLocationAndShop();
         router.push('/dashboard');
       } else if (result?.errorTypes) {
         console.error('Login failed:', result.errorTypes);

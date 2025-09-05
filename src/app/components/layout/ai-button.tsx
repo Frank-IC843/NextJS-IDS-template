@@ -118,7 +118,7 @@ export function AIButton() {
       >
         <ModalHeader hide={modal.hide} accessibleLabels={{ close: 'Close chat' }}>
           <ModalTitle>
-            <Text typography="headline">Instacart Business Analytics</Text>
+            <Text typography="headline">Instacart Business Ai</Text>
           </ModalTitle>
         </ModalHeader>
         {modal.visible && <ChatInterface />}

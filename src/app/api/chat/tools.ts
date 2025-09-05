@@ -204,6 +204,7 @@ export const tools = {
               retailerId: string;
               retailerName: string;
               price: string;
+              imageUrl: string;
               orderCount: number;
             }
           >();
@@ -238,6 +239,13 @@ export const tools = {
               const name = item.item?.name || item.currentItem?.name || '';
               const price =
                 item.item?.viewSection?.customerPriceString || item.currentItem?.viewSection?.customerPriceString || '';
+              // Get image URL from multiple possible locations
+              const imageUrl =
+                item.item?.basketProduct?.imageUrl ||
+                item.currentItem?.basketProduct?.imageUrl ||
+                item.item?.viewSection?.primaryImage?.url ||
+                item.currentItem?.viewSection?.primaryImage?.url ||
+                '';
 
               if (productId && name) {
                 const key = `${productId}_${retailerId}`;
@@ -248,6 +256,7 @@ export const tools = {
                     retailerId,
                     retailerName,
                     price,
+                    imageUrl,
                     orderCount: 0,
                   });
                 }
@@ -300,6 +309,7 @@ export const tools = {
               retailerId: string;
               retailerName: string;
               price: string;
+              imageUrl: string;
               orderCount: number;
             }>;
             topRetailers: Array<{

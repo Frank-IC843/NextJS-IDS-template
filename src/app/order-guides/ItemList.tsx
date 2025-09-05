@@ -24,35 +24,67 @@ const useStyles = ({ theme }: { theme: Theme }) => ({
   },
 });
 
+type ItemImage = {
+  id: string;
+  imageUrl: string;
+};
+
 type Props = {
   productIds: number[];
+  itemImages?: ItemImage[];
   isMobile?: boolean;
 };
 
-// Mock item data for now - in production this would come from GraphQL
-function useItemImages(productIds: number[]) {
-  const [items, setItems] = useState<Array<{ id: string; imageUrl: string }>>([]);
+export function ItemList({ productIds, itemImages, isMobile = false }: Props) {
+  const theme = useTheme();
+  const styles = useStyles({ theme });
+  const [fetchedImages, setFetchedImages] = useState<ItemImage[]>([]);
 
+  // Fetch images from API
   useEffect(() => {
-    // Mock implementation - in production this would be a GraphQL query
-    // For now, generate placeholder images
-    const mockItems = productIds.map(id => ({
+    const fetchImages = async () => {
+      try {
+        const response = await fetch('/api/product-images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productIds }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const images = data.productImages.map((item: { productId: string; imageUrl: string }) => ({
+            id: item.productId,
+            imageUrl: item.imageUrl,
+          }));
+          setFetchedImages(images);
+        }
+      } catch (error) {
+        console.error('Failed to fetch product images:', error);
+        // Fallback to placeholders
+        setFetchedImages(
+          productIds.map(id => ({
+            id: String(id),
+            imageUrl: `https://via.placeholder.com/48x48/f0f0f0/333?text=${id}`,
+          }))
+        );
+      }
+    };
+
+    if (productIds.length > 0 && !itemImages) {
+      fetchImages();
+    }
+  }, [productIds, itemImages]);
+
+  // Use provided itemImages, or fetched images, or placeholders
+  const items =
+    itemImages ||
+    fetchedImages ||
+    productIds.map(id => ({
       id: String(id),
       imageUrl: `https://via.placeholder.com/48x48/f0f0f0/333?text=${id}`,
     }));
-    setItems(mockItems);
-  }, [productIds]);
 
-  return { items, loading: false, error: null };
-}
-
-export function ItemList({ productIds, isMobile = false }: Props) {
-  const theme = useTheme();
-  const styles = useStyles({ theme });
-
-  const { items, loading, error } = useItemImages(productIds);
-
-  if (loading || !items || error || productIds.length === 0) {
+  if (items.length === 0) {
     return <ul css={styles.container} />;
   }
 
