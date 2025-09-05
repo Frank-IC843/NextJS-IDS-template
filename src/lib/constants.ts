@@ -1,1 +1,2 @@
-export const GRAPHQL_URL = 'http://localhost:3030/graphql';
+export const GRAPHQL_URL =
+  'https://rdhackathon-web-instacart-customers-stg.instacart.team/graphql'

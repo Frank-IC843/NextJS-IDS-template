@@ -32,6 +32,9 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(process.env.GRAPHQL_AUTH_TOKEN && {
+          Authorization: `Bearer ${process.env.GRAPHQL_AUTH_TOKEN}`,
+        }),
         // Forward cookies to the GraphQL server
         ...(authCookies.length > 0 && {
           Cookie: authCookies.join('; '),
@@ -49,6 +52,13 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
     });
+
+    const setCookieHeader = response.headers.get('set-cookie');
+    if (setCookieHeader) {
+      nextRes.headers.set('set-cookie', setCookieHeader);
+    }
+
+    return nextRes;
   } catch (error) {
     console.error('GraphQL proxy error:', error);
     return NextResponse.json({ errors: [{ message: 'Internal server error' }] }, { status: 500 });

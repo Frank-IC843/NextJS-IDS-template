@@ -12,7 +12,7 @@ export const openaiProvider = createOpenAI({
 });
 
 // Export pre-configured models for easy use
-export const gpt4_1 = openaiProvider('gpt-4.1');
+export const gpt4_1 = openaiProvider('gpt-4o');
 
 /**
  * You can still use the original OpenAI client from openai-client.ts for

@@ -27,11 +27,14 @@ export const { getClient, query, PreloadQuery } = registerApolloClient(() => {
         if (instacartSid) {
           authCookies.push(`${instacartSid.name}=${instacartSid.value}`);
         }
-
+        console.log(`calling tools with token ${process.env.GRAPHQL_AUTH_TOKEN}`);
         return fetch(uri, {
           ...options,
           headers: {
             ...options?.headers,
+            ...(process.env.GRAPHQL_AUTH_TOKEN && {
+              Authorization: `Bearer ${process.env.GRAPHQL_AUTH_TOKEN}`,
+            }),
             // Forward cookies to GraphQL server
             ...(authCookies.length > 0 && {
               Cookie: authCookies.join('; '),

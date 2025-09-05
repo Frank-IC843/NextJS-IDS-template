@@ -1,5 +1,10 @@
 import { gql, useQuery, useSuspenseQuery } from '@apollo/client';
 import { BusinessOrderMetricsQuery } from '@/__generated__/graphql-types';
+import {
+  MEMBER_FRAGMENT,
+  ORDER_SUMMARY_FRAGMENT,
+  ORDER_SUMMARY_WITH_MEMBER_FRAGMENT,
+} from '@/app/graphql/fragments';
 
 export const CREATE_USER_SESSION_FROM_CODE = gql`
   mutation CreateUserSessionFromVerificationCode(
@@ -64,6 +69,91 @@ export const BUSINESS_ORDER_METRICS_QUERY = gql`
     }
   }
 `;
+
+export const BUSINESS_ORDER_SUMMARIES_CONNECTION_QUERY = gql`
+  query BusinessOrderSummariesConnection(
+    $orderBy: BusinessOrderSummaryOrderBy
+    $startDate: ISO8601Date!
+    $endDate: ISO8601Date!
+    $first: Int!
+    $after: String
+  ) {
+    businessOrderSummariesConnection(
+      orderBy: $orderBy
+      startDate: $startDate
+      endDate: $endDate
+      first: $first
+      after: $after
+    ) {
+      nodes {
+        id
+        businessMember {
+          id
+          userId
+          userInfo {
+            email
+            firstName
+            fullName
+            lastName
+          }
+          availableMemberOperations {
+            operations
+          }
+        }
+        orderSummary {
+          itemCount
+          orderPlacedAtUtc
+          orderTotalCents
+          orderItemCollection {
+            orderItems {
+              certifiedDelivery
+              currentItem {
+                ...Item
+              }
+              customerAddedToOrder
+              item {
+                ...Item
+              }
+              legacyObfuscatedId
+              pickedQuantityValue
+              selectedQuantityType
+              selectedQuantityValue
+            }
+          }
+          retailer {
+            id
+            name
+            slug
+            logoImage {
+              templateUrl
+            }
+          }
+          retailerId
+          retailerLocationId
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+
+  fragment Item on OrdersItem {
+    basketProduct {
+      id
+      imageUrl
+    }
+    id
+    name
+    viewSection {
+      primaryImage {
+        url
+      }
+      customerPriceString
+    }
+  }
+`
 
 export const useGetBusinessOrderMetrics = (startDate?: string | null, endDate?: string | null) => {
   return useQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {

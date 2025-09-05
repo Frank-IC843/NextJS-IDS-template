@@ -47,6 +47,18 @@ const useStyles = () => {
     markdownHeading: {
       margin: '10px 0',
     },
+    markdownHeadingH2: {
+      margin: '12px 0',
+      fontSize: '1.25rem',
+      fontWeight: 700,
+      lineHeight: 1.25,
+    },
+    markdownHeadingH3: {
+      margin: '10px 0',
+      fontSize: '1.1rem',
+      fontWeight: 600,
+      lineHeight: 1.3,
+    },
     buttonContainer: {
       margin: '16px 0',
       display: 'flex',
@@ -70,8 +82,38 @@ const MessageTextPart: React.FC<MessageTextPartProps> = ({ content }) => {
         ul: ({ children }) => <ul css={styles.markdownList}>{children}</ul>,
         li: ({ children }) => <li css={styles.markdownListItem}>{children}</li>,
         p: ({ children }) => <p css={styles.markdownParagraph}>{children}</p>,
-        h2: ({ children }) => <h2 css={styles.markdownHeading}>{children}</h2>,
-        h3: ({ children }) => <h3 css={styles.markdownHeading}>{children}</h3>,
+        h2: ({ children }) => <h2 css={styles.markdownHeadingH2}>{children}</h2>,
+        h3: ({ children }) => <h3 css={styles.markdownHeadingH3}>{children}</h3>,
+        img: ({ src, alt }) => (
+          // Render small, lazy-loaded thumbnails for images
+          <img
+            src={typeof src === 'string' ? src : ''}
+            alt={typeof alt === 'string' ? alt : ''}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            style={{ maxWidth: 160, maxHeight: 160, borderRadius: 4, display: 'inline-block' }}
+          />
+        ),
+        a: ({ href, children }) => {
+          const url = typeof href === 'string' ? href : '';
+          const isImage = /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
+          if (isImage) {
+            return (
+              <img
+                src={url}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                style={{ maxWidth: 160, maxHeight: 160, borderRadius: 4, display: 'inline-block' }}
+              />
+            );
+          }
+          return (
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              {children}
+            </a>
+          );
+        },
       }}
     >
       {content}

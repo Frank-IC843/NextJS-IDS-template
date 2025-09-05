@@ -1,7 +1,8 @@
 import { type NextRequest } from 'next/server';
-import { streamText, generateText, type ModelMessage } from 'ai';
+import { streamText, generateText, stepCountIs, type ModelMessage } from 'ai';
 import { gpt4_1 } from '@/lib/ai-sdk-config';
 import { SYSTEM_PROMPT } from './system-prompt';
+import { graphqlTools } from './tools';
 
 interface ChatRequestBody {
   messages: ModelMessage[];
@@ -62,17 +63,92 @@ export async function POST(request: NextRequest) {
     }
 
     // Create dynamic system prompt with business information
+    const lastUserMessage = Array.isArray(messages)
+      ? [...messages].reverse().find(m => m.role === 'user')
+      : undefined;
+    const userText = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
+    const wantsPrevMonth = /(previous|past|last)\s+month/i.test(userText);
+
     let systemPrompt = SYSTEM_PROMPT;
+    if (wantsPrevMonth) {
+      const formatDate = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      const now = new Date();
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      const prevStartStr = formatDate(prevMonthStart);
+      const prevEndStr = formatDate(prevMonthEnd);
+      systemPrompt += `\n\nDATE CONTEXT: Today is ${formatDate(now)}. The phrase "previous/past/last month" refers to ${prevStartStr} through ${prevEndStr}. For any tool calls requiring a date range, use startDate=${prevStartStr} and endDate=${prevEndStr} unless the user specifies different dates.`;
+    }
     if (businessInfo?.trim()) {
       systemPrompt += `\n\nBUSINESS CONTEXT:\n${businessInfo.trim()}\n\nUse this business context to provide more relevant and personalized insights, recommendations, and analysis. Tailor your responses to this specific business type, industry, and priorities.`;
     }
 
     // Handle streaming response
     if (stream) {
+      // Limit history to reduce prompt size
+      const prunedMessages = Array.isArray(messages) ? messages.slice(-8) : messages;
       const result = await streamText({
         model: gpt4_1,
         system: systemPrompt,
-        messages,
+        messages: prunedMessages,
+        tools: graphqlTools,
+        toolChoice: 'auto',
+        stopWhen: stepCountIs(2),
+        prepareStep: ({ steps, messages: currentMessages }) => {
+          const last = steps[steps.length - 1];
+          if (!last) return undefined;
+          const calls = last.toolCalls || [];
+          const results = last.toolResults || [];
+          if (calls.length === 0 && results.length === 0) return undefined;
+
+          const callsText = calls
+            .map(c => {
+              const toolName = (c as any).toolName ?? 'tool';
+              const input = (c as any).input ?? {};
+              return `- tool=${toolName} args=${JSON.stringify(input)}`;
+            })
+            .join('\n');
+          const resultsText = results
+            .map(r => {
+              const tname = (r as any).toolName ?? 'tool';
+              const output = (r as any).output;
+              let value = '';
+              try {
+                value = typeof output === 'string' ? output : JSON.stringify(output);
+              } catch {
+                value = '[unserializable]';
+              }
+              return `- result for ${tname}: ${value}`;
+            })
+            .join('\n');
+
+          const summary = [
+            calls.length ? `Tool calls:\n${callsText}` : '',
+            results.length ? `Tool results:\n${resultsText}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n\n');
+
+          return {
+            toolChoice: 'none',
+            messages: [
+              ...currentMessages,
+              {
+                role: 'system',
+                content:
+                  `Status update based on tool usage.\n\n${summary}\n\n` +
+                  'Now present the retrieved data in natural language using ONLY the latest tool results. Include which tool and parameters were used. Do not call tools again unless new parameters are provided.\n' +
+                  'If the user is asking for an order guide/best deal, apply the Order Guide & Best Deal Policy from the system prompt.' + 
+                  'Include a thumbnail for each item when available using markdown: !, where imageUrl is item.viewSection.primaryImage.url or item.basketProduct.imageUrl.'
+              },
+            ],
+          };
+        },
         temperature: options.temperature,
         maxOutputTokens: options.max_tokens,
         topP: options.top_p,
@@ -112,10 +188,65 @@ export async function POST(request: NextRequest) {
     const modelInstance = gpt4_1;
 
     // Handle regular completion
+    // Limit history to reduce prompt size
+    const prunedMessages = Array.isArray(messages) ? messages.slice(-5) : messages;
     const result = await generateText({
       model: modelInstance,
       system: systemPrompt,
-      messages,
+      messages: prunedMessages,
+      tools: graphqlTools,
+      toolChoice: 'auto',
+      stopWhen: stepCountIs(2),
+      prepareStep: ({ steps, messages: currentMessages }) => {
+        const last = steps[steps.length - 1];
+        if (!last) return undefined;
+        const calls = last.toolCalls || [];
+        const results = last.toolResults || [];
+        if (calls.length === 0 && results.length === 0) return undefined;
+
+        const callsText = calls
+          .map(c => {
+            const toolName = (c as any).toolName ?? 'tool';
+            const input = (c as any).input ?? {};
+            return `- tool=${toolName} args=${JSON.stringify(input)}`;
+          })
+          .join('\n');
+        const resultsText = results
+          .map(r => {
+            const tname = (r as any).toolName ?? 'tool';
+            const output = (r as any).output;
+            let value = '';
+            try {
+              value = typeof output === 'string' ? output : JSON.stringify(output);
+            } catch {
+              value = '[unserializable]';
+            }
+            return `- result for ${tname}: ${value}`;
+          })
+          .join('\n');
+
+        const summary = [
+          calls.length ? `Tool calls:\n${callsText}` : '',
+          results.length ? `Tool results:\n${resultsText}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n\n');
+
+        return {
+          toolChoice: 'none',
+          messages: [
+            ...currentMessages,
+            {
+              role: 'system',
+              content:
+                `Status update based on tool usage.\n\n${summary}\n\n` +
+                'Now present the retrieved data in natural language using ONLY the latest tool results. Include which tool and parameters were used. Do not call tools again unless new parameters are provided.\n' +
+                'If the user is asking for an order guide/best deal, apply the Order Guide & Best Deal Policy from the system prompt.' + 
+                'Include a thumbnail for each item when available using markdown: !, where imageUrl is item.viewSection.primaryImage.url or item.basketProduct.imageUrl.'
+            },
+          ],
+        };
+      },
       temperature: options.temperature,
       maxOutputTokens: options.max_tokens,
       topP: options.top_p,
