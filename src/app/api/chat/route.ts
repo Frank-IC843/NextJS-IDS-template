@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
               calls: toolCalls.map(call => ({
                 name: call.toolName,
                 // Access the input for typed tools
-                args: 'input' in call ? call.input : undefined,
+                args: 'input' in call ? JSON.stringify(call.input) : undefined,
               })),
             });
           }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
               results: toolResults.map(result => ({
                 name: result.toolName,
                 // Access the output for typed tools
-                output: 'output' in result ? result.output : undefined,
+                output: 'output' in result ? JSON.stringify(result.output) : undefined,
               })),
             });
           }

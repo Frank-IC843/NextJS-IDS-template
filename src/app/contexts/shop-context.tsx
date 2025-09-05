@@ -1,9 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { useLazyQuery } from '@apollo/client';
-import { GET_LAST_USER_LOCATION, DEFAULT_SHOP_QUERY } from '@/app/queries';
-import { GetLastUserLocationQuery, DefaultShopQuery, UsersCoordinatesInput } from '@/__generated__/graphql-types';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
+import { useLazyQuery, useMutation, ApolloError } from '@apollo/client';
+import { GET_LAST_USER_LOCATION, DEFAULT_SHOP_QUERY, CREATE_USER_SESSION_FROM_CODE } from '@/app/queries';
+import {
+  GetLastUserLocationQuery,
+  DefaultShopQuery,
+  UsersCoordinatesInput,
+  UsersIdentityType,
+  UsersAccountTypes,
+  CreateUserSessionFromVerificationCodeMutation,
+} from '@/__generated__/graphql-types';
 
 interface ShopContextType {
   shopId: string | null;
@@ -24,11 +31,11 @@ export function ShopProvider({ children }: ShopProviderProps) {
   const [postalCode, setPostalCode] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState<UsersCoordinatesInput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const hasLoggedIn = useRef(false);
   const [fetchLocation] = useLazyQuery<GetLastUserLocationQuery>(GET_LAST_USER_LOCATION);
   const [fetchShop] = useLazyQuery<DefaultShopQuery>(DEFAULT_SHOP_QUERY);
 
-  const fetchUserLocationAndShop = async () => {
+  const fetchUserLocationAndShop = useCallback(async () => {
     setIsLoading(true);
 
     try {
@@ -68,7 +75,48 @@ export function ShopProvider({ children }: ShopProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchLocation, fetchShop]);
+
+  const [createUserSession] = useMutation(CREATE_USER_SESSION_FROM_CODE, {
+    onCompleted: useCallback(
+      async (data: CreateUserSessionFromVerificationCodeMutation) => {
+        const result = data?.createUserSessionFromVerificationCode;
+        if (result && 'token' in result) {
+          console.log('Login successful:', result);
+          // Fetch user location and shop after successful login
+          fetchUserLocationAndShop();
+        } else if (result && 'errorTypes' in result) {
+          console.error('Login failed:', result.errorTypes);
+          alert(`Login failed: ${result.errorTypes.join(', ')}`);
+        }
+      },
+      [fetchUserLocationAndShop]
+    ),
+    onError: useCallback((error: ApolloError) => {
+      console.error('Login error:', error);
+      alert(`Login error: ${error.message}`);
+    }, []),
+  });
+
+  const performLogin = useCallback(() => {
+    if (hasLoggedIn.current) {
+      return;
+    }
+    hasLoggedIn.current = true;
+
+    createUserSession({
+      variables: {
+        identifier: 'liming.kang@instacart.com',
+        identifier_type: UsersIdentityType.Email,
+        verification_code: '671415',
+        accountType: UsersAccountTypes.Business,
+      },
+    });
+  }, [createUserSession]);
+
+  useEffect(() => {
+    performLogin();
+  }, [performLogin]);
 
   const contextValue: ShopContextType = {
     shopId,

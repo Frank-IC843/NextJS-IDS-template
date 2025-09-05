@@ -73,7 +73,7 @@ export function ListingCard({ orderGuide }: Props) {
         actions={isAvailable ? actions : []}
         onDelete={deleteModal.show}
       >
-        {/* {isAvailable && productIds.length > 0 && <ItemList productIds={productIds} />} */}
+        {isAvailable && productIds.length > 0 && <ItemList productIds={productIds} />}
       </OrderListingCard>
 
       <ModalAutosize modal={deleteModal}>

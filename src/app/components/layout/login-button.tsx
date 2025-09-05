@@ -17,6 +17,7 @@ export const LoginButton = () => {
     onCompleted: async data => {
       const result = data?.createUserSessionFromVerificationCode;
       if (result?.token) {
+        console.log('Login successful:', result);
         // Fetch user location and shop after successful login
         fetchUserLocationAndShop();
         router.push('/dashboard');
