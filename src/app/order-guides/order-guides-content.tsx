@@ -7,7 +7,7 @@ import { CreateOrderGuideModal } from '@/app/order-guides/create-order-guide-mod
 import { EmptyStateCard } from '@/app/order-guides/empty-state-card';
 import { ListingCard } from '@/app/order-guides/ListingCard';
 import { useModalState } from '@instacart/ids-customers';
-import { OrderGuidesConnectionQuery, OrderGuideFragment } from '@/__generated__/graphql-types';
+import { OrderGuidesConnectionQuery } from '@/__generated__/graphql-types';
 
 function useStyles() {
   const theme = useTheme();

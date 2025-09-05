@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server';
-import { streamText, type CoreMessage } from 'ai';
+import { streamText, stepCountIs, type CoreMessage } from 'ai';
 import { gpt4_1 } from '@/lib/ai-sdk-config';
 import { TEST_ORDER_GUIDE_SYSTEM_PROMPT } from './system-prompt';
 import { tools } from './tools';
@@ -9,64 +9,73 @@ interface ChatRequestBody {
 }
 
 /**
- * Simplified Chat API for testing Order Guide tool calls
+ * Chat API for Order Guide Tool Testing
  *
- * Features:
- * - Streamlined for testing createBusinessOrderGuide tool
- * - Supports both streaming and non-streaming responses
- * - Clean error handling
- * - Optimized for performance
+ * Implements Vercel AI SDK best practices for tool calling:
+ * - Uses maxSteps to control execution flow
+ * - Ensures AI always responds after tool calls
+ * - Provides proper streaming support
+ * - Includes comprehensive error handling
  */
 
 // Optimized settings for tool testing
 const MODEL_SETTINGS = {
-  temperature: 0.2, // Low for consistent tool calling
-  maxOutputTokens: 5000, // Reduced for faster responses
-  topP: 0.8, // More focused outputs
+  temperature: 0.3, // Low for consistent tool calling
+  maxOutputTokens: 2000, // Sufficient for responses
+  topP: 0.9, // Slightly constrained for consistency
 };
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
+    // Parse and validate request
     const body = (await request.json()) as ChatRequestBody;
     const { messages } = body;
 
-    // Validate messages
     if (!messages || !Array.isArray(messages)) {
       return Response.json({ error: 'Messages array is required' }, { status: 400 });
     }
 
-    // Use streamText for both streaming and non-streaming
-    // (it's more efficient and allows us to avoid duplicate code)
+    // Use streamText with proper tool configuration
     const result = await streamText({
       model: gpt4_1,
       system: TEST_ORDER_GUIDE_SYSTEM_PROMPT,
       messages,
       tools,
       toolChoice: 'auto',
-      ...MODEL_SETTINGS,
-      // Log tool calls in development
-      onStepFinish: async ({ toolCalls, toolResults }) => {
+      stopWhen: stepCountIs(2), // Allow: 1) tool call, 2) text response after tool
+      temperature: MODEL_SETTINGS.temperature,
+      maxOutputTokens: MODEL_SETTINGS.maxOutputTokens,
+      topP: MODEL_SETTINGS.topP,
+      // Log tool activity in development
+      onStepFinish: async ({ toolCalls, toolResults, text, finishReason }) => {
         if (process.env.NODE_ENV === 'development') {
+          console.log('[Step]', {
+            finishReason,
+            hasToolCalls: toolCalls?.length > 0,
+            hasToolResults: toolResults?.length > 0,
+            hasText: text?.length > 0,
+          });
+
+          // Log tool calls
           if (toolCalls && toolCalls.length > 0) {
             console.log('[Tool Calls]', {
               timestamp: new Date().toISOString(),
-              count: toolCalls.length,
               calls: toolCalls.map(call => ({
-                id: 'toolCallId' in call ? call.toolCallId : undefined,
                 name: call.toolName,
-                args: 'args' in call ? call.args : undefined,
+                // Access the input for typed tools
+                args: 'input' in call ? call.input : undefined,
               })),
             });
           }
+
+          // Log tool results
           if (toolResults && toolResults.length > 0) {
             console.log('[Tool Results]', {
               timestamp: new Date().toISOString(),
-              count: toolResults.length,
               results: toolResults.map(result => ({
-                id: 'toolCallId' in result ? result.toolCallId : undefined,
                 name: result.toolName,
-                result: 'result' in result ? result.result : undefined,
+                // Access the output for typed tools
+                output: 'output' in result ? result.output : undefined,
               })),
             });
           }
@@ -74,19 +83,26 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Handle streaming response
-    // Return the stream directly for SSE
+    // Stream the response in SSE format for the client
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
         try {
+          let totalText = '';
+
+          // Stream all text parts (includes text after tool execution)
           for await (const textPart of result.textStream) {
+            totalText += textPart;
             const data = JSON.stringify({ content: textPart });
             controller.enqueue(encoder.encode(`data: ${data}\n\n`));
           }
+
+          console.log('[Stream] Completed, total text:', totalText.length, 'chars');
+
+          // Signal stream completion
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         } catch (error) {
-          console.error('Stream error:', error);
+          console.error('[Stream] Error:', error);
           controller.error(error);
         } finally {
           controller.close();
@@ -105,7 +121,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Chat API error:', error);
 
-    // Simplified error handling
+    // Handle specific error types
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
 
@@ -116,8 +132,13 @@ export async function POST(request: NextRequest) {
       if (message.includes('unauthorized')) {
         return Response.json({ error: 'Unauthorized access.' }, { status: 401 });
       }
+
+      if (message.includes('timeout')) {
+        return Response.json({ error: 'Request timeout. Please try again.' }, { status: 408 });
+      }
     }
 
+    // Generic error response
     return Response.json(
       {
         error: 'Failed to process chat request',
@@ -137,6 +158,8 @@ export async function GET() {
     service: 'chat-api',
     timestamp: new Date().toISOString(),
     tools: Object.keys(tools),
+    model: 'gpt-4o',
+    features: ['streaming', 'tool-calling'],
   });
 }
 

@@ -1,16 +1,29 @@
 'use client';
 
-import { Theme, responsive, spacing, useTheme } from '@instacart/ids-core';
-import { RetailerAvatarMedium, SecondaryButtonSmall, Text } from '@instacart/ids-customers';
+import { Theme, responsive, spacing, useTheme, TrashIcon } from '@instacart/ids-core';
+import {
+  PrimaryButtonSmall,
+  RetailerAvatarMedium,
+  SecondaryButtonSmall,
+  Text,
+  IconButton,
+} from '@instacart/ids-customers';
 import { PropsWithChildren } from 'react';
 import { useRouter } from 'next/navigation';
 
 const useStyles = ({ theme }: { theme: Theme }) =>
   ({
     container: {
+      position: 'relative',
       border: `1px solid ${theme.colors.systemGrayscale20}`,
       borderRadius: theme.radius.r12,
       padding: `${spacing.s12}px ${spacing.s24}px`,
+    },
+    deleteButton: {
+      position: 'absolute',
+      top: spacing.s8,
+      right: spacing.s8,
+      zIndex: 1,
     },
     retailerArea: {
       display: 'flex',
@@ -56,6 +69,7 @@ type Props = {
   } | null;
   retailerIconBackgroundColorHexString?: string | null;
   actions: Action[];
+  onDelete?: () => void;
 };
 
 function SubtitleLine({ children }: { children?: string | null }) {
@@ -66,10 +80,6 @@ function SubtitleLine({ children }: { children?: string | null }) {
   return <Text typography="bodyRegular">{children}</Text>;
 }
 
-function ActionButton({ action, onClick }: { action: Action; onClick: () => void }) {
-  return <SecondaryButtonSmall onClick={onClick}>{action.ctaString}</SecondaryButtonSmall>;
-}
-
 export function OrderListingCard({
   name,
   subtitleLine1,
@@ -77,6 +87,7 @@ export function OrderListingCard({
   retailerIconImage,
   retailerIconBackgroundColorHexString,
   actions,
+  onDelete,
   children,
 }: PropsWithChildren<Props>) {
   const router = useRouter();
@@ -91,6 +102,14 @@ export function OrderListingCard({
 
   return (
     <div css={styles.container}>
+      {onDelete && (
+        <IconButton
+          css={styles.deleteButton}
+          onClick={onDelete}
+          accessibleLabel="Delete order guide"
+          icon={() => <TrashIcon size={spacing.s24} />}
+        />
+      )}
       <div css={styles.retailerArea}>
         {retailerIconImage && (
           <RetailerAvatarMedium
@@ -110,9 +129,20 @@ export function OrderListingCard({
 
       {actions.length > 0 && (
         <div css={styles.buttonsArea}>
-          {actions.map(action => (
-            <ActionButton key={action.ctaString} action={action} onClick={() => handlePressAction(action)} />
-          ))}
+          {actions.map((action, index) => {
+            if (index === 0) {
+              return (
+                <PrimaryButtonSmall key={action.ctaString} onClick={() => handlePressAction(action)}>
+                  {action.ctaString}{' '}
+                </PrimaryButtonSmall>
+              );
+            }
+            return (
+              <SecondaryButtonSmall key={action.ctaString} onClick={() => handlePressAction(action)}>
+                {action.ctaString}
+              </SecondaryButtonSmall>
+            );
+          })}
         </div>
       )}
     </div>

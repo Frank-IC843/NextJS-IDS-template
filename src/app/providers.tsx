@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { IdsProvider, ThemeOverrides, coreTheme } from '@instacart/ids-core';
+import { IdsProvider, ThemeOverrides } from '@instacart/ids-core';
 import { ApolloWrapper } from '@/lib/apollo-wrapper';
 
 declare module '@instacart/ids-core' {
@@ -9,17 +9,6 @@ declare module '@instacart/ids-core' {
     routerOptions: NonNullable<Parameters<ReturnType<typeof useRouter>['push']>[1]>;
   }
 }
-
-/*
- * Sample theme overrides
- * This can be a partial list, missing atoms falling back to the default theme
- */
-// Simple utility function for button hover effects
-const createButtonColors = (baseColor: string) => ({
-  base: baseColor,
-  hover: `color-mix(in sRGB, ${baseColor} 85%, black 15%)`, // 15% darker on hover
-  press: `color-mix(in sRGB, ${baseColor} 75%, black 25%)`, // 25% darker on press
-});
 
 const defaultTheme = {
   colors: {
@@ -35,47 +24,14 @@ const defaultTheme = {
 };
 
 function getBusinessThemeOverrides(): ThemeOverrides {
-  // Simple color variants for each button
-  const secondaryColors = createButtonColors(coreTheme.colors.brandBusinessBlueberry); // Bright blue
-  const detrimentalColors = createButtonColors('#DC2626'); // Red
-
   return {
     colors: defaultTheme.colors,
     components: {
       button: {
-        radiusStandard: coreTheme.radius.round,
+        radiusStandard: 999,
         radiusSmall: 999,
         radiusCompact: 999,
         disabledBorderColor: '#C7C8CD',
-      },
-      buttonPrimary: {
-        // Bright blue solid button
-        color: secondaryColors.base, // #6672FA
-        hoverColor: secondaryColors.hover,
-        pressColor: secondaryColors.press,
-        textColor: '#FFFFFF',
-        disabledColor: '#A5B0F7', // Muted blue - maintains brand identity
-        disabledTextColor: '#FFFFFF', // Keep white text for contrast
-      },
-      buttonTertiary: {
-        // White outlined button with blue border
-        color: '#FFFFFF',
-        hoverColor: `color-mix(in sRGB, #FFFFFF 95%, ${coreTheme.colors.brandBusinessBlueberry} 5%)`,
-        pressColor: `color-mix(in sRGB, #FFFFFF 90%, ${coreTheme.colors.brandBusinessBlueberry} 10%)`,
-        borderPressColor: coreTheme.colors.brandBusinessBlueberry,
-        borderHoverColor: coreTheme.colors.brandBusinessBlueberry,
-        borderColor: coreTheme.colors.brandBusinessBlueberry,
-        borderWidth: 2,
-        textColor: coreTheme.colors.brandBusinessBlueberry,
-        disabledBorderColor: '#C7C8CD',
-      },
-      buttonDetrimental: {
-        // Red solid button
-        colorBackgroundType: 'static-color',
-        color: detrimentalColors.base,
-        hoverColor: detrimentalColors.hover,
-        pressColor: detrimentalColors.press,
-        textColor: '#FFFFFF',
       },
     },
   };
