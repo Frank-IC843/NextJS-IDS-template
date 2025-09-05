@@ -3,20 +3,33 @@
 import { HttpLink } from '@apollo/client';
 import { ApolloNextAppProvider, ApolloClient, InMemoryCache } from '@apollo/client-integration-nextjs';
 import { GRAPHQL_URL } from './constants';
+import { setVerbosity } from 'ts-invariant';
+setVerbosity('debug');
 
-// have a function to create a client for you
 function makeClient() {
   const httpLink = new HttpLink({
-    uri: GRAPHQL_URL,
+    // Use proxy route for client-side to avoid CORS, direct URL for SSR
+    uri: typeof window === 'undefined' ? GRAPHQL_URL : '/api/graphql',
     fetchOptions: {
-      // you can pass additional options that should be passed to `fetch` here,
-      // e.g. Next.js-related `fetch` options regarding caching and revalidation
-      // see https://nextjs.org/docs/app/api-reference/functions/fetch#fetchurl-options
+      credentials: 'include',
     },
   });
 
   return new ApolloClient({
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      typePolicies: {
+        Query: {
+          fields: {
+            getAllLinkedUserAccounts: {
+              // Cache this query for 5 minutes
+              merge(existing, incoming) {
+                return incoming;
+              },
+            },
+          },
+        },
+      },
+    }),
     link: httpLink,
   });
 }

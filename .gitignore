@@ -42,3 +42,7 @@ next-env.d.ts
 
 # graphql generated files
 **/__generated__/
+
+# cursor indexing ignore
+.cursorindexingignore
+.specstory/
