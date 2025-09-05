@@ -3,8 +3,8 @@
 import { OrderListingCard } from '@/app/order-guides/OrderListingCard';
 import { ItemList } from '@/app/order-guides/ItemList';
 import { OrderGuideFragment } from '@/__generated__/graphql-types';
-import { useMutation } from '@apollo/client';
-import { DELETE_ORDER_GUIDE_MUTATION, ORDER_GUIDES_CONNECTION_QUERY } from '@/app/queries';
+import { useMutation, useQuery } from '@apollo/client';
+import { DELETE_ORDER_GUIDE_MUTATION, ORDER_GUIDES_CONNECTION_QUERY, SHOP_ITEMS_QUERY } from '@/app/queries';
 import {
   useModalState,
   ModalAutosize,
@@ -17,6 +17,7 @@ import {
   DetrimentalButton,
 } from '@instacart/ids-customers';
 import { useRouter } from 'next/navigation';
+import { useShop } from '@/app/contexts/shop-context';
 
 type Props = {
   orderGuide: OrderGuideFragment;
@@ -38,6 +39,17 @@ export function ListingCard({ orderGuide }: Props) {
   // For simplicity, assuming all order guides are available
   const isAvailable = true;
 
+  const { shopId } = useShop();
+
+  const { data: shopItemsData } = useQuery(SHOP_ITEMS_QUERY, {
+    variables: {
+      productIds,
+      shopId: shopId,
+    },
+    skip: productIds.length === 0 || !shopId,
+  });
+
+  console.log('shopItemsData', shopItemsData);
   const [deleteOrderGuide, { loading }] = useMutation(DELETE_ORDER_GUIDE_MUTATION, {
     refetchQueries: [{ query: ORDER_GUIDES_CONNECTION_QUERY }],
     onCompleted: () => {

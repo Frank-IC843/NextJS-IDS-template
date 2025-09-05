@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { MenuIcon, MarkerIcon, ChevronDownIcon, responsive, useTheme, spacing } from '@instacart/ids-core';
 import { CartButton, SearchButton, Text } from '@instacart/ids-customers';
+import { useShop } from '@/app/contexts/shop-context';
 
 const useStyles = () => {
   const theme = useTheme();
@@ -90,6 +91,7 @@ const useStyles = () => {
 
 export function Header() {
   const styles = useStyles();
+  const { postalCode } = useShop();
 
   return (
     <header css={styles.header}>
@@ -115,7 +117,7 @@ export function Header() {
         <div css={styles.locationContainer}>
           <MarkerIcon size="20px" color="systemGrayscale00" css={styles.locationIcon} />
           <Text color="systemGrayscale00" typography="bodyLarge2" css={styles.locationText}>
-            94105
+            {postalCode || '11111'}
           </Text>
           <ChevronDownIcon size="16px" color="systemGrayscale00" />
         </div>

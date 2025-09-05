@@ -271,6 +271,75 @@ export const SHOP_ITEMS_QUERY = gql`
   }
 `;
 
+export const RETAILERS_RETAILER_VIEW_SECTION_FRAGMENT = gql`
+  fragment RetailersRetailerViewSection on RetailersResponseBackedRetailerSection {
+    id
+    nameString
+    retailerCardCategories {
+      id
+      categoryString
+    }
+    logoImage {
+      id
+      altText
+      templateUrl
+      url
+    }
+    trackingProperties
+    externalUrlString
+    externalRedirectConfirmationHeaderString
+    externalRedirectConfirmationMessageString
+  }
+`;
+
+export const RETAILERS_RETAILER_FRAGMENT = gql`
+  fragment RetailerSection on RetailersRetailer {
+    id
+    categories
+    homeCategories
+    slug
+    name
+    retailerType
+    backgroundColorHex
+    refreshHeaderBackgroundColorHex
+    logoBackgroundColorHex
+    viewSection {
+      ...RetailersRetailerViewSection
+    }
+  }
+  ${RETAILERS_RETAILER_VIEW_SECTION_FRAGMENT}
+`;
+
+export const SHOP_COMMON_FIELDS_FRAGMENT = gql`
+  fragment ShopCommonFields on RetailersShop {
+    id
+    retailer {
+      ...RetailerSection
+    }
+    retailerId
+    retailerLocationId
+    serviceType
+    viewSection {
+      id
+      trackingProperties
+      deliveryString
+      pickupString
+    }
+  }
+  ${RETAILERS_RETAILER_FRAGMENT}
+`;
+
+export const DEFAULT_SHOP_QUERY = gql`
+  query DefaultShop($postalCode: String!, $coordinates: UsersCoordinatesInput!, $addressId: ID) {
+    defaultShop(postalCode: $postalCode, coordinates: $coordinates, addressId: $addressId) {
+      id
+      retailerInventorySessionToken(postalCode: $postalCode, coordinates: $coordinates)
+      ...ShopCommonFields
+    }
+  }
+  ${SHOP_COMMON_FIELDS_FRAGMENT}
+`;
+
 export const useGetBusinessOrderMetrics = (startDate?: string | null, endDate?: string | null) => {
   return useQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {
     variables: { startDate, endDate },
