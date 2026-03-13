@@ -1,187 +1,276 @@
-import { gql } from '@apollo/client';
+import { gql, useQuery, useSuspenseQuery } from '@apollo/client';
+import { BusinessOrderMetricsQuery } from '@/__generated__/graphql-types';
 
-const BUSINESS_IMAGE_FRAGMENT = gql`
-  fragment BusinessImageFragment on Image {
-    url
-    templateUrl
-    altText
-  }
-`;
-
-export const BUSINESS_LAYOUT_QUERY = gql`
-  query BusinessLayout($category: String, $isReferral: Boolean) {
-    viewLayout {
-      business(category: $category, isReferral: $isReferral) {
-        auth {
-          landingAuthVariant
-        }
-        head {
-          titleString
-          descriptionString
-        }
-        businessOffer {
-          ctaString
-          ctaStartShoppingString
-          offerDetailString
-          offerImage {
-            ...BusinessImageFragment
-          }
-          offerTitleString
-          offerDetailTermsString
-        }
-        businessInfo {
-          ctaString
-          descriptionString
-          headlineString
-        }
-        businessFeatures {
-          businessFeatures {
-            id
-            titleString
-            descriptionString
-            businessFeatureImage {
-              ...BusinessImageFragment
-            }
-          }
-          ctaTextString
-          ctaFollowString
-          disclaimerString
-          disclaimerRestrictionsString
-          disclaimerAppleString
-          disclaimerV2Line2String
-          headlineString
-          subheadlineString
-          headlineAvailableNowString
-          headlineComingSoonString
-          promo200HeadlineString
-          promo200DetailsStringFormatted {
-            id
-            sections {
-              content
-              name
-              id
-            }
-          }
-          promo250HeadlineString
-          promo250DetailsStringFormatted {
-            id
-            sections {
-              content
-              name
-              id
-            }
-          }
-        }
-        retailersList {
-          headerString
-          subheaderString
-        }
-        localFavorites {
-          headerString
-        }
-        heroContent {
-          heroTitleString
-          logoAltTextString
-          businessLogoImage {
-            ...BusinessImageFragment
-          }
-        }
-        testimonials {
-          headlineString
-          testimonials {
-            id
-            headlineString
-            contentString
-            attributionString
-            organizationString
-            testimonialSourceVariant
-            logoImage {
-              ...BusinessImageFragment
-            }
-          }
-        }
-        valueProps {
-          titleString
-          subtitleString
-          restaurantVoiceOfCustomerUrlString
-          valueProps {
-            ctaString
-            titleString
-            descriptionString
-            valuePropVariant
-            valuePropImage {
-              ...BusinessImageFragment
-            }
-          }
-        }
-        partners {
-          partners {
-            titleString
-            descriptionString
-            linkTextString
-            linkUrlString
-            logoImage {
-              url
-              templateUrl
-              altText
-            }
-          }
-        }
-        faqs {
-          id
-          headerString
-          faqLists {
-            id
-            questionString
-            answerStringFormatted {
-              id
-              sections {
-                id
-                content
-                name
-              }
-            }
-          }
-        }
-        contactSupport {
-          headlineString
-          taglineString
-          ctaString
-          ctaContactUsString
-          ctaContactUsUrlString
-        }
-        businessUpsell {
-          titleString
-          descriptionString
-          primaryCtaString
-          secondaryCtaString
-          primaryCtaUrlString
-          secondaryCtaUrlString
-          upsellImage {
-            ...BusinessImageFragment
-          }
-        }
-        businessComparison {
-          titleString
-          subtitleString
-          desktopImage {
-            ...BusinessImageFragment
-          }
-          mobileImage {
-            ...BusinessImageFragment
-          }
-        }
-        orderedList {
-          titleString
-          subtitleString
-          listItems {
-            id
-            titleString
-            descriptionString
-          }
-        }
+export const CREATE_USER_SESSION_FROM_CODE = gql`
+  mutation CreateUserSessionFromVerificationCode(
+    $identifier: String!
+    $identifier_type: UsersIdentityType!
+    $verification_code: String!
+    $accountType: UsersAccountTypes
+    $linkUserAccounts: Boolean
+  ) {
+    createUserSessionFromVerificationCode(
+      identifier: $identifier
+      identifierType: $identifier_type
+      verificationCode: $verification_code
+      accountType: $accountType
+      linkUserAccounts: $linkUserAccounts
+    ) {
+      ... on UsersAuthToken {
+        token
+        expires
+      }
+      ... on SharedError {
+        errorTypes
       }
     }
   }
-  ${BUSINESS_IMAGE_FRAGMENT}
 `;
+
+export const BUSINESS_MONTHS_QUERY = gql`
+  query BusinessMonths {
+    businessMonths {
+      id
+      startDate
+      endDate
+      viewSection {
+        labelString
+      }
+    }
+  }
+`;
+
+export const BUSINESS_ORDER_METRICS_QUERY = gql`
+  query BusinessOrderMetrics($startDate: String!, $endDate: String!) {
+    businessOrderMetrics(startDate: $startDate, endDate: $endDate) {
+      startDate
+      endDate
+      ordersPlaced
+      ordersCompleted
+      totalSpendCents
+      totalSavingsCents
+    }
+  }
+`;
+
+export const BUSINESS_ORDER_SUMMARIES_CONNECTION_QUERY = gql`
+  query BusinessOrderSummariesConnection(
+    $orderBy: BusinessOrderSummaryOrderBy
+    $startDate: ISO8601Date!
+    $endDate: ISO8601Date!
+    $first: Int!
+    $after: String
+  ) {
+    businessOrderSummariesConnection(
+      orderBy: $orderBy
+      startDate: $startDate
+      endDate: $endDate
+      first: $first
+      after: $after
+    ) {
+      nodes {
+        id
+        businessMember {
+          id
+          userId
+          userInfo {
+            email
+            firstName
+            fullName
+            lastName
+          }
+          availableMemberOperations {
+            operations
+          }
+        }
+        orderSummary {
+          itemCount
+          orderPlacedAtUtc
+          orderTotalCents
+          orderItemCollection {
+            orderItems {
+              certifiedDelivery
+              currentItem {
+                ...Item
+              }
+              customerAddedToOrder
+              item {
+                ...Item
+              }
+              legacyObfuscatedId
+              pickedQuantityValue
+              selectedQuantityType
+              selectedQuantityValue
+            }
+          }
+          retailer {
+            id
+            name
+            slug
+            logoImage {
+              templateUrl
+            }
+          }
+          retailerId
+          retailerLocationId
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+
+  fragment Item on OrdersItem {
+    basketProduct {
+      id
+      imageUrl
+    }
+    id
+    name
+    viewSection {
+      primaryImage {
+        url
+      }
+      customerPriceString
+    }
+  }
+`;
+
+const ORDER_GUIDE_FRAGMENT = gql`
+  fragment OrderGuide on BusinessOrderGuide {
+    id
+    description
+    imageUrl
+    name
+    # productIds field is currently broken on staging, causing InternalGraphQLError
+    productIds
+    retailerId
+    # viewSection field also causes issues on staging
+    viewSection {
+      card {
+        actions {
+          ctaColor
+          ctaString
+          navigateToUrlCtaAction {
+            openInNewTab
+            url
+          }
+        }
+        content {
+          retailerIconImage {
+            templateUrl
+            altText
+          }
+          retailerIconBackgroundColorHexString
+          subtitleString
+          summaryString
+          unavailableSummaryString
+        }
+        trackingProperties
+      }
+    }
+  }
+`;
+
+export const ORDER_GUIDES_CONNECTION_QUERY = gql`
+  query OrderGuidesConnection(
+    $orderBy: BusinessOrderGuidesOrderBy
+    $filters: BusinessOrderGuidesFilters
+    $after: String
+    $first: Int
+  ) {
+    businessOrderGuidesConnection(orderBy: $orderBy, filters: $filters, after: $after, first: $first) {
+      nodes {
+        ...OrderGuide
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+      }
+    }
+  }
+  ${ORDER_GUIDE_FRAGMENT}
+`;
+
+export const CREATE_ORDER_GUIDE_MUTATION = gql`
+  mutation CreateOrderGuide(
+    $name: String!
+    $retailerId: ID!
+    $description: String
+    $imageUrl: String
+    $productIds: [ID!]
+  ) {
+    createBusinessOrderGuide(
+      name: $name
+      retailerId: $retailerId
+      description: $description
+      imageUrl: $imageUrl
+      productIds: $productIds
+    ) {
+      ... on BusinessCreateOrderGuideSuccessResponse {
+        orderGuideId
+      }
+      ... on BusinessCreateOrderGuideError {
+        errorType
+      }
+    }
+  }
+`;
+
+export const DELETE_ORDER_GUIDE_MUTATION = gql`
+  mutation DeleteOrderGuide($orderGuideId: ID!) {
+    deleteBusinessOrderGuide(orderGuideId: $orderGuideId) {
+      ... on BusinessDeleteOrderGuideSuccessResponse {
+        id
+      }
+      ... on BusinessDeleteOrderGuideError {
+        errorType
+      }
+    }
+  }
+`;
+
+const USER_LOCATION_FRAGMENT = gql`
+  fragment UserLocationFields on UsersUserLocation {
+    addressId
+    zoneId
+    postalCode
+    coordinates {
+      latitude
+      longitude
+    }
+    viewSection {
+      trackingProperties
+      shoppingInString
+    }
+    zone {
+      timeZoneName
+    }
+  }
+`;
+
+export const GET_LAST_USER_LOCATION = gql`
+  query GetLastUserLocation {
+    lastUserLocation {
+      ...UserLocationFields
+    }
+  }
+  ${USER_LOCATION_FRAGMENT}
+`;
+
+export const useGetBusinessOrderMetrics = (startDate?: string | null, endDate?: string | null) => {
+  return useQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {
+    variables: { startDate, endDate },
+    skip: !startDate || !endDate,
+  });
+};
+
+export const useSuspenseBusinessOrderMetrics = (startDate: string, endDate: string) => {
+  return useSuspenseQuery<BusinessOrderMetricsQuery>(BUSINESS_ORDER_METRICS_QUERY, {
+    variables: { startDate, endDate },
+  });
+};

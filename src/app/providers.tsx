@@ -1,20 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { IdsProvider } from '@instacart/ids-core';
+import { IdsProvider, ThemeOverrides } from '@instacart/ids-core';
 import { ApolloWrapper } from '@/lib/apollo-wrapper';
-
 declare module '@instacart/ids-core' {
   interface RouterConfig {
     routerOptions: NonNullable<Parameters<ReturnType<typeof useRouter>['push']>[1]>;
   }
 }
 
-/*
- * Sample theme overrides
- * This can be a partial list, missing atoms falling back to the default theme
- */
-const themeOverrides = {
+const defaultTheme = {
   colors: {
     brandPrimaryRegular: '#0AAD0A',
     brandPrimaryDark: '#098A09',
@@ -27,13 +22,26 @@ const themeOverrides = {
   },
 };
 
+function getBusinessThemeOverrides(): ThemeOverrides {
+  return {
+    colors: defaultTheme.colors,
+    components: {
+      button: {
+        radiusStandard: 999,
+        radiusSmall: 999,
+        radiusCompact: 999,
+        disabledBorderColor: '#C7C8CD',
+      },
+    },
+  };
+}
+
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-
   return (
     <ApolloWrapper>
       <IdsProvider
-        themeOverrides={themeOverrides}
+        themeOverrides={getBusinessThemeOverrides()}
         routing={{
           navigate: router.push,
         }}
