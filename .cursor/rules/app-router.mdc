@@ -1,0 +1,18 @@
+---
+description: Next.js App Router guidance for pages, layouts, route handlers, server actions, and caching
+globs: src/app/**/*.ts*
+alwaysApply: false
+---
+
+# App Router Patterns
+
+- Server Components are the default. Add `'use client'` only for state, effects, event handlers, context usage, or browser APIs.
+- Keep client boundaries small and leaf-like. Prefer small client shells that receive server-rendered children or props. Follow `@src/app/providers.tsx` for the app-wide provider pattern.
+- Colocate route-specific components, hooks, and utilities inside the route segment directory by default instead of pushing them into shared folders too early.
+- In Server Components, call GraphQL or shared async server logic directly. Do not fetch your own Route Handlers just to reach server code.
+- Use Route Handlers for public HTTP APIs, webhooks, proxy/BFF needs, file responses, or explicit HTTP method handling.
+- For UI-triggered mutations, prefer Server Actions when they simplify forms or event flows.
+- After mutations, revalidate explicitly with `revalidatePath`, `revalidateTag`, or `updateTag`.
+- Be explicit about caching. In Next.js 15, `fetch()` is not cached by default.
+- Do not move initial data loading into `useEffect` just to make a component interactive; split the interactive part into a smaller client component instead.
+- On the server, prefer `params`, `searchParams`, `headers()`, and `cookies()` over moving request-derived logic into client hooks.
