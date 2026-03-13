@@ -1,0 +1,16 @@
+---
+description: IDS and Emotion patterns for building UI in this repo
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+# IDS UI Patterns
+
+- Prefer components from `@instacart/ids-core` and `@instacart/ids-customers` before building custom primitives.
+- Follow the app provider and theme setup in `@src/app/providers.tsx`.
+- Keep styling local with Emotion and existing IDS theme values; avoid introducing another styling system.
+- Prefer the Emotion `css` prop over the `style` prop.
+- Use `useTheme()` and IDS tokens for colors, typography, spacing, and radius where possible.
+- Reuse nearby layout and component patterns before creating new UI abstractions.
+- Avoid hardcoded font styles and new colors unless matching an existing repo pattern; otherwise use theme-driven values.
+- Use semantic HTML and keep forms, cards, tabs, dialogs, and tables composition-first and accessible.

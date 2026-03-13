@@ -1,6 +1,18 @@
 ---
+description: Core repo defaults for fast hackathon delivery
 alwaysApply: true
 ---
 
-Alwas use yarn to install, not npm
-Always use aliased imports
+# Core Repo Defaults
+
+- Use `yarn` for package management and scripts. Never use `npm`.
+- Use `@/` imports for code under `src/`. Avoid long relative imports across feature boundaries.
+- Optimize for hackathon speed: prefer the smallest working change that matches existing repo patterns.
+- Default to editing existing code paths instead of adding new abstraction layers unless they clearly reduce complexity.
+- Keep TypeScript strict-friendly. Avoid broad `any`, double-casts, and silent error swallowing.
+- Prefer function declarations for React components and hooks. Avoid `React.FC`.
+- This repo uses the React Compiler. Do not add `useMemo`, `useCallback`, or `React.memo` unless there is a measured reason.
+- Put interaction logic in event handlers when user actions trigger the side effect. Do not model clicks/submits as state plus `useEffect`.
+- Derive values during render when they can be computed from props, query results, or state. Avoid syncing derived state with `useEffect`.
+- When new state depends on previous state, use the functional `setState(prev => ...)` form.
+- Do not add tests, broad refactors, or cleanup-only work unless the user asks.

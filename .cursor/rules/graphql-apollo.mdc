@@ -1,0 +1,18 @@
+---
+description: GraphQL, Apollo, and codegen conventions for this repo
+alwaysApply: false
+---
+
+# GraphQL And Apollo
+
+- Add or update GraphQL documents in an existing nearby `queries.ts`; if none exists, create one. `@codegen.ts` only scans `src/**/queries.ts`.
+- Reuse shared fragments from `@src/app/graphql/fragments.ts` when the fragment belongs across features.
+- Import generated operation types from `@/__generated__/graphql-types`. Do not hand-maintain duplicate TypeScript interfaces for GraphQL payloads.
+- Server-side reads should use the registered Apollo client in `@src/lib/apollo-client.ts`.
+- Client-side reads should use Apollo hooks under the provider setup in `@src/lib/apollo-wrapper.tsx` and `@src/app/providers.tsx`.
+- In GraphQL-backed UI, handle loading, error, and empty states intentionally.
+- Do not mirror query data into local state with `useEffect` unless the user is editing a separate local draft. Prefer deriving values during render.
+- After client-side mutations, use the smallest repo-native sync strategy: Apollo cache updates, `refetchQueries`, or Next.js revalidation depending on where the data is read.
+- If a query, mutation, fragment, or variables shape changes, run `yarn codegen`.
+- Never hand-edit files in `src/__generated__`.
+- Keep GraphQL endpoint details centralized in `@src/lib/constants.ts`.
