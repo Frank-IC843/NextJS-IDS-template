@@ -7,12 +7,14 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  ModalInnerWrapper,
   ModalTitle,
   SecondaryButtonSmall,
   Text,
   useModalState,
 } from '@instacart/ids-customers';
-import { useEffect, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useEffect } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import type { SupportedWidgetType } from '@/app/dashboard/dashboard-builder-types';
@@ -35,6 +37,13 @@ function useStyles() {
       flexDirection: 'column' as const,
       gap: '20px',
       paddingTop: '8px',
+    },
+    modalMotionShell: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      height: '100%',
+      transformOrigin: '50% 18%',
+      willChange: 'transform, opacity',
     },
     introBlock: {
       display: 'flex',
@@ -77,6 +86,7 @@ function useStyles() {
     },
     widgetOption: {
       appearance: 'none' as const,
+      boxSizing: 'border-box' as const,
       display: 'flex',
       flexDirection: 'column' as const,
       alignItems: 'stretch',
@@ -104,6 +114,7 @@ function useStyles() {
       },
     },
     widgetOptionSelected: {
+      borderWidth: '2px',
       borderColor: businessPalette.elderberry,
       backgroundColor: 'rgba(255, 255, 255, 0.98)',
       boxShadow: '0 14px 28px rgba(110, 72, 229, 0.12)',
@@ -313,10 +324,26 @@ function useStyles() {
       color: '#B42318',
     },
     buttonRow: {
-      display: 'flex',
-      flexWrap: 'wrap' as const,
+      display: 'grid',
       gap: '12px',
-      alignItems: 'center',
+      width: '100%',
+      gridTemplateColumns: 'minmax(0, 1fr)',
+      [responsive.up('r')]: {
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+      },
+    },
+    buttonCell: {
+      display: 'flex',
+      minWidth: 0,
+      '& > *': {
+        flex: 1,
+        width: '100%',
+      },
+    },
+    footerButton: {
+      width: '100%',
+      minHeight: '48px',
+      justifyContent: 'center',
     },
     primaryAction: {
       backgroundColor: businessPalette.elderberry,
@@ -326,6 +353,11 @@ function useStyles() {
         backgroundColor: businessPalette.elderberryDark,
         borderColor: businessPalette.elderberryDark,
       },
+
+    },
+    secondaryAction: {
+      minHeight: '48px',
+      justifyContent: 'center',
     },
   } as const;
 }
@@ -374,6 +406,52 @@ function DashboardPromptComposerModal({
   const modal = useModalState({ visible: true });
   const accessibleLabels = { close: 'Close builder' };
   const isSubmitDisabled = isGenerating || selectedWidgetTypes.length === 0;
+  const prefersReducedMotion = useReducedMotion();
+
+  const shellAnimation = prefersReducedMotion
+    ? {
+        initial: false,
+        animate: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+        },
+      }
+    : {
+        initial: {
+          opacity: 0,
+          y: 28,
+          scale: 0.96,
+        },
+        animate: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: {
+            type: 'spring' as const,
+            stiffness: 340,
+            damping: 30,
+            mass: 0.92,
+          },
+        },
+      };
+
+  const sectionTransition = prefersReducedMotion
+    ? undefined
+    : {
+        initial: {
+          opacity: 0,
+          y: 12,
+        },
+        animate: {
+          opacity: 1,
+          y: 0,
+          transition: {
+            duration: 0.32,
+            ease: [0.22, 1, 0.36, 1] as const,
+          },
+        },
+      };
 
   useEffect(() => {
     if (!modal.visible && !isGenerating) {
@@ -381,147 +459,214 @@ function DashboardPromptComposerModal({
     }
   }, [isGenerating, modal.visible, onClose]);
 
-  function handleKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !isSubmitDisabled) {
-      event.preventDefault();
-      onPromptSubmit();
-    }
-  }
-
   return (
     <ModalBase
       modal={modal}
       styles={styles.modalStyles}
+      isMounted
       hideOnClickOutside={!isGenerating}
       hideOnEsc={!isGenerating}
     >
-      <ModalHeader hide={modal.hide} accessibleLabels={accessibleLabels} onClick={() => onClose()} disabled={isGenerating}>
-        <ModalTitle>Build a dashboard widget</ModalTitle>
-      </ModalHeader>
-      <ModalContent>
-        <div css={styles.contentLayout}>
-          <div css={styles.introBlock}>
-            <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
-              Builder
-            </Text>
-            <Text typography="bodyRegular" color="systemGrayscale60">
-              Prompt a single widget and guide the AI by selecting which widget types it is allowed to use for this request.
-            </Text>
-          </div>
-
-          <div css={styles.widgetTypePanel}>
-            <div css={styles.sectionHeader}>
-              <div css={styles.section}>
-                <Text typography="bodyEmphasized">Widget types the AI can use</Text>
-                <Text typography="bodySmall1" css={styles.helperText}>
-                  Select one or more widget types. The AI will stay within this set when generating the widget.
+      <ModalInnerWrapper as={motion.div} css={styles.modalMotionShell} initial={shellAnimation.initial} animate={shellAnimation.animate}>
+        <motion.div initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
+          <ModalHeader hide={modal.hide} accessibleLabels={accessibleLabels} onClick={modal.hide} disabled={isGenerating}>
+            <ModalTitle>Widget Builder</ModalTitle>
+          </ModalHeader>
+        </motion.div>
+        <ModalContent>
+          <motion.div css={styles.contentLayout} initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
+            <motion.div initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
+              <div css={styles.introBlock}>
+                <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
+                  Builder
+                </Text>
+                <Text typography="bodyRegular" color="systemGrayscale60">
+                  Prompt a single widget and guide the AI by selecting which widget types it is allowed to use for this request.
                 </Text>
               </div>
-              <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
-                {selectedWidgetTypes.length} of {supportedWidgets.length} enabled
-              </Text>
-            </div>
+            </motion.div>
 
-            <div css={styles.widgetCatalog}>
-              {supportedWidgets.map(widget => {
-                const isSelected = selectedWidgetTypes.includes(widget.type);
+            <motion.div
+              initial={sectionTransition?.initial}
+              animate={{
+                ...sectionTransition?.animate,
+                transition: prefersReducedMotion
+                  ? undefined
+                  : {
+                      duration: 0.38,
+                      delay: 0.06,
+                      ease: [0.22, 1, 0.36, 1] as const,
+                    },
+              }}
+            >
+              <div css={styles.widgetTypePanel}>
+                <div css={styles.sectionHeader}>
+                  <div css={styles.section}>
+                    <Text typography="bodyEmphasized">Widget types the AI can use</Text>
+                    <Text typography="bodySmall1" css={styles.helperText}>
+                      Select one or more widget types. The AI will stay within this set when generating the widget.
+                    </Text>
+                  </div>
+                  <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
+                    {selectedWidgetTypes.length} of {supportedWidgets.length} enabled
+                  </Text>
+                </div>
 
-                return (
-                  <button
-                    type="button"
-                    key={widget.type}
-                    onClick={() => onWidgetTypeToggle(widget.type)}
-                    aria-pressed={isSelected}
-                    css={{
-                      ...styles.widgetOption,
-                      ...(isSelected ? styles.widgetOptionSelected : {}),
-                    }}
-                  >
-                    <div css={styles.widgetPreviewSurface}>{renderWidgetPreview(widget.type, styles, businessPalette, theme.colors.systemGrayscale00)}</div>
-                    <div css={styles.widgetOptionHeader}>
-                      <div css={styles.widgetOptionText}>
-                        <Text typography="bodyEmphasized">{widget.label}</Text>
-                        <Text typography="bodySmall1" css={styles.helperText}>
-                          {widget.promptHint}
-                        </Text>
-                      </div>
-                      <div
+                <div css={styles.widgetCatalog}>
+                  {supportedWidgets.map(widget => {
+                    const isSelected = selectedWidgetTypes.includes(widget.type);
+
+                    return (
+                      <button
+                        type="button"
+                        key={widget.type}
+                        onClick={() => onWidgetTypeToggle(widget.type)}
+                        aria-pressed={isSelected}
                         css={{
-                          ...styles.widgetOptionStatus,
-                          ...(isSelected ? styles.widgetOptionStatusSelected : {}),
+                          ...styles.widgetOption,
+                          ...(isSelected ? styles.widgetOptionSelected : {}),
                         }}
                       >
-                        <Text typography="bodySmall1" css={{ color: isSelected ? businessPalette.elderberryDark : businessPalette.blueberryDark }}>
-                          {isSelected ? 'Enabled' : 'Off'}
-                        </Text>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                        <div css={styles.widgetPreviewSurface}>
+                          {renderWidgetPreview(widget.type, styles, businessPalette, theme.colors.systemGrayscale00)}
+                        </div>
+                        <div css={styles.widgetOptionHeader}>
+                          <div css={styles.widgetOptionText}>
+                            <Text typography="bodyEmphasized">{widget.label}</Text>
+                            <Text typography="bodySmall1" css={styles.helperText}>
+                              {widget.promptHint}
+                            </Text>
+                          </div>
+                          <div
+                            css={{
+                              ...styles.widgetOptionStatus,
+                              ...(isSelected ? styles.widgetOptionStatusSelected : {}),
+                            }}
+                          >
+                            <Text
+                              typography="bodySmall1"
+                              css={{ color: isSelected ? businessPalette.elderberryDark : businessPalette.blueberryDark }}
+                            >
+                              {isSelected ? 'Enabled' : 'Off'}
+                            </Text>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
 
-            {selectedWidgetTypes.length === 0 ? (
-              <Text typography="bodySmall1" css={styles.warningText}>
-                Select at least one widget type to continue.
-              </Text>
+                {selectedWidgetTypes.length === 0 ? (
+                  <Text typography="bodySmall1" css={styles.warningText}>
+                    Select at least one widget type to continue.
+                  </Text>
+                ) : null}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={sectionTransition?.initial}
+              animate={{
+                ...sectionTransition?.animate,
+                transition: prefersReducedMotion
+                  ? undefined
+                  : {
+                      duration: 0.34,
+                      delay: 0.1,
+                      ease: [0.22, 1, 0.36, 1] as const,
+                    },
+              }}
+            >
+              <div css={styles.section}>
+                <Text typography="bodyEmphasized">Describe the widget</Text>
+                <label css={styles.section}>
+                  <Text typography="bodySmall1" css={styles.helperText}>
+                    Prompt
+                  </Text>
+                  <textarea
+                    value={prompt}
+                    onChange={event => onPromptChange(event.target.value)}
+                    placeholder="Example: Add a line chart showing spend over the last 8 weeks."
+                    css={styles.textarea}
+                    autoFocus
+                  />
+                </label>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={sectionTransition?.initial}
+              animate={{
+                ...sectionTransition?.animate,
+                transition: prefersReducedMotion
+                  ? undefined
+                  : {
+                      duration: 0.34,
+                      delay: 0.14,
+                      ease: [0.22, 1, 0.36, 1] as const,
+                    },
+              }}
+            >
+              <div css={styles.section}>
+                <Text typography="bodySmall1" css={styles.helperText}>
+                  Example requests
+                </Text>
+                <div css={styles.hintRow}>
+                  {promptSuggestions.map(suggestion => (
+                    <ButtonBase
+                      key={suggestion}
+                      onClick={() => onPromptSuggestionClick(suggestion)}
+                      css={styles.suggestionChip}
+                    >
+                      <Text typography="bodyRegular">{suggestion}</Text>
+                    </ButtonBase>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {errorMessage ? (
+              <motion.div initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
+                <Text typography="bodyRegular" css={styles.errorText}>
+                  {errorMessage}
+                </Text>
+              </motion.div>
             ) : null}
-          </div>
-
-          <div css={styles.section}>
-            <Text typography="bodyEmphasized">Describe the widget</Text>
-            <label css={styles.section}>
-              <Text typography="bodySmall1" css={styles.helperText}>
-                Prompt
-              </Text>
-              <textarea
-                value={prompt}
-                onChange={event => onPromptChange(event.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Example: Add a line chart showing spend over the last 8 weeks."
-                css={styles.textarea}
-                autoFocus
-              />
-            </label>
-          </div>
-
-          <div css={styles.section}>
-            <Text typography="bodySmall1" css={styles.helperText}>
-              Example requests
-            </Text>
-            <div css={styles.hintRow}>
-              {promptSuggestions.map(suggestion => (
-                <ButtonBase
-                  key={suggestion}
-                  onClick={() => onPromptSuggestionClick(suggestion)}
-                  css={styles.suggestionChip}
+          </motion.div>
+        </ModalContent>
+        <motion.div
+          initial={sectionTransition?.initial}
+          animate={{
+            ...sectionTransition?.animate,
+            transition: prefersReducedMotion
+              ? undefined
+              : {
+                  duration: 0.32,
+                  delay: 0.16,
+                  ease: [0.22, 1, 0.36, 1] as const,
+                },
+          }}
+        >
+          <ModalFooter>
+            <div css={styles.buttonRow}>
+              <div css={styles.buttonCell}>
+                <PrimaryButtonSmall
+                  onClick={onPromptSubmit}
+                  disabled={isSubmitDisabled}
+                  css={{ ...styles.footerButton, ...styles.primaryAction }}
                 >
-                  <Text typography="bodyRegular">{suggestion}</Text>
-                </ButtonBase>
-              ))}
+                  {isGenerating ? 'Generating widget...' : 'Generate widget'}
+                </PrimaryButtonSmall>
+              </div>
+              <div css={styles.buttonCell}>
+                <SecondaryButtonSmall onClick={modal.hide} disabled={isGenerating} css={{ ...styles.footerButton, ...styles.secondaryAction }}>
+                  Cancel
+                </SecondaryButtonSmall>
+              </div>
             </div>
-          </div>
-
-          {errorMessage ? (
-            <Text typography="bodyRegular" css={styles.errorText}>
-              {errorMessage}
-            </Text>
-          ) : null}
-        </div>
-      </ModalContent>
-      <ModalFooter>
-        <div css={styles.buttonRow}>
-          <PrimaryButtonSmall onClick={onPromptSubmit} disabled={isSubmitDisabled} css={styles.primaryAction}>
-            {isGenerating ? 'Generating widget...' : 'Generate widget'}
-          </PrimaryButtonSmall>
-          <SecondaryButtonSmall onClick={() => onClose()} disabled={isGenerating}>
-            Cancel
-          </SecondaryButtonSmall>
-          <Text typography="bodySmall1" css={styles.helperText}>
-            Tip: press Cmd/Ctrl + Enter to submit.
-          </Text>
-        </div>
-      </ModalFooter>
+          </ModalFooter>
+        </motion.div>
+      </ModalInnerWrapper>
     </ModalBase>
   );
 }

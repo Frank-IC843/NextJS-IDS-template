@@ -3,11 +3,16 @@
 import { keyframes } from '@emotion/react';
 import {
   closestCenter,
+  type CollisionDetection,
   DndContext,
+  type DragOverEvent,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   type DragEndEvent,
   type Modifier,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -19,6 +24,7 @@ import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import {
   dashboardGenerateResponseSchema,
+  type DashboardLayout,
   type DashboardWidget,
 } from '@/app/dashboard/dashboard-builder-types';
 import { DashboardPromptComposer } from '@/app/dashboard/dashboard-prompt-composer';
@@ -77,25 +83,25 @@ const heroCarouselSteps = [
   {
     id: 'choose',
     stepLabel: '01',
-    navLabel: 'Pick',
-    title: 'Pick the widget type.',
-    description: 'Start with the KPI, trend, or breakdown your team wants to see first.',
+    navLabel: 'Enable',
+    title: 'Enable the right widget types.',
+    description: 'Choose which widget types the AI can use before you submit a prompt.',
     prompt: 'Add a metric widget for total spend this month.',
   },
   {
     id: 'describe',
     stepLabel: '02',
-    navLabel: 'Describe',
-    title: 'Describe the ask.',
-    description: 'Write a short request and the builder shapes a focused widget for the page.',
+    navLabel: 'Prompt',
+    title: 'Prompt one widget.',
+    description: 'Use the prompt box or example requests to describe the single widget you want.',
     prompt: 'Add a line chart showing order volume over the last 8 weeks.',
   },
   {
     id: 'arrange',
     stepLabel: '03',
     navLabel: 'Arrange',
-    title: 'Arrange the flow.',
-    description: 'Place the widget, then drag to refine the review order as the page grows.',
+    title: 'Generate, then arrange.',
+    description: 'The widget lands on the canvas and can be reordered as your dashboard grows.',
     prompt: 'Add an insight list summarizing budget pacing this quarter.',
   },
 ] as const;
@@ -611,11 +617,41 @@ const useStyles = () => {
       maxWidth: '760px',
     },
     canvasGrid: {
+      position: 'relative' as const,
+      zIndex: 1,
       display: 'grid',
       gap: '18px',
       gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
       [responsive.up('r')]: {
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      },
+    },
+    canvasGridShell: {
+      position: 'relative' as const,
+      minWidth: 0,
+    },
+    canvasDragGuide: {
+      position: 'absolute' as const,
+      inset: 0,
+      zIndex: 2,
+      display: 'grid',
+      gap: '18px',
+      gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+      pointerEvents: 'none' as const,
+      [responsive.up('r')]: {
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      },
+    },
+    canvasDragGuideColumn: {
+      borderRadius: theme.radius.r12,
+      border: '1px dashed rgba(43, 120, 198, 0.28)',
+      backgroundColor: 'rgba(43, 120, 198, 0.03)',
+      boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.66)',
+    },
+    canvasDragGuideColumnDesktop: {
+      display: 'none',
+      [responsive.up('r')]: {
+        display: 'block',
       },
     },
   } as const;
@@ -634,6 +670,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const defaultPrompt = promptSuggestions[0] ?? '';
   const allWidgetTypes = supportedWidgets.map(widget => widget.type);
   const pageRef = useRef<HTMLDivElement | null>(null);
+  const canvasGridRef = useRef<HTMLDivElement | null>(null);
   const [widgets, setWidgets] = useState(initialWidgets);
   const isEmpty = widgets.length === 0;
   const [prompt, setPrompt] = useState(defaultPrompt);
@@ -642,6 +679,8 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [allowedWidgetTypes, setAllowedWidgetTypes] = useState<SupportedWidgetDefinition['type'][]>(allWidgetTypes);
   const [activeHeroCarouselIndex, setActiveHeroCarouselIndex] = useState(0);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [dragOverWidgetId, setDragOverWidgetId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -653,6 +692,22 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
     }),
   );
   const activeHeroCarouselStep = heroCarouselSteps[activeHeroCarouselIndex];
+  const isCanvasDragging = activeDragId !== null;
+  const collisionDetectionStrategy: CollisionDetection = args => {
+    const pointerCollisions = pointerWithin(args);
+
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+
+    const intersectionCollisions = rectIntersection(args);
+
+    if (intersectionCollisions.length > 0) {
+      return intersectionCollisions;
+    }
+
+    return closestCenter(args);
+  };
 
   useEffect(() => {
     if (!isEmpty) {
@@ -670,6 +725,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
   const restrictToPageBounds: Modifier = ({ draggingNodeRect, activeNodeRect, transform }) => {
     const pageRect = pageRef.current?.getBoundingClientRect();
+    const canvasGridRect = canvasGridRef.current?.getBoundingClientRect();
     const nodeRect = draggingNodeRect ?? activeNodeRect;
 
     if (!pageRect || !nodeRect) {
@@ -678,6 +734,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
     let x = transform.x;
     let y = transform.y;
+    const topBound = canvasGridRect?.top ?? pageRect.top;
 
     const nextLeft = nodeRect.left + x;
     const nextRight = nodeRect.right + x;
@@ -692,8 +749,8 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
       x -= nextRight - pageRect.right;
     }
 
-    if (nextTop < pageRect.top) {
-      y += pageRect.top - nextTop;
+    if (nextTop < topBound) {
+      y += topBound - nextTop;
     }
 
     if (nextBottom > pageRect.bottom) {
@@ -706,6 +763,11 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
       y,
     };
   };
+
+  function clearDragState() {
+    setActiveDragId(null);
+    setDragOverWidgetId(null);
+  }
 
   function openBuilder(nextPrompt?: string) {
     setRequestError(null);
@@ -782,6 +844,21 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
     setWidgets(currentWidgets => currentWidgets.filter(widget => widget.id !== widgetId));
   }
 
+  function handleLayoutChange(widgetId: string, layout: DashboardLayout) {
+    setWidgets(currentWidgets =>
+      currentWidgets.map(widget => {
+        if (widget.id !== widgetId || widget.layout === layout) {
+          return widget;
+        }
+
+        return {
+          ...widget,
+          layout,
+        };
+      }),
+    );
+  }
+
   function handleReset() {
     setWidgets(initialWidgets);
     setPrompt(defaultPrompt);
@@ -792,6 +869,8 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+
+    clearDragState();
 
     if (!over || active.id === over.id) {
       return;
@@ -809,57 +888,93 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
     });
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    const nextActiveId = String(event.active.id);
+    setActiveDragId(nextActiveId);
+    setDragOverWidgetId(nextActiveId);
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    setDragOverWidgetId(event.over ? String(event.over.id) : null);
+  }
+
   function renderHeroCarouselStage(stepId: HeroCarouselStepId) {
     switch (stepId) {
       case 'choose':
         return (
           <div css={styles.heroCarouselStageInner} aria-hidden="true">
             <div css={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
-              <div css={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <div
-                    key={index}
-                    css={{
-                      ...styles.heroCarouselToolbarDot,
-                      backgroundColor: index === 0 ? businessPalette.elderberry : styles.heroCarouselToolbarDot.backgroundColor,
-                    }}
-                  />
-                ))}
+              <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <Text typography="bodySmall1" color="systemGrayscale60">
+                  Allowed types
+                </Text>
+                <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
+                  3 enabled
+                </Text>
               </div>
-              <div css={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {['Metric', 'Line', 'Bar'].map(label => (
+              <div css={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', flex: 1 }}>
+                {[
+                  { label: 'Metric', active: true, preview: <Text typography="bodyEmphasized">$18.4K</Text> },
+                  {
+                    label: 'Line',
+                    active: true,
+                    preview: (
+                      <svg viewBox="0 0 60 24" css={{ width: '100%', height: '24px', display: 'block' }}>
+                        <path d="M2 20 C18 16, 28 12, 42 10 C50 8, 55 6, 58 4" fill="none" stroke="#6E48E5" strokeWidth="3" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: 'Insight',
+                    active: true,
+                    preview: (
+                      <div css={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {[70, 52].map(width => (
+                          <div
+                            key={width}
+                            css={{
+                              width: `${width}%`,
+                              height: '5px',
+                              borderRadius: '999px',
+                              backgroundColor: businessPalette.blueberrySoft,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ),
+                  },
+                ].map(item => (
                   <div
-                    key={label}
+                    key={item.label}
                     css={{
-                      ...styles.heroCarouselChoicePill,
-                      ...(label === 'Metric' ? styles.heroCarouselChoicePillActive : {}),
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      minWidth: 0,
+                      padding: '8px',
+                      borderRadius: theme.radius.r12,
+                      border: `1px solid ${item.active ? businessPalette.elderberryBorder : 'rgba(43, 120, 198, 0.16)'}`,
+                      backgroundColor: item.active ? businessPalette.elderberrySoft : 'rgba(255,255,255,0.92)',
                     }}
                   >
-                    <Text typography="bodySmall1" css={{ color: label === 'Metric' ? businessPalette.elderberryDark : businessPalette.blueberryDark }}>
-                      {label}
-                    </Text>
+                    <div css={{ minHeight: '24px', display: 'flex', alignItems: 'flex-end' }}>{item.preview}</div>
+                    <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                      <Text typography="bodySmall1" css={{ color: item.active ? businessPalette.elderberryDark : businessPalette.blueberryDark }}>
+                        {item.label}
+                      </Text>
+                      <div
+                        css={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '999px',
+                          backgroundColor: item.active ? businessPalette.elderberry : 'rgba(43, 120, 198, 0.22)',
+                          flexShrink: 0,
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
-              </div>
-              <div
-                css={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  padding: '12px',
-                  borderRadius: theme.radius.r12,
-                  background: 'linear-gradient(135deg, rgba(110, 72, 229, 0.12) 0%, rgba(43, 120, 198, 0.08) 100%)',
-                }}
-              >
-                <div css={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <Text typography="bodySmall1" color="systemGrayscale60">
-                    Selected
-                  </Text>
-                  <Text typography="bodyEmphasized">Metric widget</Text>
-                </div>
-                <Text typography="titleMedium">$18.4K</Text>
               </div>
             </div>
           </div>
@@ -870,8 +985,12 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
             <div css={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
               <div
                 css={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
                   padding: '10px 12px',
-                  borderRadius: `${theme.radius.r12} ${theme.radius.r12} ${theme.radius.r12} 6px`,
+                  borderRadius: theme.radius.r12,
                   border: `1px solid rgba(110, 72, 229, 0.18)`,
                   backgroundColor: 'rgba(255,255,255,0.95)',
                 }}
@@ -880,34 +999,56 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
                   Prompt
                 </Text>
                 <Text typography="bodyEmphasized">Show order volume over the last 8 weeks.</Text>
+                <div
+                  css={{
+                    marginTop: 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  {['Try example', 'Refine prompt'].map(label => (
+                    <div
+                      key={label}
+                      css={{
+                        padding: '5px 8px',
+                        borderRadius: '999px',
+                        border: `1px solid rgba(43, 120, 198, 0.16)`,
+                        backgroundColor: businessPalette.blueberrySoft,
+                      }}
+                    >
+                      <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
+                        {label}
+                      </Text>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div
                 css={{
-                  flex: 1,
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  padding: '12px',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  padding: '8px 10px',
                   borderRadius: theme.radius.r12,
                   border: `1px solid rgba(43, 120, 198, 0.16)`,
                   backgroundColor: 'rgba(255,255,255,0.94)',
                 }}
               >
-                <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
-                  Generated widget
+                <Text typography="bodySmall1" color="systemGrayscale60">
+                  One widget per request
                 </Text>
-                <div css={{ display: 'flex', alignItems: 'flex-end', gap: '6px', flex: 1 }}>
-                  {[32, 44, 38, 54, 66].map(height => (
-                    <div
-                      key={height}
-                      css={{
-                        flex: 1,
-                        height: `${height}px`,
-                        borderRadius: '999px 999px 4px 4px',
-                        background: 'linear-gradient(180deg, rgba(110, 72, 229, 0.9) 0%, rgba(43, 120, 198, 0.76) 100%)',
-                      }}
-                    />
-                  ))}
+                <div css={{ width: '72px', height: '8px', borderRadius: '999px', backgroundColor: businessPalette.blueberrySoft }}>
+                  <div
+                    css={{
+                      width: '44px',
+                      height: '100%',
+                      borderRadius: '999px',
+                      background: 'linear-gradient(90deg, rgba(110, 72, 229, 0.92) 0%, rgba(43, 120, 198, 0.8) 100%)',
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -928,10 +1069,27 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
                   boxShadow: '0 10px 22px rgba(17, 24, 39, 0.04)',
                 }}
               >
-                <Text typography="bodySmall1" color="systemGrayscale60">
-                  Headline
-                </Text>
-                <Text typography="bodyEmphasized">Order trend</Text>
+                <div css={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                  <div css={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                    <Text typography="bodySmall1" color="systemGrayscale60">
+                      New widget
+                    </Text>
+                    <Text typography="bodyEmphasized">Order trend</Text>
+                  </div>
+                  <div css={{ display: 'grid', gridTemplateColumns: 'repeat(2, 4px)', gap: '3px', paddingTop: '2px' }}>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <div
+                        key={index}
+                        css={{
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '999px',
+                          backgroundColor: businessPalette.elderberryDark,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
               {['Mix', 'Insights'].map(label => (
                 <div
@@ -961,7 +1119,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
       <section css={styles.overviewCard}>
         <div css={styles.overviewTopRow}>
           <div css={styles.overviewBody}>
-            <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
+            <Text typography="bodyRegular" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
               Custom dashboards
             </Text>
             <Text typography="headline">Build dashboards around your team&apos;s metrics.</Text>
@@ -999,7 +1157,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         {isEmpty ? (
           <div css={styles.emptyLaunchpad}>
             <div css={styles.previewPanel}>
-              <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
+              <Text typography="bodyRegular" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
                 Example layout
               </Text>
               <Text typography="titleMedium">Lead with one trend widget and support it with quick context.</Text>
@@ -1071,7 +1229,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
             <div css={styles.starterPanel}>
               <div css={styles.heroCarouselHeader}>
-                <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.blueberryDark }}>
+                <Text typography="bodyRegular" css={{ ...styles.eyebrow, color: businessPalette.blueberryDark }}>
                   Get started
                 </Text>
                 <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
@@ -1138,15 +1296,32 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         {!isEmpty ? (
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={collisionDetectionStrategy}
             modifiers={[restrictToPageBounds]}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragCancel={clearDragState}
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={widgets.map(widget => widget.id)} strategy={rectSortingStrategy}>
-              <div css={styles.canvasGrid}>
-                {widgets.map(widget => (
-                  <DashboardWidgetShell key={widget.id} widget={widget} onRemove={handleRemove} />
-                ))}
+              <div css={styles.canvasGridShell}>
+                {isCanvasDragging ? (
+                  <div css={styles.canvasDragGuide} aria-hidden="true">
+                    <div css={styles.canvasDragGuideColumn} />
+                    <div css={{ ...styles.canvasDragGuideColumn, ...styles.canvasDragGuideColumnDesktop }} />
+                  </div>
+                ) : null}
+                <div ref={canvasGridRef} css={styles.canvasGrid}>
+                  {widgets.map(widget => (
+                    <DashboardWidgetShell
+                      key={widget.id}
+                      widget={widget}
+                      isDropTarget={dragOverWidgetId === widget.id && activeDragId !== widget.id}
+                      onLayoutChange={handleLayoutChange}
+                      onRemove={handleRemove}
+                    />
+                  ))}
+                </div>
               </div>
             </SortableContext>
           </DndContext>

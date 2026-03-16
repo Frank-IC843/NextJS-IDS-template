@@ -6,7 +6,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import { DashboardWidgetRenderer } from '@/app/dashboard/dashboard-widget-renderer';
-import type { DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
+import type { DashboardLayout, DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
 
 function useStyles() {
   const theme = useTheme();
@@ -57,6 +57,53 @@ function useStyles() {
       gap: '8px',
       flexShrink: 0,
     },
+    layoutControl: {
+      display: 'inline-grid',
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      gap: '4px',
+      padding: '4px',
+      borderRadius: '999px',
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: theme.colors.systemGrayscale00,
+    },
+    layoutOption: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '36px',
+      height: '32px',
+      borderRadius: '999px',
+      border: 'none',
+      backgroundColor: 'transparent',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s ease, transform 0.2s ease',
+      '&:hover': {
+        transform: 'translateY(-1px)',
+        backgroundColor: businessPalette.blueberrySoft,
+      },
+    },
+    layoutOptionActive: {
+      backgroundColor: businessPalette.elderberrySoft,
+      boxShadow: `inset 0 0 0 1px ${businessPalette.elderberryBorder}`,
+    },
+    layoutGlyphHalf: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      gap: '2px',
+      width: '16px',
+      height: '10px',
+    },
+    layoutGlyphFull: {
+      display: 'flex',
+      width: '16px',
+      height: '10px',
+    },
+    layoutGlyphBar: {
+      flex: 1,
+      borderRadius: '999px',
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: 'rgba(43, 120, 198, 0.16)',
+    },
     iconButton: {
       display: 'inline-flex',
       alignItems: 'center',
@@ -93,10 +140,12 @@ function useStyles() {
 
 interface DashboardWidgetShellProps {
   widget: DashboardWidget;
+  isDropTarget?: boolean;
+  onLayoutChange: (widgetId: string, layout: DashboardLayout) => void;
   onRemove: (widgetId: string) => void;
 }
 
-export function DashboardWidgetShell({ widget, onRemove }: DashboardWidgetShellProps) {
+export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutChange, onRemove }: DashboardWidgetShellProps) {
   const styles = useStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
@@ -121,8 +170,16 @@ export function DashboardWidgetShell({ widget, onRemove }: DashboardWidgetShellP
         transition,
         opacity: 1,
         zIndex: isDragging ? 20 : 1,
-        boxShadow: isDragging ? '0 18px 44px rgba(17, 24, 39, 0.16)' : styles.container.boxShadow,
-        borderColor: isDragging ? businessPalette.blueberry : businessPalette.blueberryBorder,
+        boxShadow: isDragging
+          ? '0 18px 44px rgba(17, 24, 39, 0.16)'
+          : isDropTarget
+            ? '0 0 0 2px rgba(110, 72, 229, 0.16), 0 16px 42px rgba(17, 24, 39, 0.08)'
+            : styles.container.boxShadow,
+        borderColor: isDragging
+          ? businessPalette.blueberry
+          : isDropTarget
+            ? businessPalette.elderberry
+            : businessPalette.blueberryBorder,
       }}
     >
       <div css={styles.header}>
@@ -145,6 +202,37 @@ export function DashboardWidgetShell({ widget, onRemove }: DashboardWidgetShellP
         </div>
 
         <div css={styles.controls}>
+          <div css={styles.layoutControl} aria-label={`${widget.title} width`}>
+            <button
+              type="button"
+              aria-label={`Set ${widget.title} to one column`}
+              aria-pressed={widget.layout === 'half'}
+              css={{
+                ...styles.layoutOption,
+                ...(widget.layout === 'half' ? styles.layoutOptionActive : {}),
+              }}
+              onClick={() => onLayoutChange(widget.id, 'half')}
+            >
+              <div css={styles.layoutGlyphHalf}>
+                <div css={styles.layoutGlyphBar} />
+                <div css={styles.layoutGlyphBar} />
+              </div>
+            </button>
+            <button
+              type="button"
+              aria-label={`Set ${widget.title} to full width`}
+              aria-pressed={widget.layout === 'full'}
+              css={{
+                ...styles.layoutOption,
+                ...(widget.layout === 'full' ? styles.layoutOptionActive : {}),
+              }}
+              onClick={() => onLayoutChange(widget.id, 'full')}
+            >
+              <div css={styles.layoutGlyphFull}>
+                <div css={styles.layoutGlyphBar} />
+              </div>
+            </button>
+          </div>
           <button type="button" aria-label={`Drag ${widget.title}`} css={styles.iconButton} {...attributes} {...listeners}>
             <div css={styles.gripDots}>
               {Array.from({ length: 6 }).map((_, index) => (
