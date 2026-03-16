@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import { DashboardWidgetRenderer } from '@/app/dashboard/dashboard-widget-renderer';
 import type { DashboardLayout, DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
+import { DashboardLayoutGlyph } from '@/app/dashboard/dashboard-layout-glyph';
 
 function useStyles() {
   const theme = useTheme();
@@ -121,24 +122,6 @@ function useStyles() {
     layoutOptionActive: {
       backgroundColor: businessPalette.elderberrySoft,
       boxShadow: `inset 0 0 0 1px ${businessPalette.elderberryBorder}`,
-    },
-    layoutGlyphHalf: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-      gap: '2px',
-      width: '16px',
-      height: '10px',
-    },
-    layoutGlyphFull: {
-      display: 'flex',
-      width: '16px',
-      height: '10px',
-    },
-    layoutGlyphBar: {
-      flex: 1,
-      borderRadius: '999px',
-      border: `1px solid ${businessPalette.blueberryBorder}`,
-      backgroundColor: 'rgba(43, 120, 198, 0.16)',
     },
     layoutTooltip: {
       position: 'absolute' as const,
@@ -318,10 +301,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
                 }}
                 onClick={() => onLayoutChange(widget.id, 'half')}
               >
-                <div css={styles.layoutGlyphHalf}>
-                  <div css={styles.layoutGlyphBar} />
-                  <div css={styles.layoutGlyphBar} />
-                </div>
+                <DashboardLayoutGlyph layout="half" />
               </button>
               <div data-layout-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
                 <Text typography="bodySmall1">One column</Text>
@@ -339,9 +319,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
                 }}
                 onClick={() => onLayoutChange(widget.id, 'full')}
               >
-                <div css={styles.layoutGlyphFull}>
-                  <div css={styles.layoutGlyphBar} />
-                </div>
+                <DashboardLayoutGlyph layout="full" />
               </button>
               <div data-layout-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
                 <Text typography="bodySmall1">Full width</Text>

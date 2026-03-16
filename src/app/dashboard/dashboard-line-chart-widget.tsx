@@ -4,37 +4,25 @@ import { useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
+import {
+  getDashboardChartContainerStyles,
+  getDashboardChartSurfaceStyles,
+  getDashboardChartTooltipContentStyle,
+} from '@/app/dashboard/dashboard-chart-styles';
 import type { LineChartWidget } from '@/app/dashboard/dashboard-builder-types';
 
-function useStyles() {
-  const theme = useTheme();
-  const businessPalette = getDashboardBusinessPalette(theme);
-
-  return {
-    container: {
-      display: 'flex',
-      flexDirection: 'column' as const,
-      gap: '16px',
-    },
-    chartSurface: {
-      width: '100%',
-      height: '240px',
-      borderRadius: theme.radius.r12,
-      border: `1px solid ${businessPalette.elderberryBorder}`,
-      background: `linear-gradient(180deg, ${businessPalette.elderberrySoft} 0%, rgba(255, 255, 255, 0.98) 100%)`,
-      padding: '12px 12px 4px',
-    },
-  } as const;
-}
-
 export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidget }) {
-  const styles = useStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
+  const containerStyles = getDashboardChartContainerStyles();
+  const chartSurfaceStyles = getDashboardChartSurfaceStyles(theme, businessPalette, {
+    borderColor: businessPalette.elderberryBorder,
+    background: `linear-gradient(180deg, ${businessPalette.elderberrySoft} 0%, rgba(255, 255, 255, 0.98) 100%)`,
+  });
 
   return (
-    <div css={styles.container}>
-      <div css={styles.chartSurface}>
+    <div css={containerStyles}>
+      <div css={chartSurfaceStyles}>
         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
           <LineChart data={widget.data.points} margin={{ top: 16, right: 12, left: -24, bottom: 0 }}>
             <CartesianGrid stroke={theme.colors.systemGrayscale20} strokeDasharray="3 3" vertical={false} />
@@ -47,11 +35,7 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
             <YAxis hide />
             <Tooltip
               cursor={{ stroke: theme.colors.systemGrayscale30, strokeWidth: 1 }}
-              contentStyle={{
-                borderRadius: 12,
-                border: `1px solid ${businessPalette.elderberryBorder}`,
-                boxShadow: '0 12px 30px rgba(17, 24, 39, 0.10)',
-              }}
+              contentStyle={getDashboardChartTooltipContentStyle(businessPalette.elderberryBorder)}
             />
             <Line
               type="monotone"

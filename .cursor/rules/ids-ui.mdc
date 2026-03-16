@@ -7,6 +7,10 @@ alwaysApply: false
 # IDS UI Patterns
 
 - Prefer components from `@instacart/ids-core` and `@instacart/ids-customers` before building custom primitives.
+- IDS packages are private GitHub Packages on `npm.pkg.github.com`; registry-based inspection can fail without the user's npm auth token even when the package is already installed locally.
+- If IDS package inspection/search fails, inspect the installed package directly under `node_modules/@instacart/ids-core` or `node_modules/@instacart/ids-customers`.
+- Start with `package.json`, then `dist/types/index.d.ts`, then `dist/types/{atoms,molecules,organisms}/index.d.ts`, then the specific component folder's `index.d.ts` or `<Component>.d.ts`.
+- Do not rely on broad workspace search to discover IDS internals; `node_modules` may be hidden from normal repo search, so use direct file reads or explicit directory listing.
 - Follow the app provider and theme setup in `@src/app/providers.tsx`.
 - Keep styling local with Emotion and existing IDS theme values; avoid introducing another styling system.
 - Prefer the Emotion `css` prop over the `style` prop.

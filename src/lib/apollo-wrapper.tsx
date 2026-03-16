@@ -4,7 +4,10 @@ import { HttpLink } from '@apollo/client';
 import { ApolloNextAppProvider, ApolloClient, InMemoryCache } from '@apollo/client-integration-nextjs';
 import { GRAPHQL_URL } from './constants';
 import { setVerbosity } from 'ts-invariant';
-setVerbosity('debug');
+
+if (process.env.NODE_ENV === 'development') {
+  setVerbosity('debug');
+}
 
 function makeClient() {
   const httpLink = new HttpLink({

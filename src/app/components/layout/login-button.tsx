@@ -4,7 +4,7 @@ import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@apollo/client';
-import { CREATE_USER_SESSION_FROM_CODE } from '@/app/queries';
+import { CREATE_USER_SESSION_FROM_CODE } from '@/app/api/login/queries';
 import { UsersAccountTypes, UsersIdentityType } from '@/__generated__/graphql-types';
 
 export const LoginButton = () => {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { CREATE_USER_SESSION_FROM_CODE } from '@/app/api/login/queries';
 import { getClient } from '@/lib/apollo-client';
-import { CREATE_USER_SESSION_FROM_CODE } from '@/app/queries';
+import { setInstacartAuthCookies } from '@/lib/instacart-auth-cookies';
 import { UsersAccountTypes, UsersIdentityType } from '@/__generated__/graphql-types';
 
 export async function POST(request: NextRequest) {
@@ -33,22 +34,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const environment = process.env.NODE_ENV || 'development';
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    };
-
-    // Environment-specific cookie names
-    if (environment === 'production') {
-      cookieStore.set('_instacart_session', result.token, cookieOptions);
-      cookieStore.set('__Host-instacart_sid', result.token, cookieOptions);
-    } else {
-      cookieStore.set('_instacart_session', result.token, cookieOptions);
-      cookieStore.set('instacart_sid', result.token, cookieOptions);
-    }
+    setInstacartAuthCookies(cookieStore, result.token, environment);
 
     return NextResponse.json({
       success: true,

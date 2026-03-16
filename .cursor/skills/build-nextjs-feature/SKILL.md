@@ -38,6 +38,10 @@ description: Implements features quickly in this Next.js 15 App Router repo whil
 
 - Use IDS components and Emotion for UI.
 - Prefer the `css` prop over inline `style`, and use theme or IDS tokens for colors, typography, spacing, and radius.
+- IDS packages come from a private GitHub Package Registry. Registry-based module inspection may fail if the tool cannot access the user's npm auth token.
+- When you need to inspect IDS exports or props, go straight to `node_modules/@instacart/ids-core` or `node_modules/@instacart/ids-customers`.
+- Inspect in this order: `package.json`, `dist/types/index.d.ts`, `dist/types/{atoms,molecules,organisms}/index.d.ts`, then the specific component folder's `index.d.ts` or `<Component>.d.ts`.
+- Do not rely on broad workspace search for IDS internals; `node_modules` may not appear there, so use direct file reads or explicit directory listing.
 - Handle loading, error, and empty states for new data-driven UI.
 - For GraphQL-heavy changes, use the `change-graphql-data-flow` skill or the `graphql-apollo-specialist` subagent.
 - For multi-file App Router changes, use the `app-router-architect` subagent before implementation.

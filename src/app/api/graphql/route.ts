@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { GRAPHQL_URL } from '@/lib/constants';
+import { getGraphQLAuthHeaders } from '@/lib/instacart-auth-cookies';
 
 /**
  * GraphQL Proxy Route
@@ -14,31 +15,12 @@ export async function POST(request: NextRequest) {
 
     // Get cookies from the request
     const cookieStore = await cookies();
-    const authCookies = [];
-
-    // Extract Instacart auth cookies
-    const instacartSession = cookieStore.get('_instacart_session');
-    const instacartSid = cookieStore.get('instacart_sid') || cookieStore.get('__Host-instacart_sid');
-
-    if (instacartSession) {
-      authCookies.push(`_instacart_session=${instacartSession.value}`);
-    }
-    if (instacartSid) {
-      authCookies.push(`${instacartSid.name}=${instacartSid.value}`);
-    }
-
     // Forward the request to the GraphQL server
     const response = await fetch(GRAPHQL_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(process.env.GRAPHQL_AUTH_TOKEN && {
-          Authorization: `Bearer ${process.env.GRAPHQL_AUTH_TOKEN}`,
-        }),
-        // Forward cookies to the GraphQL server
-        ...(authCookies.length > 0 && {
-          Cookie: authCookies.join('; '),
-        }),
+        ...getGraphQLAuthHeaders(cookieStore),
       },
       body: JSON.stringify(body),
     });
