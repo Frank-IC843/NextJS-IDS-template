@@ -20,7 +20,7 @@ export function DashboardWidgetTypePreview({ widgetType }: DashboardWidgetTypePr
       return (
         <div css={styles.previewMetric}>
           <div css={styles.previewMetricTag}>
-            <Text typography="bodySmall1" css={{ color: businessPalette.elderberryDark }}>
+            <Text typography="bodyMedium1" css={{ color: businessPalette.elderberryDark }}>
               Headline
             </Text>
           </div>

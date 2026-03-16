@@ -56,14 +56,14 @@ function DashboardExampleWidgetShell({ widget }: { widget: DashboardWidget }) {
             <Text typography="bodyEmphasized">{widget.title}</Text>
             {widget.timeRangeLabel ? (
               <div css={styles.exampleWidgetPill}>
-                <Text typography="bodySmall1" color="systemGrayscale60">
+                <Text typography="bodyMedium1" color="systemGrayscale60">
                   {widget.timeRangeLabel}
                 </Text>
               </div>
             ) : null}
           </div>
           {widget.description ? (
-            <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetDescription}>
+            <Text typography="bodyMedium1" color="systemGrayscale60" css={styles.exampleWidgetDescription}>
               {widget.description}
             </Text>
           ) : null}
@@ -113,7 +113,7 @@ function renderExampleWidgetBody(
               ))}
             </svg>
           </div>
-          <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+          <Text typography="bodyMedium1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
             {widget.data.footer}
           </Text>
         </>
@@ -134,14 +134,14 @@ function renderExampleWidgetBody(
                       height: `${Math.max((bar.value / maxValue) * 100, 18)}%`,
                     }}
                   />
-                  <Text typography="bodySmall1" css={styles.exampleBarLabel}>
+                  <Text typography="bodyMedium1" css={styles.exampleBarLabel}>
                     {bar.label}
                   </Text>
                 </div>
               ))}
             </div>
           </div>
-          <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+          <Text typography="bodyMedium1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
             {widget.data.footer}
           </Text>
         </>
@@ -163,10 +163,10 @@ function renderExampleWidgetBody(
                   return (
                     <div key={segment.label} css={styles.exampleDonutLegendRow}>
                       <div css={{ ...styles.exampleDonutLegendDot, backgroundColor: palette.accent }} />
-                      <Text typography="bodySmall1" css={styles.exampleDonutLegendLabel}>
+                      <Text typography="bodyMedium1" css={styles.exampleDonutLegendLabel}>
                         {segment.label}
                       </Text>
-                      <Text typography="bodySmall1" color="systemGrayscale60">
+                      <Text typography="bodyMedium1" color="systemGrayscale60">
                         {Math.round((segment.value / total) * 100)}%
                       </Text>
                     </div>
@@ -175,7 +175,7 @@ function renderExampleWidgetBody(
               </div>
             </div>
           </div>
-          <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+          <Text typography="bodyMedium1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
             {widget.data.footer}
           </Text>
         </>
@@ -183,7 +183,7 @@ function renderExampleWidgetBody(
     }
     default:
       return (
-        <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+        <Text typography="bodyMedium1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
           This example widget preview is unavailable.
         </Text>
       );

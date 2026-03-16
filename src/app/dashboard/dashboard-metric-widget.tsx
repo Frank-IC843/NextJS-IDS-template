@@ -58,7 +58,7 @@ export function DashboardMetricWidgetView({ widget }: { widget: MetricWidget }) 
           {widget.data.value}
         </Text>
         <div css={{ ...styles.changeBadge, backgroundColor: theme.colors.systemGrayscale00, borderColor: palette.border }}>
-          <Text typography="bodySmall1" css={{ color: palette.accent }}>
+          <Text typography="bodyMedium1" css={{ color: palette.accent }}>
             {widget.data.change}
           </Text>
         </div>

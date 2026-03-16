@@ -149,7 +149,7 @@ function DashboardPromptComposerModal({
           <motion.div css={styles.contentLayout} initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
             <motion.div initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
               <div css={styles.introBlock}>
-                <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
+                <Text typography="bodyMedium1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
                   {isPreviewMode ? 'Preview' : 'Builder'}
                 </Text>
                 <Text typography="bodyRegular" color="systemGrayscale60">
@@ -187,7 +187,7 @@ function DashboardPromptComposerModal({
                       <div css={styles.previewWidgetHeaderCopy}>
                         <Text typography="bodyEmphasized">{previewWidget.title}</Text>
                         {previewWidget.description ? (
-                          <Text typography="bodySmall1" css={styles.helperText}>
+                          <Text typography="bodyMedium1" css={styles.helperText}>
                             {previewWidget.description}
                           </Text>
                         ) : null}
@@ -195,13 +195,13 @@ function DashboardPromptComposerModal({
                       <div css={styles.previewWidgetMeta}>
                         {previewWidget.timeRangeLabel ? (
                           <div css={styles.previewWidgetBadge}>
-                            <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
+                            <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
                               {previewWidget.timeRangeLabel}
                             </Text>
                           </div>
                         ) : null}
                         <div css={{ ...styles.previewWidgetBadge, ...styles.previewWidgetBadgeAccent }}>
-                          <Text typography="bodySmall1" css={{ color: businessPalette.elderberryDark }}>
+                          <Text typography="bodyMedium1" css={{ color: businessPalette.elderberryDark }}>
                             {getWidgetLayoutLabel(previewWidget.layout)}
                           </Text>
                         </div>
@@ -213,7 +213,7 @@ function DashboardPromptComposerModal({
                     </div>
                   </div>
 
-                  <Text typography="bodySmall1" css={styles.helperText}>
+                  <Text typography="bodyMedium1" css={styles.helperText}>
                     Looks right? Add it to the dashboard or go back to refine the prompt and allowed widget types.
                   </Text>
                 </div>

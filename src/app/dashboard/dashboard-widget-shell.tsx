@@ -261,7 +261,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
             <Text typography="titleMedium">{widget.title}</Text>
             {widget.timeRangeLabel ? (
               <div css={styles.pill}>
-                <Text typography="bodySmall1" color="systemGrayscale60">
+                <Text typography="bodyMedium1" color="systemGrayscale60">
                   {widget.timeRangeLabel}
                 </Text>
               </div>
@@ -304,7 +304,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
                 <DashboardLayoutGlyph layout="half" />
               </button>
               <div data-layout-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
-                <Text typography="bodySmall1">One column</Text>
+                <Text typography="bodyMedium1">One column</Text>
               </div>
             </div>
             <div css={styles.layoutOptionWrap}>
@@ -322,7 +322,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
                 <DashboardLayoutGlyph layout="full" />
               </button>
               <div data-layout-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
-                <Text typography="bodySmall1">Full width</Text>
+                <Text typography="bodyMedium1">Full width</Text>
               </div>
             </div>
           </div>
@@ -341,7 +341,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
               <GrabIcon css={styles.iconGlyph} />
             </button>
             <div data-toolbar-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
-              <Text typography="bodySmall1">Re-order</Text>
+              <Text typography="bodyMedium1">Re-order</Text>
             </div>
           </div>
           <div css={styles.iconButtonWrap}>
@@ -355,7 +355,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
               <TrashIcon css={styles.iconGlyph} />
             </button>
             <div data-toolbar-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
-              <Text typography="bodySmall1">Delete</Text>
+              <Text typography="bodyMedium1">Delete</Text>
             </div>
           </div>
         </div>

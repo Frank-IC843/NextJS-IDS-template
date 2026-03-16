@@ -108,7 +108,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
 
             <div css={styles.heroCarouselCopy}>
               <Text typography="bodyEmphasized">{activeStep.title}</Text>
-              <Text typography="bodySmall1" color="systemGrayscale60">
+              <Text typography="bodyMedium1" color="systemGrayscale60">
                 {activeStep.description}
               </Text>
             </div>
@@ -158,10 +158,10 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
           <div css={styles.heroCarouselStageInner} aria-hidden="true">
             <div css={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
               <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                <Text typography="bodySmall1" color="systemGrayscale60">
+                <Text typography="bodyMedium1" color="systemGrayscale60">
                   Allowed types
                 </Text>
-                <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
+                <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
                   3 enabled
                 </Text>
               </div>
@@ -233,7 +233,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
                   >
                     <div css={{ minHeight: '24px', display: 'flex', alignItems: 'flex-end' }}>{item.preview}</div>
                     <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                      <Text typography="bodySmall1" css={{ color: item.active ? businessPalette.elderberryDark : businessPalette.blueberryDark }}>
+                      <Text typography="bodyMedium1" css={{ color: item.active ? businessPalette.elderberryDark : businessPalette.blueberryDark }}>
                         {item.label}
                       </Text>
                       <div
@@ -264,7 +264,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
                   height: '100%',
                 }}
               >
-                <Text typography="bodySmall1" color="systemGrayscale60">
+                <Text typography="bodyMedium1" color="systemGrayscale60">
                   Prompt
                 </Text>
                 <div
@@ -279,7 +279,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
                     boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.9)',
                   }}
                 >
-                  <Text typography="bodySmall1" css={{ lineHeight: 1.4, color: theme.colors.systemGrayscale90 }}>
+                  <Text typography="bodyMedium1" css={{ lineHeight: 1.4, color: theme.colors.systemGrayscale90 }}>
                     Add a line chart showing order volume over the last 8 weeks.
                   </Text>
                 </div>
@@ -302,7 +302,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
                         backgroundColor: businessPalette.blueberrySoft,
                       }}
                     >
-                      <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
+                      <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
                         {label}
                       </Text>
                     </div>
@@ -329,7 +329,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
               >
                 <div css={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
                   <div css={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-                    <Text typography="bodySmall1" color="systemGrayscale60">
+                    <Text typography="bodyMedium1" color="systemGrayscale60">
                       New widget
                     </Text>
                     <Text typography="bodyEmphasized">Order trend</Text>
@@ -432,7 +432,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
                         backgroundColor: theme.colors.systemGrayscale00,
                       }}
                     >
-                      <Text typography="bodySmall1" color="systemGrayscale70">
+                      <Text typography="bodyMedium1" color="systemGrayscale70">
                         Remove
                       </Text>
                     </div>
@@ -450,7 +450,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
                     boxShadow: '0 10px 22px rgba(17, 24, 39, 0.04)',
                   }}
                 >
-                  <Text typography="bodySmall1" color="systemGrayscale60">
+                  <Text typography="bodyMedium1" color="systemGrayscale60">
                     Support
                   </Text>
                   <Text typography="bodyEmphasized">{label}</Text>

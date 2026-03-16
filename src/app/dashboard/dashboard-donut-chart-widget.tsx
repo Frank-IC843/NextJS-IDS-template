@@ -81,7 +81,7 @@ export function DashboardDonutChartWidgetView({ widget }: { widget: DonutChartWi
                 <div css={{ ...toneDotStyles, backgroundColor: palette.accent }} />
                 <Text typography="bodyRegular">{segment.label}</Text>
               </div>
-              <Text typography="bodySmall1" color="systemGrayscale60">
+              <Text typography="bodyMedium1" color="systemGrayscale60">
                 {percent}%
               </Text>
             </div>

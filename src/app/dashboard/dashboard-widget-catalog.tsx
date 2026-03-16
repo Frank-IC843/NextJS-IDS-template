@@ -27,11 +27,11 @@ export function DashboardWidgetCatalog({
       <div css={styles.sectionHeader}>
         <div css={styles.section}>
           <Text typography="bodyEmphasized">Widget types the AI can use</Text>
-          <Text typography="bodySmall1" css={styles.helperText}>
+          <Text typography="bodyMedium1" css={styles.helperText}>
             Select one or more widget types. The AI will stay within this set when generating the widget.
           </Text>
         </div>
-        <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
+        <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
           {selectedWidgetTypes.length} of {supportedWidgets.length} enabled
         </Text>
       </div>
@@ -57,7 +57,7 @@ export function DashboardWidgetCatalog({
               <div css={styles.widgetOptionHeader}>
                 <div css={styles.widgetOptionText}>
                   <Text typography="bodyEmphasized">{widget.label}</Text>
-                  <Text typography="bodySmall1" css={styles.helperText}>
+                  <Text typography="bodyMedium1" css={styles.helperText}>
                     {widget.promptHint}
                   </Text>
                 </div>
@@ -68,7 +68,7 @@ export function DashboardWidgetCatalog({
                   }}
                 >
                   <Text
-                    typography="bodySmall1"
+                    typography="bodyMedium1"
                     css={{ color: isSelected ? businessPalette.elderberryDark : businessPalette.blueberryDark }}
                   >
                     {isSelected ? 'Enabled' : 'Off'}
@@ -81,7 +81,7 @@ export function DashboardWidgetCatalog({
       </div>
 
       {selectedWidgetTypes.length === 0 ? (
-        <Text typography="bodySmall1" css={styles.warningText}>
+        <Text typography="bodyMedium1" css={styles.warningText}>
           Select at least one widget type to continue.
         </Text>
       ) : null}
