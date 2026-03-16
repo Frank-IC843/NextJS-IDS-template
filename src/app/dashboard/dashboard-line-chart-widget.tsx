@@ -58,8 +58,18 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
               dataKey="value"
               stroke={businessPalette.elderberry}
               strokeWidth={3}
-              dot={false}
-              activeDot={{ r: 5, fill: businessPalette.blueberryDark }}
+              dot={{
+                r: 3.5,
+                strokeWidth: 2,
+                stroke: businessPalette.blueberry,
+                fill: theme.colors.systemGrayscale00,
+              }}
+              activeDot={{
+                r: 5,
+                strokeWidth: 2,
+                stroke: businessPalette.blueberryDark,
+                fill: theme.colors.systemGrayscale00,
+              }}
             />
           </LineChart>
         </ResponsiveContainer>

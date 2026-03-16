@@ -1,9 +1,10 @@
 'use client';
 
-import { useTheme } from '@instacart/ids-core';
+import { GrabIcon, TrashIcon, useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useState } from 'react';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import { DashboardWidgetRenderer } from '@/app/dashboard/dashboard-widget-renderer';
 import type { DashboardLayout, DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
@@ -26,9 +27,9 @@ function useStyles() {
       minWidth: 0,
     },
     header: {
+      position: 'relative' as const,
       display: 'flex',
       alignItems: 'flex-start',
-      justifyContent: 'space-between',
       gap: '16px',
     },
     titleGroup: {
@@ -36,6 +37,13 @@ function useStyles() {
       flexDirection: 'column' as const,
       gap: '8px',
       minWidth: 0,
+      flex: 1,
+      paddingRight: '196px',
+      borderRadius: theme.radius.r12,
+      outline: 'none',
+      '&:focus-visible': {
+        boxShadow: `0 0 0 2px ${businessPalette.blueberrySoft}`,
+      },
     },
     metaRow: {
       display: 'flex',
@@ -52,17 +60,31 @@ function useStyles() {
       backgroundColor: businessPalette.blueberrySoft,
     },
     controls: {
+      position: 'absolute' as const,
+      top: 0,
+      right: 0,
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
-      flexShrink: 0,
+      gap: '6px',
+      padding: 0,
+      opacity: 0,
+      visibility: 'hidden' as const,
+      transform: 'translateY(-4px)',
+      pointerEvents: 'none' as const,
       overflow: 'visible' as const,
+      transition: 'opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease',
+    },
+    controlsVisible: {
+      opacity: 1,
+      visibility: 'visible' as const,
+      transform: 'translateY(0)',
+      pointerEvents: 'auto' as const,
     },
     layoutControl: {
       display: 'inline-grid',
       gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
       gap: '4px',
-      padding: '4px',
+      padding: '3px',
       borderRadius: '999px',
       border: `1px solid ${businessPalette.blueberryBorder}`,
       backgroundColor: theme.colors.systemGrayscale00,
@@ -149,12 +171,17 @@ function useStyles() {
         transform: 'translateX(-50%) rotate(45deg)',
       },
     },
+    layoutTooltipHidden: {
+      opacity: '0 !important' as const,
+      transform: 'translateX(-50%) translateY(4px) !important',
+    },
     iconButton: {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: '40px',
-      height: '40px',
+      minWidth: '36px',
+      height: '36px',
+      padding: '0 10px',
       borderRadius: '999px',
       border: `1px solid ${businessPalette.blueberryBorder}`,
       backgroundColor: theme.colors.systemGrayscale00,
@@ -165,17 +192,23 @@ function useStyles() {
         borderColor: businessPalette.blueberry,
         backgroundColor: businessPalette.blueberrySoft,
       },
+      '&:focus-visible': {
+        outline: `2px solid ${businessPalette.blueberry}`,
+        outlineOffset: '2px',
+      },
     },
-    gripDots: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 4px)',
-      gap: '3px',
+    iconButtonWrap: {
+      position: 'relative' as const,
+      display: 'inline-flex',
+      '&:hover [data-toolbar-tooltip], & [data-toolbar-trigger]:focus-visible + [data-toolbar-tooltip]': {
+        opacity: 1,
+        transform: 'translateX(-50%) translateY(0)',
+      },
     },
-    gripDot: {
-      width: '4px',
-      height: '4px',
-      borderRadius: '999px',
-      backgroundColor: businessPalette.elderberryDark,
+    iconGlyph: {
+      width: '16px',
+      height: '16px',
+      color: businessPalette.elderberryDark,
     },
     body: {
       minWidth: 0,
@@ -197,6 +230,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
   });
+  const [isToolbarVisible, setIsToolbarVisible] = useState(false);
   const translatedTransform = transform
     ? CSS.Transform.toString({
         ...transform,
@@ -228,7 +262,18 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
       }}
     >
       <div css={styles.header}>
-        <div css={styles.titleGroup}>
+        <div
+          tabIndex={0}
+          css={styles.titleGroup}
+          onMouseEnter={() => setIsToolbarVisible(true)}
+          onMouseLeave={() => setIsToolbarVisible(false)}
+          onFocus={() => setIsToolbarVisible(true)}
+          onBlur={event => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setIsToolbarVisible(false);
+            }
+          }}
+        >
           <div css={styles.metaRow}>
             <Text typography="titleMedium">{widget.title}</Text>
             {widget.timeRangeLabel ? (
@@ -246,7 +291,20 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
           ) : null}
         </div>
 
-        <div css={styles.controls}>
+        <div
+          css={{
+            ...styles.controls,
+            ...(isToolbarVisible || isDragging ? styles.controlsVisible : {}),
+          }}
+          onMouseEnter={() => setIsToolbarVisible(true)}
+          onMouseLeave={() => setIsToolbarVisible(false)}
+          onFocusCapture={() => setIsToolbarVisible(true)}
+          onBlurCapture={event => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setIsToolbarVisible(false);
+            }
+          }}
+        >
           <div css={styles.layoutControl} aria-label={`${widget.title} width`}>
             <div css={styles.layoutOptionWrap}>
               <button
@@ -265,7 +323,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
                   <div css={styles.layoutGlyphBar} />
                 </div>
               </button>
-              <div data-layout-tooltip css={styles.layoutTooltip}>
+              <div data-layout-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
                 <Text typography="bodySmall1">One column</Text>
               </div>
             </div>
@@ -285,32 +343,43 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
                   <div css={styles.layoutGlyphBar} />
                 </div>
               </button>
-              <div data-layout-tooltip css={styles.layoutTooltip}>
+              <div data-layout-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
                 <Text typography="bodySmall1">Full width</Text>
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            aria-label={`Drag ${widget.title}`}
-            css={{
-              ...styles.iconButton,
-              cursor: isDragging ? 'grabbing' : 'grab',
-            }}
-            {...attributes}
-            {...listeners}
-          >
-            <div css={styles.gripDots}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} css={styles.gripDot} />
-              ))}
+          <div css={styles.iconButtonWrap}>
+            <button
+              type="button"
+              data-toolbar-trigger
+              aria-label={`Re-order ${widget.title}`}
+              css={{
+                ...styles.iconButton,
+                cursor: isDragging ? 'grabbing' : 'grab',
+              }}
+              {...attributes}
+              {...listeners}
+            >
+              <GrabIcon css={styles.iconGlyph} />
+            </button>
+            <div data-toolbar-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
+              <Text typography="bodySmall1">Re-order</Text>
             </div>
-          </button>
-          <button type="button" aria-label={`Remove ${widget.title}`} css={styles.iconButton} onClick={() => onRemove(widget.id)}>
-            <Text typography="bodySmall1" color="systemGrayscale70">
-              Remove
-            </Text>
-          </button>
+          </div>
+          <div css={styles.iconButtonWrap}>
+            <button
+              type="button"
+              data-toolbar-trigger
+              aria-label={`Delete ${widget.title}`}
+              css={styles.iconButton}
+              onClick={() => onRemove(widget.id)}
+            >
+              <TrashIcon css={styles.iconGlyph} />
+            </button>
+            <div data-toolbar-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
+              <Text typography="bodySmall1">Delete</Text>
+            </div>
+          </div>
         </div>
       </div>
 

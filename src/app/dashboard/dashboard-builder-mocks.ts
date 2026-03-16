@@ -162,18 +162,6 @@ export function getStarterDashboardWidgets(): DashboardWidget[] {
   return [
     hydrateWidgetRequest(
       {
-        widgetType: 'metric',
-        title: 'Total spend',
-        description: 'Headline performance for the current reporting window.',
-        metric: 'spend',
-        timeRange: 'last30Days',
-        filters: [],
-        layoutHint: 'half',
-      },
-      { widgetId: 'starter-metric-spend' },
-    ),
-    hydrateWidgetRequest(
-      {
         widgetType: 'lineChart',
         title: 'Orders over time',
         description: 'Order volume trend across the selected reporting window.',
@@ -186,15 +174,27 @@ export function getStarterDashboardWidgets(): DashboardWidget[] {
     ),
     hydrateWidgetRequest(
       {
-        widgetType: 'insightList',
-        title: 'What stands out',
-        description: 'Key observations to support reviews and follow-up decisions.',
-        metric: 'orders',
+        widgetType: 'barChart',
+        title: 'Department contribution',
+        description: 'Compare the categories driving the most volume in the current window.',
+        groupBy: 'department',
         timeRange: 'last30Days',
         filters: [],
         layoutHint: 'half',
       },
-      { widgetId: 'starter-insights-orders' },
+      { widgetId: 'starter-bar-departments' },
+    ),
+    hydrateWidgetRequest(
+      {
+        widgetType: 'donutChart',
+        title: 'Location mix',
+        description: 'See how volume is distributed across locations in the current window.',
+        groupBy: 'location',
+        timeRange: 'last30Days',
+        filters: [],
+        layoutHint: 'half',
+      },
+      { widgetId: 'starter-donut-locations' },
     ),
   ];
 }

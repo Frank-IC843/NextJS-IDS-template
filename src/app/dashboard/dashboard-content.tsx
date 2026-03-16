@@ -17,11 +17,13 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { arrayMove, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { responsive, useTheme } from '@instacart/ids-core';
+import { responsive, type Theme, useTheme } from '@instacart/ids-core';
 import { ButtonBase, SecondaryButtonSmall, Text } from '@instacart/ids-customers';
 import { useEffect, useRef, useState } from 'react';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
+import { getTonePalette } from '@/app/dashboard/dashboard-block-utils';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
+import { getStarterDashboardWidgets } from '@/app/dashboard/dashboard-builder-mocks';
 import {
   dashboardGenerateResponseSchema,
   type DashboardLayout,
@@ -111,6 +113,8 @@ const heroCarouselSteps = [
   },
 ] as const;
 
+const exampleLayoutWidgets = getStarterDashboardWidgets();
+
 type HeroCarouselStepId = (typeof heroCarouselSteps)[number]['id'];
 
 const useStyles = () => {
@@ -184,6 +188,13 @@ const useStyles = () => {
       justifyContent: 'space-between',
       gap: '12px',
     },
+    heroCarouselMain: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '18px',
+      flex: 1,
+      minHeight: 0,
+    },
     heroCarouselBody: {
       display: 'flex',
       flexDirection: 'column' as const,
@@ -193,10 +204,10 @@ const useStyles = () => {
     heroCarouselCopy: {
       display: 'flex',
       flexDirection: 'column' as const,
-      justifyContent: 'space-between',
-      gap: '8px',
+      gap: '6px',
       minWidth: 0,
-      minHeight: '120px',
+      minHeight: 0,
+      padding: '2px 2px 0',
     },
     heroCarouselStepBadge: {
       display: 'inline-flex',
@@ -209,12 +220,67 @@ const useStyles = () => {
     },
     heroCarouselActions: {
       display: 'flex',
-      gap: '8px',
+      flexDirection: 'column' as const,
+      gap: '10px',
+      alignItems: 'stretch',
+      marginTop: 'auto',
+      paddingTop: '6px',
+    },
+    heroCarouselFooter: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '12px',
+      paddingTop: '2px',
+    },
+    heroCarouselActionRow: {
+      display: 'flex',
+      width: '100%',
+      minWidth: 0,
+      '& > *': {
+        flex: 1,
+        width: '100%',
+      },
+    },
+    heroCarouselActionCallout: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '4px',
+      padding: '10px 12px',
+      borderRadius: theme.radius.r12,
+      border: `1px solid rgba(43, 120, 198, 0.14)`,
+      backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    },
+    heroCarouselActionButton: {
+      appearance: 'none' as const,
+      display: 'inline-flex',
       alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      minHeight: '46px',
+      padding: '0 18px',
+      borderRadius: '999px',
+      border: `1px solid ${businessPalette.elderberry}`,
+      backgroundColor: businessPalette.elderberry,
+      color: theme.colors.systemGrayscale00,
+      font: 'inherit',
+      fontWeight: 600,
+      cursor: 'pointer',
+      boxShadow: '0 14px 28px rgba(110, 72, 229, 0.18)',
+      transition: 'transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
+      '&:hover': {
+        transform: 'translateY(-1px)',
+        backgroundColor: businessPalette.elderberryDark,
+        borderColor: businessPalette.elderberryDark,
+        boxShadow: '0 18px 32px rgba(110, 72, 229, 0.22)',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${businessPalette.blueberry}`,
+        outlineOffset: '3px',
+      },
     },
     heroCarouselStage: {
       position: 'relative' as const,
-      height: '110px',
+      height: '156px',
       minWidth: 0,
       borderRadius: theme.radius.r12,
       border: `1px solid rgba(43, 120, 198, 0.18)`,
@@ -463,6 +529,7 @@ const useStyles = () => {
       display: 'flex',
       flexDirection: 'column',
       gap: '14px',
+      marginTop: '14px',
     },
     emptyLaunchpad: {
       display: 'grid',
@@ -475,14 +542,146 @@ const useStyles = () => {
     previewPanel: {
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '12px',
-      padding: '16px',
+      gap: '10px',
+      padding: '14px',
       borderRadius: theme.radius.r12,
       border: `1px solid ${businessPalette.blueberryBorder}`,
       backgroundColor: theme.colors.systemGrayscale00,
       boxShadow: '0 16px 42px rgba(17, 24, 39, 0.05)',
       overflow: 'hidden' as const,
       minWidth: 0,
+    },
+    exampleWidgetGrid: {
+      display: 'grid',
+      gap: '14px',
+      gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+      [responsive.up('r')]: {
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      },
+    },
+    exampleWidgetCard: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '12px',
+      position: 'relative' as const,
+      borderRadius: theme.radius.r12,
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: theme.colors.systemGrayscale00,
+      boxShadow: '0 12px 40px rgba(17, 24, 39, 0.06)',
+      padding: '14px',
+      minWidth: 0,
+    },
+    exampleWidgetHeader: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: '12px',
+    },
+    exampleWidgetTitleGroup: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '4px',
+      minWidth: 0,
+    },
+    exampleWidgetMetaRow: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      flexWrap: 'wrap' as const,
+    },
+    exampleWidgetPill: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '5px 8px',
+      borderRadius: '999px',
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: businessPalette.blueberrySoft,
+    },
+    exampleWidgetControls: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      flexShrink: 0,
+    },
+    exampleWidgetLayoutControl: {
+      display: 'inline-grid',
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      gap: '3px',
+      padding: '3px',
+      borderRadius: '999px',
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: theme.colors.systemGrayscale00,
+    },
+    exampleWidgetLayoutOption: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '30px',
+      height: '26px',
+      borderRadius: '999px',
+      backgroundColor: 'transparent',
+    },
+    exampleWidgetLayoutOptionActive: {
+      backgroundColor: businessPalette.elderberrySoft,
+      boxShadow: `inset 0 0 0 1px ${businessPalette.elderberryBorder}`,
+    },
+    exampleWidgetLayoutGlyphHalf: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      gap: '2px',
+      width: '13px',
+      height: '8px',
+    },
+    exampleWidgetLayoutGlyphFull: {
+      display: 'flex',
+      width: '13px',
+      height: '8px',
+    },
+    exampleWidgetLayoutGlyphBar: {
+      flex: 1,
+      borderRadius: '999px',
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: 'rgba(43, 120, 198, 0.16)',
+    },
+    exampleWidgetIconButton: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: '34px',
+      height: '34px',
+      padding: '0 8px',
+      borderRadius: '999px',
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: theme.colors.systemGrayscale00,
+    },
+    exampleWidgetGripDots: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 4px)',
+      gap: '3px',
+    },
+    exampleWidgetGripDot: {
+      width: '4px',
+      height: '4px',
+      borderRadius: '999px',
+      backgroundColor: businessPalette.elderberryDark,
+    },
+    exampleWidgetBody: {
+      minWidth: 0,
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '8px',
+    },
+    exampleWidgetDescription: {
+      display: '-webkit-box',
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: 'vertical' as const,
+      overflow: 'hidden',
+    },
+    exampleWidgetFooter: {
+      display: '-webkit-box',
+      WebkitLineClamp: 1,
+      WebkitBoxOrient: 'vertical' as const,
+      overflow: 'hidden',
     },
     previewFeatureCard: {
       display: 'flex',
@@ -495,11 +694,14 @@ const useStyles = () => {
         'linear-gradient(180deg, rgba(110, 72, 229, 0.08) 0%, rgba(255, 255, 255, 0.98) 100%)',
     },
     previewChartSurface: {
-      height: '108px',
+      display: 'flex',
+      alignItems: 'stretch',
+      justifyContent: 'stretch',
+      height: '84px',
       borderRadius: theme.radius.r12,
       border: `1px solid ${businessPalette.blueberryBorder}`,
       background: 'linear-gradient(180deg, rgba(43, 120, 198, 0.06) 0%, rgba(255, 255, 255, 0.96) 100%)',
-      padding: '10px',
+      padding: '8px',
     },
     previewMiniGrid: {
       display: 'grid',
@@ -556,10 +758,87 @@ const useStyles = () => {
       height: '100%',
       display: 'block',
     },
+    exampleBarChart: {
+      display: 'flex',
+      alignItems: 'flex-end',
+      gap: '6px',
+      width: '100%',
+      height: '100%',
+    },
+    exampleBarColumnWrap: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column' as const,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: '6px',
+      minWidth: 0,
+      height: '100%',
+    },
+    exampleBarColumn: {
+      width: '100%',
+      borderRadius: '999px 999px 4px 4px',
+      background: 'linear-gradient(180deg, rgba(110, 72, 229, 0.92) 0%, rgba(43, 120, 198, 0.76) 100%)',
+    },
+    exampleBarLabel: {
+      maxWidth: '100%',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap' as const,
+      color: theme.colors.systemGrayscale60,
+    },
+    exampleDonutWrap: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '10px',
+      width: '100%',
+      height: '100%',
+    },
+    exampleDonutChart: {
+      width: '64px',
+      height: '64px',
+      borderRadius: '999px',
+      position: 'relative' as const,
+      flexShrink: 0,
+      '&::after': {
+        content: '""',
+        position: 'absolute' as const,
+        inset: '15px',
+        borderRadius: '999px',
+        backgroundColor: theme.colors.systemGrayscale00,
+      },
+    },
+    exampleDonutLegend: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '6px',
+      flex: 1,
+      minWidth: 0,
+    },
+    exampleDonutLegendRow: {
+      display: 'grid',
+      gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+      alignItems: 'center',
+      gap: '8px',
+      minWidth: 0,
+    },
+    exampleDonutLegendDot: {
+      width: '8px',
+      height: '8px',
+      borderRadius: '999px',
+      flexShrink: 0,
+    },
+    exampleDonutLegendLabel: {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap' as const,
+    },
     starterPanel: {
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '10px',
+      gap: '12px',
+      height: '100%',
       padding: '16px',
       borderRadius: theme.radius.r12,
       border: `1px solid ${businessPalette.blueberryBorder}`,
@@ -988,7 +1267,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
                     label: 'Line',
                     active: true,
                     preview: (
-                      <svg viewBox="0 0 60 24" css={{ width: '100%', height: '24px', display: 'block' }}>
+                      <svg viewBox="0 0 60 24" preserveAspectRatio="none" css={{ width: '100%', height: '24px', display: 'block' }}>
                         <path d="M2 20 C18 16, 28 12, 42 10 C50 8, 55 6, 58 4" fill="none" stroke="#6E48E5" strokeWidth="3" />
                       </svg>
                     ),
@@ -1307,7 +1586,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
       <section css={styles.overviewCard}>
         <div css={styles.overviewTopRow}>
           <div css={styles.overviewBody}>
-            <Text typography="bodyRegular" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
+            <Text typography="bodyEmphasized" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
               Custom dashboards
             </Text>
             <Text typography="headline">Build dashboards around your team&apos;s metrics.</Text>
@@ -1319,7 +1598,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
           {!isEmpty ? (
             <div css={styles.actionRail}>
               <div css={styles.widgetSummaryPanel}>
-                <Text typography="bodySmall1" color="systemGrayscale60">
+                <Text typography="bodyEmphasized" color="systemGrayscale60">
                   Layout summary
                 </Text>
                 <Text typography="titleMedium">{widgets.length} active widget{widgets.length === 1 ? '' : 's'}</Text>
@@ -1345,79 +1624,19 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         {isEmpty ? (
           <div css={styles.emptyLaunchpad}>
             <div css={styles.previewPanel}>
-              <Text typography="bodyRegular" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
+              <Text typography="bodyEmphasized" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
                 Example layout
               </Text>
-              <Text typography="titleMedium">Lead with one trend widget and support it with quick context.</Text>
-              <div css={styles.previewFeatureCard}>
-                <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
-                  Order trend
-                </Text>
-                <div css={styles.previewChartSurface}>
-                  <svg viewBox="0 0 520 180" css={styles.previewLineSvg} aria-hidden="true">
-                    <path d="M0 34 H520" stroke="rgba(43, 120, 198, 0.16)" strokeDasharray="5 5" />
-                    <path d="M0 86 H520" stroke="rgba(43, 120, 198, 0.16)" strokeDasharray="5 5" />
-                    <path d="M0 138 H520" stroke="rgba(43, 120, 198, 0.16)" strokeDasharray="5 5" />
-                    <path
-                      d="M18 122 C90 110, 132 98, 188 90 C244 82, 286 70, 346 64 C402 58, 444 42, 500 30"
-                      fill="none"
-                      stroke="#6E48E5"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="188" cy="90" r="6" fill="#2B78C6" />
-                    <circle cx="346" cy="64" r="6" fill="#2B78C6" />
-                    <circle cx="500" cy="30" r="6" fill="#6E48E5" />
-                  </svg>
-                </div>
-              </div>
-
-              <div css={styles.previewMiniGrid}>
-                <div css={styles.previewMiniCard}>
-                  <Text typography="bodySmall1" color="systemGrayscale60">
-                    Total spend
-                  </Text>
-                  <Text typography="headline" css={styles.previewValue}>
-                    $18.4K
-                  </Text>
-                  <div css={styles.previewBadge}>
-                    <Text typography="bodySmall1" css={{ color: businessPalette.elderberryDark }}>
-                      6.1% under budget
-                    </Text>
-                  </div>
-                </div>
-
-                <div css={styles.previewMiniCard}>
-                  <Text typography="bodySmall1" color="systemGrayscale60">
-                    Review highlights
-                  </Text>
-                  <ul css={styles.previewList}>
-                    <li css={styles.previewListItem}>
-                      <div css={styles.previewListDot} />
-                      <Text typography="bodySmall1" color="systemGrayscale60">
-                        Midweek volume remains strongest
-                      </Text>
-                    </li>
-                    <li css={styles.previewListItem}>
-                      <div css={styles.previewListDot} />
-                      <Text typography="bodySmall1" color="systemGrayscale60">
-                        Produce continues to lead contribution
-                      </Text>
-                    </li>
-                    <li css={styles.previewListItem}>
-                      <div css={styles.previewListDot} />
-                      <Text typography="bodySmall1" color="systemGrayscale60">
-                        Budget pacing remains healthy
-                      </Text>
-                    </li>
-                  </ul>
-                </div>
+              <div css={styles.exampleWidgetGrid}>
+                {exampleLayoutWidgets.map(widget => (
+                  <DashboardExampleWidgetShell key={widget.id} widget={widget} />
+                ))}
               </div>
             </div>
 
             <div css={styles.starterPanel}>
               <div css={styles.heroCarouselHeader}>
-                <Text typography="bodyRegular" css={{ ...styles.eyebrow, color: businessPalette.blueberryDark }}>
+                <Text typography="bodyEmphasized" css={{ ...styles.eyebrow, color: businessPalette.blueberryDark }}>
                   Get started
                 </Text>
                 <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
@@ -1425,61 +1644,55 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
                 </Text>
               </div>
 
-              <div css={styles.heroCarouselStage}>{renderHeroCarouselStage(activeHeroCarouselStep.id)}</div>
+              <div css={styles.heroCarouselMain}>
+                <div css={styles.heroCarouselStage}>{renderHeroCarouselStage(activeHeroCarouselStep.id)}</div>
 
-              <div css={styles.heroCarouselCopy}>
-                <div css={styles.heroCarouselStepBadge}>
-                  <Text typography="bodySmall1" css={{ color: businessPalette.elderberryDark }}>
-                    {activeHeroCarouselStep.navLabel}
+                <div css={styles.heroCarouselCopy}>
+                  <Text typography="bodyEmphasized">{activeHeroCarouselStep.title}</Text>
+                  <Text typography="bodySmall1" color="systemGrayscale60">
+                    {activeHeroCarouselStep.description}
                   </Text>
                 </div>
-                <Text typography="titleMedium">{activeHeroCarouselStep.title}</Text>
-                <Text typography="bodySmall1" color="systemGrayscale60">
-                  {activeHeroCarouselStep.description}
-                </Text>
-                <div css={styles.heroCarouselActions}>
-                  <PrimaryButtonSmall onClick={() => openBuilder(activeHeroCarouselStep.prompt)} css={styles.primaryAction}>
-                    Open builder
-                  </PrimaryButtonSmall>
+                <div css={styles.heroCarouselNav}>
+                  {heroCarouselSteps.map((step, index) => {
+                    const isActive = index === activeHeroCarouselIndex;
+
+                    return (
+                      <ButtonBase
+                        key={step.id}
+                        onClick={() => setActiveHeroCarouselIndex(index)}
+                        css={{
+                          ...styles.heroCarouselNavButton,
+                          ...(isActive ? styles.heroCarouselNavButtonActive : {}),
+                        }}
+                      >
+                        <Text typography="bodySmall1" css={{ color: isActive ? businessPalette.elderberryDark : businessPalette.blueberryDark }}>
+                          {step.stepLabel}
+                        </Text>
+                        <Text typography="bodySmall1">{step.navLabel}</Text>
+                        <div css={styles.heroCarouselNavProgressTrack}>
+                          {isActive ? <div css={styles.heroCarouselNavProgressFill} /> : null}
+                        </div>
+                      </ButtonBase>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div css={styles.heroCarouselNav}>
-                {heroCarouselSteps.map((step, index) => {
-                  const isActive = index === activeHeroCarouselIndex;
-
-                  return (
-                    <ButtonBase
-                      key={step.id}
-                      onClick={() => setActiveHeroCarouselIndex(index)}
-                      css={{
-                        ...styles.heroCarouselNavButton,
-                        ...(isActive ? styles.heroCarouselNavButtonActive : {}),
-                      }}
-                    >
-                      <Text typography="bodySmall1" css={{ color: isActive ? businessPalette.elderberryDark : businessPalette.blueberryDark }}>
-                        {step.stepLabel}
-                      </Text>
-                      <Text typography="bodySmall1">{step.navLabel}</Text>
-                      <div css={styles.heroCarouselNavProgressTrack}>
-                        {isActive ? <div css={styles.heroCarouselNavProgressFill} /> : null}
-                      </div>
-                    </ButtonBase>
-                  );
-                })}
+              <div css={styles.heroCarouselFooter}>
+                <div css={styles.heroCarouselActionRow}>
+                  <button
+                    type="button"
+                    onClick={() => openBuilder(activeHeroCarouselStep.prompt)}
+                    css={styles.heroCarouselActionButton}
+                  >
+                    Open builder
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        ) : (
-          <div css={styles.canvasHeader}>
-            <div css={styles.canvasTitleGroup}>
-              <Text typography="titleMedium">Dashboard canvas</Text>
-              <Text typography="bodyRegular" color="systemGrayscale60">
-                Arrange widgets to match how your team reads the page, from headline KPIs to deeper category and location analysis.
-              </Text>
-            </div>
-          </div>
-        )}
+        ) : null}
 
         {!isEmpty ? (
           <DndContext
@@ -1556,4 +1769,233 @@ function getBuilderRequestKey(prompt: string, allowedWidgetTypes: readonly Suppo
     prompt,
     allowedWidgetTypes,
   });
+}
+
+function DashboardExampleWidgetShell({ widget }: { widget: DashboardWidget }) {
+  const styles = useStyles();
+  const theme = useTheme();
+  const businessPalette = getDashboardBusinessPalette(theme);
+
+  return (
+    <article
+      css={{
+        ...styles.exampleWidgetCard,
+        gridColumn: widget.layout === 'full' ? '1 / -1' : undefined,
+      }}
+    >
+      <div css={styles.exampleWidgetHeader}>
+        <div css={styles.exampleWidgetTitleGroup}>
+          <div css={styles.exampleWidgetMetaRow}>
+            <Text typography="bodyEmphasized">{widget.title}</Text>
+            {widget.timeRangeLabel ? (
+              <div css={styles.exampleWidgetPill}>
+                <Text typography="bodySmall1" color="systemGrayscale60">
+                  {widget.timeRangeLabel}
+                </Text>
+              </div>
+            ) : null}
+          </div>
+          {widget.description ? (
+            <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetDescription}>
+              {widget.description}
+            </Text>
+          ) : null}
+        </div>
+
+        <div css={styles.exampleWidgetControls} aria-hidden="true">
+          <div css={styles.exampleWidgetLayoutControl}>
+            <div
+              css={{
+                ...styles.exampleWidgetLayoutOption,
+                ...(widget.layout === 'half' ? styles.exampleWidgetLayoutOptionActive : {}),
+              }}
+            >
+              <div css={styles.exampleWidgetLayoutGlyphHalf}>
+                <div css={styles.exampleWidgetLayoutGlyphBar} />
+                <div css={styles.exampleWidgetLayoutGlyphBar} />
+              </div>
+            </div>
+            <div
+              css={{
+                ...styles.exampleWidgetLayoutOption,
+                ...(widget.layout === 'full' ? styles.exampleWidgetLayoutOptionActive : {}),
+              }}
+            >
+              <div css={styles.exampleWidgetLayoutGlyphFull}>
+                <div css={styles.exampleWidgetLayoutGlyphBar} />
+              </div>
+            </div>
+          </div>
+
+          <div css={styles.exampleWidgetIconButton}>
+            <div css={styles.exampleWidgetGripDots}>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} css={styles.exampleWidgetGripDot} />
+              ))}
+            </div>
+          </div>
+
+          <div css={styles.exampleWidgetIconButton}>
+            <Text typography="bodySmall1" color="systemGrayscale70">
+              Remove
+            </Text>
+          </div>
+        </div>
+      </div>
+
+      <div css={styles.exampleWidgetBody}>{renderExampleWidgetBody(widget, styles, theme, businessPalette)}</div>
+    </article>
+  );
+}
+
+function renderExampleWidgetBody(
+  widget: DashboardWidget,
+  styles: ReturnType<typeof useStyles>,
+  theme: Theme,
+  businessPalette: ReturnType<typeof getDashboardBusinessPalette>,
+) {
+  switch (widget.widgetType) {
+    case 'lineChart': {
+      const chartPoints = getExampleLinePreviewPoints(widget);
+
+      return (
+        <>
+          <div css={styles.previewChartSurface}>
+            <svg viewBox="0 0 520 180" preserveAspectRatio="none" css={styles.previewLineSvg} aria-hidden="true">
+              <path d="M0 34 H520" stroke="rgba(43, 120, 198, 0.16)" strokeDasharray="5 5" />
+              <path d="M0 86 H520" stroke="rgba(43, 120, 198, 0.16)" strokeDasharray="5 5" />
+              <path d="M0 138 H520" stroke="rgba(43, 120, 198, 0.16)" strokeDasharray="5 5" />
+              <path
+                d={chartPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')}
+                fill="none"
+                stroke={businessPalette.elderberry}
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {chartPoints.map((point, index) => (
+                <circle
+                  key={point.label}
+                  cx={point.x}
+                  cy={point.y}
+                  r={index === chartPoints.length - 1 ? 5 : 4}
+                  fill={theme.colors.systemGrayscale00}
+                  stroke={index === chartPoints.length - 1 ? businessPalette.elderberry : businessPalette.blueberry}
+                  strokeWidth="2.5"
+                />
+              ))}
+            </svg>
+          </div>
+          <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+            {widget.data.footer}
+          </Text>
+        </>
+      );
+    }
+    case 'barChart': {
+      const maxValue = Math.max(...widget.data.bars.map(bar => bar.value), 1);
+
+      return (
+        <>
+          <div css={styles.previewChartSurface}>
+            <div css={styles.exampleBarChart} aria-hidden="true">
+              {widget.data.bars.map(bar => (
+                <div key={bar.label} css={styles.exampleBarColumnWrap}>
+                  <div
+                    css={{
+                      ...styles.exampleBarColumn,
+                      height: `${Math.max((bar.value / maxValue) * 100, 18)}%`,
+                    }}
+                  />
+                  <Text typography="bodySmall1" css={styles.exampleBarLabel}>
+                    {bar.label}
+                  </Text>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+            {widget.data.footer}
+          </Text>
+        </>
+      );
+    }
+    case 'donutChart': {
+      const total = Math.max(widget.data.segments.reduce((sum, segment) => sum + segment.value, 0), 1);
+      const donutGradient = buildExampleDonutGradient(widget, theme);
+
+      return (
+        <>
+          <div css={styles.previewChartSurface}>
+            <div css={styles.exampleDonutWrap}>
+              <div css={{ ...styles.exampleDonutChart, background: donutGradient }} />
+              <div css={styles.exampleDonutLegend}>
+                {widget.data.segments.slice(0, 3).map(segment => {
+                  const palette = getTonePalette(theme, segment.tone);
+
+                  return (
+                    <div key={segment.label} css={styles.exampleDonutLegendRow}>
+                      <div css={{ ...styles.exampleDonutLegendDot, backgroundColor: palette.accent }} />
+                      <Text typography="bodySmall1" css={styles.exampleDonutLegendLabel}>
+                        {segment.label}
+                      </Text>
+                      <Text typography="bodySmall1" color="systemGrayscale60">
+                        {Math.round((segment.value / total) * 100)}%
+                      </Text>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+            {widget.data.footer}
+          </Text>
+        </>
+      );
+    }
+    default:
+      return (
+        <Text typography="bodySmall1" color="systemGrayscale60" css={styles.exampleWidgetFooter}>
+          This example widget preview is unavailable.
+        </Text>
+      );
+  }
+}
+
+function getExampleLinePreviewPoints(widget: Extract<DashboardWidget, { widgetType: 'lineChart' }>) {
+  const points = widget.data.points;
+  const chartWidth = 520;
+  const leftPadding = 18;
+  const rightPadding = 20;
+  const topPadding = 30;
+  const bottomPadding = 140;
+  const maxValue = Math.max(...points.map(point => point.value), 1);
+  const minValue = Math.min(...points.map(point => point.value));
+  const valueRange = Math.max(maxValue - minValue, 1);
+  const xStep = points.length > 1 ? (chartWidth - leftPadding - rightPadding) / (points.length - 1) : 0;
+
+  return points.map((point, index) => ({
+    label: point.label,
+    x: Number((leftPadding + xStep * index).toFixed(2)),
+    y: Number((bottomPadding - ((point.value - minValue) / valueRange) * (bottomPadding - topPadding)).toFixed(2)),
+  }));
+}
+
+function buildExampleDonutGradient(widget: Extract<DashboardWidget, { widgetType: 'donutChart' }>, theme: Theme) {
+  const total = Math.max(widget.data.segments.reduce((sum, segment) => sum + segment.value, 0), 1);
+  let currentAngle = 0;
+
+  const gradientStops = widget.data.segments.map(segment => {
+    const palette = getTonePalette(theme, segment.tone);
+    const startAngle = currentAngle;
+    const sweep = (segment.value / total) * 360;
+    const endAngle = startAngle + sweep;
+
+    currentAngle = endAngle;
+
+    return `${palette.accent} ${startAngle}deg ${endAngle}deg`;
+  });
+
+  return `conic-gradient(${gradientStops.join(', ')})`;
 }
