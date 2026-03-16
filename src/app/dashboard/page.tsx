@@ -1,6 +1,13 @@
 import { DashboardContent } from '@/app/dashboard/dashboard-content';
-import { mockDashboardData } from '@/app/dashboard/dashboard-mock-data';
+import { dashboardPromptSuggestions, getStarterDashboardWidgets } from '@/app/dashboard/dashboard-builder-mocks';
+import { supportedDashboardWidgets } from '@/app/dashboard/dashboard-supported-widgets';
 
 export default function Dashboard() {
-  return <DashboardContent dashboard={mockDashboardData} />;
+  return (
+    <DashboardContent
+      initialWidgets={getStarterDashboardWidgets()}
+      promptSuggestions={dashboardPromptSuggestions}
+      supportedWidgets={supportedDashboardWidgets}
+    />
+  );
 }

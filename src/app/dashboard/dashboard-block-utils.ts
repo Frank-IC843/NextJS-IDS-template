@@ -1,5 +1,5 @@
 import type { Theme } from '@instacart/ids-core';
-import type { DashboardTone } from '@/app/dashboard/dashboard-mock-data';
+import type { DashboardTone } from '@/app/dashboard/dashboard-builder-types';
 
 export interface TonePalette {
   accent: string;
@@ -17,9 +17,9 @@ export function getTonePalette(theme: Theme, tone: DashboardTone): TonePalette {
       };
     case 'brand':
       return {
-        accent: theme.colors.brandPrimaryRegular,
-        soft: 'rgba(10, 173, 10, 0.12)',
-        border: 'rgba(10, 173, 10, 0.22)',
+        accent: theme.colors.brandHighlightRegular,
+        soft: 'rgba(43, 120, 198, 0.12)',
+        border: 'rgba(43, 120, 198, 0.22)',
       };
     case 'caution':
       return {
@@ -35,13 +35,4 @@ export function getTonePalette(theme: Theme, tone: DashboardTone): TonePalette {
         border: theme.colors.systemGrayscale20,
       };
   }
-}
-
-export function getInitials(label: string) {
-  return label
-    .split(' ')
-    .map(part => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 }
