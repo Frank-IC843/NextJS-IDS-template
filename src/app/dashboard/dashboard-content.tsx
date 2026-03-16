@@ -6,13 +6,14 @@ import {
   KeyboardSensor,
   PointerSensor,
   type DragEndEvent,
+  type Modifier,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
 import { arrayMove, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { responsive, useTheme } from '@instacart/ids-core';
 import { SecondaryButtonSmall, Text } from '@instacart/ids-customers';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import {
@@ -206,6 +207,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
   const defaultPrompt = promptSuggestions[0] ?? '';
+  const pageRef = useRef<HTMLDivElement | null>(null);
   const [widgets, setWidgets] = useState(initialWidgets);
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -222,6 +224,45 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+
+  const restrictToPageBounds: Modifier = ({ draggingNodeRect, activeNodeRect, transform }) => {
+    const pageRect = pageRef.current?.getBoundingClientRect();
+    const nodeRect = draggingNodeRect ?? activeNodeRect;
+
+    if (!pageRect || !nodeRect) {
+      return transform;
+    }
+
+    let x = transform.x;
+    let y = transform.y;
+
+    const nextLeft = nodeRect.left + x;
+    const nextRight = nodeRect.right + x;
+    const nextTop = nodeRect.top + y;
+    const nextBottom = nodeRect.bottom + y;
+
+    if (nextLeft < pageRect.left) {
+      x += pageRect.left - nextLeft;
+    }
+
+    if (nextRight > pageRect.right) {
+      x -= nextRight - pageRect.right;
+    }
+
+    if (nextTop < pageRect.top) {
+      y += pageRect.top - nextTop;
+    }
+
+    if (nextBottom > pageRect.bottom) {
+      y -= nextBottom - pageRect.bottom;
+    }
+
+    return {
+      ...transform,
+      x,
+      y,
+    };
+  };
 
   function openBuilder() {
     setRequestError(null);
@@ -311,7 +352,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   }
 
   return (
-    <div css={styles.container}>
+    <div ref={pageRef} css={styles.container}>
       <section css={styles.overviewCard}>
         <div css={styles.overviewBody}>
           <Text typography="bodySmall1" css={{ ...styles.eyebrow, color: businessPalette.elderberryDark }}>
@@ -384,19 +425,6 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
               Arrange cards to match how your team reads the page, from headline KPIs to deeper category and location analysis.
             </Text>
           </div>
-
-          <div css={styles.canvasMeta}>
-            <div css={styles.statusPill}>
-              <Text typography="bodySmall1" css={{ color: businessPalette.blueberryDark }}>
-                {widgets.length} widget{widgets.length === 1 ? '' : 's'}
-              </Text>
-            </div>
-            {isGenerating ? (
-              <Text typography="bodySmall1" color="systemGrayscale60">
-                Generating widget...
-              </Text>
-            ) : null}
-          </div>
         </div>
 
         {lastPrompt ? (
@@ -411,7 +439,12 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         ) : null}
 
         {widgets.length ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            modifiers={[restrictToPageBounds]}
+            onDragEnd={handleDragEnd}
+          >
             <SortableContext items={widgets.map(widget => widget.id)} strategy={rectSortingStrategy}>
               <div css={styles.canvasGrid}>
                 {widgets.map(widget => (

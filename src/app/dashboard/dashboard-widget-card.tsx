@@ -17,6 +17,7 @@ function useStyles() {
       display: 'flex',
       flexDirection: 'column' as const,
       gap: '18px',
+      position: 'relative' as const,
       borderRadius: theme.radius.r12,
       border: `1px solid ${businessPalette.blueberryBorder}`,
       backgroundColor: theme.colors.systemGrayscale00,
@@ -118,7 +119,8 @@ export function DashboardWidgetCard({ widget, onRemove }: DashboardWidgetCardPro
         gridColumn: widget.layout === 'full' ? '1 / -1' : undefined,
         transform: translatedTransform,
         transition,
-        opacity: isDragging ? 0.82 : 1,
+        opacity: 1,
+        zIndex: isDragging ? 20 : 1,
         boxShadow: isDragging ? '0 18px 44px rgba(17, 24, 39, 0.16)' : styles.card.boxShadow,
         borderColor: isDragging ? businessPalette.blueberry : businessPalette.blueberryBorder,
       }}
