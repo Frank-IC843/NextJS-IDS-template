@@ -8,7 +8,7 @@ import {
   dashboardGenerateResponseSchema,
   singleWidgetRequestSchema,
 } from '@/app/dashboard/dashboard-builder-types';
-import { dashboardWidgetSystemPrompt } from '@/app/api/dashboard/generate/system-prompt';
+import { buildDashboardWidgetSystemPrompt } from '@/app/api/dashboard/generate/system-prompt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,14 +16,20 @@ export async function POST(request: NextRequest) {
     const parsedInput = dashboardGenerateInputSchema.safeParse(body);
 
     if (!parsedInput.success) {
-      return NextResponse.json({ error: 'Prompt is required to generate widgets.' }, { status: 400 });
+      return NextResponse.json({ error: 'A prompt and at least one allowed widget type are required.' }, { status: 400 });
     }
 
-    if (!dashboardWidgetSystemPrompt) {
+    const systemPrompt = buildDashboardWidgetSystemPrompt(parsedInput.data.allowedWidgetTypes);
+
+    if (!systemPrompt) {
       return NextResponse.json({ error: 'Dashboard widget generation is unavailable.' }, { status: 500 });
     }
 
-    const parsedWidgetRequest = singleWidgetRequestSchema.safeParse(mockGenerateWidgetRequest(parsedInput.data.prompt));
+    const parsedWidgetRequest = singleWidgetRequestSchema.safeParse(
+      mockGenerateWidgetRequest(parsedInput.data.prompt, {
+        allowedWidgetTypes: parsedInput.data.allowedWidgetTypes,
+      }),
+    );
 
     if (!parsedWidgetRequest.success) {
       console.error('Dashboard widget request validation failed:', parsedWidgetRequest.error.flatten());
@@ -42,6 +48,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(hydratedResponse.data);
   } catch (error) {
     console.error('Dashboard generate route failed:', error);
-    return NextResponse.json({ error: 'Unable to generate widgets right now.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to generate a widget right now.' }, { status: 500 });
   }
 }

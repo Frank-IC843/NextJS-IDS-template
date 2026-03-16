@@ -17,7 +17,6 @@ import { ButtonBase, SecondaryButtonSmall, Text } from '@instacart/ids-customers
 import { useEffect, useRef, useState } from 'react';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
-import { createQuickAddWidget } from '@/app/dashboard/dashboard-builder-mocks';
 import {
   dashboardGenerateResponseSchema,
   type DashboardWidget,
@@ -633,6 +632,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
   const defaultPrompt = promptSuggestions[0] ?? '';
+  const allWidgetTypes = supportedWidgets.map(widget => widget.type);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const [widgets, setWidgets] = useState(initialWidgets);
   const isEmpty = widgets.length === 0;
@@ -640,6 +640,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const [isGenerating, setIsGenerating] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [allowedWidgetTypes, setAllowedWidgetTypes] = useState<SupportedWidgetDefinition['type'][]>(allWidgetTypes);
   const [activeHeroCarouselIndex, setActiveHeroCarouselIndex] = useState(0);
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -718,7 +719,12 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
     const trimmedPrompt = prompt.trim();
 
     if (!trimmedPrompt) {
-      setRequestError('Enter a prompt before generating widgets.');
+      setRequestError('Enter a prompt before generating a widget.');
+      return;
+    }
+
+    if (allowedWidgetTypes.length === 0) {
+      setRequestError('Select at least one widget type for the builder.');
       return;
     }
 
@@ -731,7 +737,10 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: trimmedPrompt }),
+        body: JSON.stringify({
+          prompt: trimmedPrompt,
+          allowedWidgetTypes,
+        }),
       });
       const payload = await response.json();
 
@@ -758,10 +767,15 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
     }
   }
 
-  function handleQuickAdd(widgetType: SupportedWidgetDefinition['type']) {
-    setWidgets(currentWidgets => [...currentWidgets, createQuickAddWidget(widgetType)]);
+  function handleAllowedWidgetTypeToggle(widgetType: SupportedWidgetDefinition['type']) {
+    setAllowedWidgetTypes(currentTypes => {
+      const nextTypes = currentTypes.includes(widgetType)
+        ? currentTypes.filter(currentType => currentType !== widgetType)
+        : [...currentTypes, widgetType];
+
+      return allWidgetTypes.filter(type => nextTypes.includes(type));
+    });
     setRequestError(null);
-    setIsBuilderOpen(false);
   }
 
   function handleRemove(widgetId: string) {
@@ -1146,13 +1160,14 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         errorMessage={requestError}
         promptSuggestions={promptSuggestions}
         supportedWidgets={supportedWidgets}
+        selectedWidgetTypes={allowedWidgetTypes}
         onPromptChange={setPrompt}
         onPromptSubmit={handlePromptSubmit}
         onPromptSuggestionClick={suggestion => {
           setPrompt(suggestion);
           setRequestError(null);
         }}
-        onQuickAdd={handleQuickAdd}
+        onWidgetTypeToggle={handleAllowedWidgetTypeToggle}
         onClose={() => {
           if (!isGenerating) {
             setIsBuilderOpen(false);

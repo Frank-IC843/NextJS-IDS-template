@@ -199,16 +199,17 @@ export function getStarterDashboardWidgets(): DashboardWidget[] {
   ];
 }
 
-export function createQuickAddWidget(widgetType: SupportedWidgetType) {
-  return hydrateWidgetRequest(buildDefaultWidgetRequest(widgetType));
-}
-
-export function mockGenerateWidgetRequest(prompt: string): WidgetRequest {
+export function mockGenerateWidgetRequest(
+  prompt: string,
+  options?: {
+    allowedWidgetTypes?: SupportedWidgetType[];
+  },
+): WidgetRequest {
   const normalizedPrompt = prompt.toLowerCase();
   const timeRange = inferTimeRange(normalizedPrompt);
   const metric = inferMetricKey(normalizedPrompt);
   const groupBy = inferGroupBy(normalizedPrompt);
-  const widgetType = inferWidgetType(normalizedPrompt);
+  const widgetType = resolveAllowedWidgetType(inferWidgetType(normalizedPrompt), options?.allowedWidgetTypes);
 
   return buildDefaultWidgetRequest(widgetType, { metric, timeRange, groupBy });
 }
@@ -586,6 +587,21 @@ function inferWidgetType(prompt: string): SupportedWidgetType {
   }
 
   return 'lineChart';
+}
+
+function resolveAllowedWidgetType(
+  preferredWidgetType: SupportedWidgetType,
+  allowedWidgetTypes?: SupportedWidgetType[],
+): SupportedWidgetType {
+  if (!allowedWidgetTypes || allowedWidgetTypes.length === 0) {
+    return preferredWidgetType;
+  }
+
+  if (allowedWidgetTypes.includes(preferredWidgetType)) {
+    return preferredWidgetType;
+  }
+
+  return allowedWidgetTypes[0];
 }
 
 function hasPromptKeyword(prompt: string, keywords: string[]) {

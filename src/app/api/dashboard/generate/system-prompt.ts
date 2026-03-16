@@ -1,7 +1,9 @@
+import type { SupportedWidgetType } from '@/app/dashboard/dashboard-builder-types';
 import { supportedDashboardWidgets } from '@/app/dashboard/dashboard-supported-widgets';
 
-export function buildDashboardWidgetSystemPrompt() {
+export function buildDashboardWidgetSystemPrompt(allowedWidgetTypes: SupportedWidgetType[]) {
   const widgetCatalog = supportedDashboardWidgets
+    .filter(widget => allowedWidgetTypes.includes(widget.type))
     .map(
       widget =>
         `- ${widget.type}: ${widget.description} Default title: ${widget.defaultTitle}. Guidance: ${widget.promptHint}`,
@@ -31,5 +33,3 @@ WidgetRequest fields:
 - layoutHint
 `;
 }
-
-export const dashboardWidgetSystemPrompt = buildDashboardWidgetSystemPrompt();

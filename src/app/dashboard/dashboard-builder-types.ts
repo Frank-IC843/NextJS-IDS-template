@@ -14,6 +14,7 @@ export type DashboardTimeRange = z.infer<typeof dashboardTimeRangeSchema>;
 
 export const dashboardGenerateInputSchema = z.object({
   prompt: z.string().trim().min(1).max(400),
+  allowedWidgetTypes: z.array(supportedWidgetTypeSchema).min(1),
 });
 export type DashboardGenerateInput = z.infer<typeof dashboardGenerateInputSchema>;
 
