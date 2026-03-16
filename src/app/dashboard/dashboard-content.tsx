@@ -19,6 +19,7 @@ import {
 import { arrayMove, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { responsive, type Theme, useTheme } from '@instacart/ids-core';
 import { ButtonBase, SecondaryButtonSmall, Text } from '@instacart/ids-customers';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getTonePalette } from '@/app/dashboard/dashboard-block-utils';
@@ -229,7 +230,6 @@ const useStyles = () => {
     heroCarouselFooter: {
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '12px',
       paddingTop: '2px',
     },
     heroCarouselActionRow: {
@@ -460,6 +460,8 @@ const useStyles = () => {
       display: 'grid',
       gap: '8px',
       gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+      marginTop: 'auto',
+      marginBottom: 'auto',
     },
     heroCarouselNavButton: {
       display: 'flex',
@@ -967,6 +969,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const [activeHeroCarouselIndex, setActiveHeroCarouselIndex] = useState(0);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverWidgetId, setDragOverWidgetId] = useState<string | null>(null);
+  const prefersReducedMotion = useReducedMotion();
   const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -980,6 +983,30 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   );
   const activeHeroCarouselStep = heroCarouselSteps[activeHeroCarouselIndex];
   const isCanvasDragging = activeDragId !== null;
+  const heroCarouselStepTransition = prefersReducedMotion
+    ? undefined
+    : {
+        initial: {
+          opacity: 0,
+          y: 12,
+        },
+        animate: {
+          opacity: 1,
+          y: 0,
+          transition: {
+            duration: 0.34,
+            ease: [0.22, 1, 0.36, 1] as const,
+          },
+        },
+        exit: {
+          opacity: 0,
+          y: -10,
+          transition: {
+            duration: 0.22,
+            ease: [0.4, 0, 1, 1] as const,
+          },
+        },
+      };
   const collisionDetectionStrategy: CollisionDetection = args => {
     const pointerCollisions = pointerWithin(args);
 
@@ -1645,14 +1672,24 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
               </div>
 
               <div css={styles.heroCarouselMain}>
-                <div css={styles.heroCarouselStage}>{renderHeroCarouselStage(activeHeroCarouselStep.id)}</div>
+                <AnimatePresence initial={false} mode="wait">
+                  <motion.div
+                    key={activeHeroCarouselStep.id}
+                    css={styles.heroCarouselBody}
+                    initial={heroCarouselStepTransition?.initial}
+                    animate={heroCarouselStepTransition?.animate}
+                    exit={heroCarouselStepTransition?.exit}
+                  >
+                    <div css={styles.heroCarouselStage}>{renderHeroCarouselStage(activeHeroCarouselStep.id)}</div>
 
-                <div css={styles.heroCarouselCopy}>
-                  <Text typography="bodyEmphasized">{activeHeroCarouselStep.title}</Text>
-                  <Text typography="bodySmall1" color="systemGrayscale60">
-                    {activeHeroCarouselStep.description}
-                  </Text>
-                </div>
+                    <div css={styles.heroCarouselCopy}>
+                      <Text typography="bodyEmphasized">{activeHeroCarouselStep.title}</Text>
+                      <Text typography="bodySmall1" color="systemGrayscale60">
+                        {activeHeroCarouselStep.description}
+                      </Text>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
                 <div css={styles.heroCarouselNav}>
                   {heroCarouselSteps.map((step, index) => {
                     const isActive = index === activeHeroCarouselIndex;
@@ -1800,46 +1837,6 @@ function DashboardExampleWidgetShell({ widget }: { widget: DashboardWidget }) {
               {widget.description}
             </Text>
           ) : null}
-        </div>
-
-        <div css={styles.exampleWidgetControls} aria-hidden="true">
-          <div css={styles.exampleWidgetLayoutControl}>
-            <div
-              css={{
-                ...styles.exampleWidgetLayoutOption,
-                ...(widget.layout === 'half' ? styles.exampleWidgetLayoutOptionActive : {}),
-              }}
-            >
-              <div css={styles.exampleWidgetLayoutGlyphHalf}>
-                <div css={styles.exampleWidgetLayoutGlyphBar} />
-                <div css={styles.exampleWidgetLayoutGlyphBar} />
-              </div>
-            </div>
-            <div
-              css={{
-                ...styles.exampleWidgetLayoutOption,
-                ...(widget.layout === 'full' ? styles.exampleWidgetLayoutOptionActive : {}),
-              }}
-            >
-              <div css={styles.exampleWidgetLayoutGlyphFull}>
-                <div css={styles.exampleWidgetLayoutGlyphBar} />
-              </div>
-            </div>
-          </div>
-
-          <div css={styles.exampleWidgetIconButton}>
-            <div css={styles.exampleWidgetGripDots}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} css={styles.exampleWidgetGripDot} />
-              ))}
-            </div>
-          </div>
-
-          <div css={styles.exampleWidgetIconButton}>
-            <Text typography="bodySmall1" color="systemGrayscale70">
-              Remove
-            </Text>
-          </div>
         </div>
       </div>
 
