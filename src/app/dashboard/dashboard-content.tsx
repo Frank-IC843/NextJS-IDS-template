@@ -32,6 +32,11 @@ import type { SupportedWidgetDefinition } from '@/app/dashboard/dashboard-suppor
 import { DashboardWidgetShell } from '@/app/dashboard/dashboard-widget-shell';
 
 const HERO_CAROUSEL_AUTOPLAY_MS = 4800;
+type BuilderAction = 'generate' | 'preview';
+type PreviewCacheEntry = {
+  requestKey: string;
+  widget: DashboardWidget;
+};
 
 const heroCarouselEnter = keyframes`
   0% {
@@ -678,9 +683,12 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [allowedWidgetTypes, setAllowedWidgetTypes] = useState<SupportedWidgetDefinition['type'][]>(allWidgetTypes);
+  const [previewWidget, setPreviewWidget] = useState<DashboardWidget | null>(null);
+  const [pendingBuilderAction, setPendingBuilderAction] = useState<BuilderAction | null>(null);
   const [activeHeroCarouselIndex, setActiveHeroCarouselIndex] = useState(0);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverWidgetId, setDragOverWidgetId] = useState<string | null>(null);
+  const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -734,6 +742,8 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
     let x = transform.x;
     let y = transform.y;
+    const leftBound = canvasGridRect?.left ?? pageRect.left;
+    const rightBound = canvasGridRect?.right ?? pageRect.right;
     const topBound = canvasGridRect?.top ?? pageRect.top;
 
     const nextLeft = nodeRect.left + x;
@@ -741,12 +751,12 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
     const nextTop = nodeRect.top + y;
     const nextBottom = nodeRect.bottom + y;
 
-    if (nextLeft < pageRect.left) {
-      x += pageRect.left - nextLeft;
+    if (nextLeft < leftBound) {
+      x += leftBound - nextLeft;
     }
 
-    if (nextRight > pageRect.right) {
-      x -= nextRight - pageRect.right;
+    if (nextRight > rightBound) {
+      x -= nextRight - rightBound;
     }
 
     if (nextTop < topBound) {
@@ -771,26 +781,36 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
   function openBuilder(nextPrompt?: string) {
     setRequestError(null);
+    setPreviewWidget(null);
     if (typeof nextPrompt === 'string') {
       setPrompt(nextPrompt);
     }
     setIsBuilderOpen(true);
   }
 
-  async function handlePromptSubmit() {
+  async function requestGeneratedWidget(action: BuilderAction) {
     const trimmedPrompt = prompt.trim();
 
     if (!trimmedPrompt) {
       setRequestError('Enter a prompt before generating a widget.');
-      return;
+      return null;
     }
 
     if (allowedWidgetTypes.length === 0) {
       setRequestError('Select at least one widget type for the builder.');
-      return;
+      return null;
+    }
+
+    const requestKey = getBuilderRequestKey(trimmedPrompt, allowedWidgetTypes);
+    const cachedPreview = previewCacheRef.current;
+
+    if (cachedPreview?.requestKey === requestKey) {
+      setRequestError(null);
+      return cachedPreview.widget;
     }
 
     setIsGenerating(true);
+    setPendingBuilderAction(action);
     setRequestError(null);
 
     try {
@@ -808,25 +828,71 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
       if (!response.ok) {
         setRequestError(typeof payload?.error === 'string' ? payload.error : 'Unable to generate a widget right now.');
-        return;
+        return null;
       }
 
       const parsedResponse = dashboardGenerateResponseSchema.safeParse(payload);
 
       if (!parsedResponse.success) {
         setRequestError('The widget response did not match the supported schema.');
-        return;
+        return null;
       }
 
-      setWidgets(currentWidgets => [...currentWidgets, parsedResponse.data.widget]);
-      setPrompt(defaultPrompt);
-      setIsBuilderOpen(false);
+      if (action === 'preview') {
+        previewCacheRef.current = {
+          requestKey,
+          widget: parsedResponse.data.widget,
+        };
+      }
+
+      return parsedResponse.data.widget;
     } catch (error) {
       console.error('Dashboard prompt request failed:', error);
       setRequestError('Unable to generate a widget right now.');
+      return null;
     } finally {
       setIsGenerating(false);
+      setPendingBuilderAction(null);
     }
+  }
+
+  async function handlePromptSubmit() {
+    const widget = await requestGeneratedWidget('generate');
+
+    if (!widget) {
+      return;
+    }
+
+    setWidgets(currentWidgets => [...currentWidgets, widget]);
+    setPreviewWidget(null);
+    setPrompt(defaultPrompt);
+    setIsBuilderOpen(false);
+  }
+
+  async function handlePreviewSubmit() {
+    const widget = await requestGeneratedWidget('preview');
+
+    if (!widget) {
+      return;
+    }
+
+    setPreviewWidget(widget);
+  }
+
+  function handlePreviewConfirm() {
+    if (!previewWidget) {
+      return;
+    }
+
+    setWidgets(currentWidgets => [...currentWidgets, previewWidget]);
+    setPreviewWidget(null);
+    setPrompt(defaultPrompt);
+    setRequestError(null);
+    setIsBuilderOpen(false);
+  }
+
+  function handlePreviewBack() {
+    setPreviewWidget(null);
   }
 
   function handleAllowedWidgetTypeToggle(widgetType: SupportedWidgetDefinition['type']) {
@@ -837,6 +903,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
 
       return allWidgetTypes.filter(type => nextTypes.includes(type));
     });
+    setPreviewWidget(null);
     setRequestError(null);
   }
 
@@ -862,9 +929,11 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   function handleReset() {
     setWidgets(initialWidgets);
     setPrompt(defaultPrompt);
+    setPreviewWidget(null);
     setRequestError(null);
     setIsBuilderOpen(false);
     setActiveHeroCarouselIndex(0);
+    previewCacheRef.current = null;
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -925,21 +994,41 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
                     ),
                   },
                   {
-                    label: 'Insight',
+                    label: 'Donut',
                     active: true,
                     preview: (
-                      <div css={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {[70, 52].map(width => (
-                          <div
-                            key={width}
-                            css={{
-                              width: `${width}%`,
-                              height: '5px',
+                      <div css={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                        <div
+                          css={{
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '999px',
+                            background:
+                              'conic-gradient(#6E48E5 0deg 148deg, #2B78C6 148deg 282deg, rgba(43, 120, 198, 0.18) 282deg 360deg)',
+                            position: 'relative',
+                            flexShrink: 0,
+                            '&::after': {
+                              content: '""',
+                              position: 'absolute',
+                              inset: '5px',
                               borderRadius: '999px',
-                              backgroundColor: businessPalette.blueberrySoft,
-                            }}
-                          />
-                        ))}
+                              backgroundColor: theme.colors.systemGrayscale00,
+                            },
+                          }}
+                        />
+                        <div css={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flex: 1 }}>
+                          {[68, 46].map(width => (
+                            <div
+                              key={width}
+                              css={{
+                                width: `${width}%`,
+                                height: '4px',
+                                borderRadius: '999px',
+                                backgroundColor: width === 68 ? businessPalette.blueberrySoft : 'rgba(43, 120, 198, 0.18)',
+                              }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     ),
                   },
@@ -985,30 +1074,41 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
             <div css={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
               <div
                 css={{
-                  flex: 1,
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px',
-                  padding: '10px 12px',
-                  borderRadius: theme.radius.r12,
-                  border: `1px solid rgba(110, 72, 229, 0.18)`,
-                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  gap: '6px',
+                  height: '100%',
                 }}
               >
                 <Text typography="bodySmall1" color="systemGrayscale60">
                   Prompt
                 </Text>
-                <Text typography="bodyEmphasized">Show order volume over the last 8 weeks.</Text>
                 <div
                   css={{
-                    marginTop: 'auto',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    minHeight: '58px',
+                    padding: '10px 12px',
+                    borderRadius: theme.radius.r12,
+                    border: `1px solid ${theme.colors.systemGrayscale20}`,
+                    backgroundColor: theme.colors.systemGrayscale00,
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+                  }}
+                >
+                  <Text typography="bodySmall1" css={{ lineHeight: 1.4, color: theme.colors.systemGrayscale90 }}>
+                    Add a line chart showing order volume over the last 8 weeks.
+                  </Text>
+                </div>
+                <div
+                  css={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
                     flexWrap: 'wrap',
+                    marginTop: 'auto',
                   }}
                 >
-                  {['Try example', 'Refine prompt'].map(label => (
+                  {['Orders over time', 'Example request'].map(label => (
                     <div
                       key={label}
                       css={{
@@ -1023,32 +1123,6 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
                       </Text>
                     </div>
                   ))}
-                </div>
-              </div>
-              <div
-                css={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '10px',
-                  padding: '8px 10px',
-                  borderRadius: theme.radius.r12,
-                  border: `1px solid rgba(43, 120, 198, 0.16)`,
-                  backgroundColor: 'rgba(255,255,255,0.94)',
-                }}
-              >
-                <Text typography="bodySmall1" color="systemGrayscale60">
-                  One widget per request
-                </Text>
-                <div css={{ width: '72px', height: '8px', borderRadius: '999px', backgroundColor: businessPalette.blueberrySoft }}>
-                  <div
-                    css={{
-                      width: '44px',
-                      height: '100%',
-                      borderRadius: '999px',
-                      background: 'linear-gradient(90deg, rgba(110, 72, 229, 0.92) 0%, rgba(43, 120, 198, 0.8) 100%)',
-                    }}
-                  />
                 </div>
               </div>
             </div>
@@ -1076,18 +1150,132 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
                     </Text>
                     <Text typography="bodyEmphasized">Order trend</Text>
                   </div>
-                  <div css={{ display: 'grid', gridTemplateColumns: 'repeat(2, 4px)', gap: '3px', paddingTop: '2px' }}>
-                    {Array.from({ length: 6 }).map((_, index) => (
+                  <div css={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <div
+                      css={{
+                        display: 'inline-grid',
+                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                        gap: '4px',
+                        padding: '4px',
+                        borderRadius: '999px',
+                        border: `1px solid ${businessPalette.blueberryBorder}`,
+                        backgroundColor: theme.colors.systemGrayscale00,
+                      }}
+                    >
                       <div
-                        key={index}
                         css={{
-                          width: '4px',
-                          height: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '24px',
+                          height: '20px',
                           borderRadius: '999px',
-                          backgroundColor: businessPalette.elderberryDark,
+                          backgroundColor: businessPalette.elderberrySoft,
+                          boxShadow: `inset 0 0 0 1px ${businessPalette.elderberryBorder}`,
                         }}
-                      />
-                    ))}
+                      >
+                        <div css={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '2px', width: '12px', height: '8px' }}>
+                          <div
+                            css={{
+                              borderRadius: '999px',
+                              border: `1px solid ${businessPalette.blueberryBorder}`,
+                              backgroundColor: 'rgba(43, 120, 198, 0.16)',
+                            }}
+                          />
+                          <div
+                            css={{
+                              borderRadius: '999px',
+                              border: `1px solid ${businessPalette.blueberryBorder}`,
+                              backgroundColor: 'rgba(43, 120, 198, 0.16)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        css={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '24px',
+                          height: '20px',
+                          borderRadius: '999px',
+                        }}
+                      >
+                        <div css={{ display: 'flex', width: '12px', height: '8px' }}>
+                          <div
+                            css={{
+                              flex: 1,
+                              borderRadius: '999px',
+                              border: `1px solid ${businessPalette.blueberryBorder}`,
+                              backgroundColor: 'rgba(43, 120, 198, 0.16)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      css={{
+                        position: 'relative',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '999px',
+                        border: `1px solid ${businessPalette.blueberryBorder}`,
+                        backgroundColor: theme.colors.systemGrayscale00,
+                      }}
+                    >
+                      <div css={{ display: 'grid', gridTemplateColumns: 'repeat(2, 4px)', gap: '3px' }}>
+                        {Array.from({ length: 6 }).map((_, index) => (
+                          <div
+                            key={index}
+                            css={{
+                              width: '4px',
+                              height: '4px',
+                              borderRadius: '999px',
+                              backgroundColor: businessPalette.elderberryDark,
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <svg
+                        viewBox="0 0 18 22"
+                        css={{
+                          position: 'absolute',
+                          right: '-4px',
+                          top: '-7px',
+                          width: '18px',
+                          height: '22px',
+                          filter: 'drop-shadow(0 4px 8px rgba(17, 24, 39, 0.18))',
+                        }}
+                      >
+                        <path
+                          d="M2 1.5 L12.8 10.3 L8.6 10.9 L11.5 18.4 L8.7 19.4 L5.8 12 L2 14.8 Z"
+                          fill={theme.colors.systemGrayscale00}
+                          stroke={businessPalette.elderberryDark}
+                          strokeWidth="1.4"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <div
+                      css={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '54px',
+                        height: '32px',
+                        padding: '0 10px',
+                        borderRadius: '999px',
+                        border: `1px solid ${businessPalette.blueberryBorder}`,
+                        backgroundColor: theme.colors.systemGrayscale00,
+                      }}
+                    >
+                      <Text typography="bodySmall1" color="systemGrayscale70">
+                        Remove
+                      </Text>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1332,12 +1520,20 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         isOpen={isBuilderOpen}
         prompt={prompt}
         isGenerating={isGenerating}
+        pendingAction={pendingBuilderAction}
         errorMessage={requestError}
+        previewWidget={previewWidget}
         promptSuggestions={promptSuggestions}
         supportedWidgets={supportedWidgets}
         selectedWidgetTypes={allowedWidgetTypes}
-        onPromptChange={setPrompt}
+        onPromptChange={value => {
+          setPrompt(value);
+          setRequestError(null);
+        }}
         onPromptSubmit={handlePromptSubmit}
+        onPreviewSubmit={handlePreviewSubmit}
+        onPreviewBack={handlePreviewBack}
+        onPreviewConfirm={handlePreviewConfirm}
         onPromptSuggestionClick={suggestion => {
           setPrompt(suggestion);
           setRequestError(null);
@@ -1345,10 +1541,19 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
         onWidgetTypeToggle={handleAllowedWidgetTypeToggle}
         onClose={() => {
           if (!isGenerating) {
+            setPreviewWidget(null);
+            setRequestError(null);
             setIsBuilderOpen(false);
           }
         }}
       />
     </div>
   );
+}
+
+function getBuilderRequestKey(prompt: string, allowedWidgetTypes: readonly SupportedWidgetDefinition['type'][]) {
+  return JSON.stringify({
+    prompt,
+    allowedWidgetTypes,
+  });
 }

@@ -56,6 +56,7 @@ function useStyles() {
       alignItems: 'center',
       gap: '8px',
       flexShrink: 0,
+      overflow: 'visible' as const,
     },
     layoutControl: {
       display: 'inline-grid',
@@ -65,6 +66,15 @@ function useStyles() {
       borderRadius: '999px',
       border: `1px solid ${businessPalette.blueberryBorder}`,
       backgroundColor: theme.colors.systemGrayscale00,
+      overflow: 'visible' as const,
+    },
+    layoutOptionWrap: {
+      position: 'relative' as const,
+      display: 'inline-flex',
+      '&:hover [data-layout-tooltip], & [data-layout-trigger]:focus-visible + [data-layout-tooltip]': {
+        opacity: 1,
+        transform: 'translateX(-50%) translateY(0)',
+      },
     },
     layoutOption: {
       display: 'inline-flex',
@@ -80,6 +90,10 @@ function useStyles() {
       '&:hover': {
         transform: 'translateY(-1px)',
         backgroundColor: businessPalette.blueberrySoft,
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${businessPalette.blueberry}`,
+        outlineOffset: '2px',
       },
     },
     layoutOptionActive: {
@@ -103,6 +117,37 @@ function useStyles() {
       borderRadius: '999px',
       border: `1px solid ${businessPalette.blueberryBorder}`,
       backgroundColor: 'rgba(43, 120, 198, 0.16)',
+    },
+    layoutTooltip: {
+      position: 'absolute' as const,
+      left: '50%',
+      bottom: 'calc(100% + 8px)',
+      transform: 'translateX(-50%) translateY(4px)',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '6px 10px',
+      borderRadius: theme.radius.r12,
+      border: `1px solid ${businessPalette.blueberryBorder}`,
+      backgroundColor: theme.colors.systemGrayscale00,
+      boxShadow: '0 12px 24px rgba(17, 24, 39, 0.12)',
+      whiteSpace: 'nowrap' as const,
+      pointerEvents: 'none' as const,
+      opacity: 0,
+      transition: 'opacity 0.18s ease, transform 0.18s ease',
+      zIndex: 3,
+      '&::after': {
+        content: '""',
+        position: 'absolute' as const,
+        top: '100%',
+        left: '50%',
+        width: '8px',
+        height: '8px',
+        borderRight: `1px solid ${businessPalette.blueberryBorder}`,
+        borderBottom: `1px solid ${businessPalette.blueberryBorder}`,
+        backgroundColor: theme.colors.systemGrayscale00,
+        transform: 'translateX(-50%) rotate(45deg)',
+      },
     },
     iconButton: {
       display: 'inline-flex',
@@ -203,37 +248,58 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
 
         <div css={styles.controls}>
           <div css={styles.layoutControl} aria-label={`${widget.title} width`}>
-            <button
-              type="button"
-              aria-label={`Set ${widget.title} to one column`}
-              aria-pressed={widget.layout === 'half'}
-              css={{
-                ...styles.layoutOption,
-                ...(widget.layout === 'half' ? styles.layoutOptionActive : {}),
-              }}
-              onClick={() => onLayoutChange(widget.id, 'half')}
-            >
-              <div css={styles.layoutGlyphHalf}>
-                <div css={styles.layoutGlyphBar} />
-                <div css={styles.layoutGlyphBar} />
+            <div css={styles.layoutOptionWrap}>
+              <button
+                type="button"
+                data-layout-trigger
+                aria-label={`Set ${widget.title} to one column`}
+                aria-pressed={widget.layout === 'half'}
+                css={{
+                  ...styles.layoutOption,
+                  ...(widget.layout === 'half' ? styles.layoutOptionActive : {}),
+                }}
+                onClick={() => onLayoutChange(widget.id, 'half')}
+              >
+                <div css={styles.layoutGlyphHalf}>
+                  <div css={styles.layoutGlyphBar} />
+                  <div css={styles.layoutGlyphBar} />
+                </div>
+              </button>
+              <div data-layout-tooltip css={styles.layoutTooltip}>
+                <Text typography="bodySmall1">One column</Text>
               </div>
-            </button>
-            <button
-              type="button"
-              aria-label={`Set ${widget.title} to full width`}
-              aria-pressed={widget.layout === 'full'}
-              css={{
-                ...styles.layoutOption,
-                ...(widget.layout === 'full' ? styles.layoutOptionActive : {}),
-              }}
-              onClick={() => onLayoutChange(widget.id, 'full')}
-            >
-              <div css={styles.layoutGlyphFull}>
-                <div css={styles.layoutGlyphBar} />
+            </div>
+            <div css={styles.layoutOptionWrap}>
+              <button
+                type="button"
+                data-layout-trigger
+                aria-label={`Set ${widget.title} to full width`}
+                aria-pressed={widget.layout === 'full'}
+                css={{
+                  ...styles.layoutOption,
+                  ...(widget.layout === 'full' ? styles.layoutOptionActive : {}),
+                }}
+                onClick={() => onLayoutChange(widget.id, 'full')}
+              >
+                <div css={styles.layoutGlyphFull}>
+                  <div css={styles.layoutGlyphBar} />
+                </div>
+              </button>
+              <div data-layout-tooltip css={styles.layoutTooltip}>
+                <Text typography="bodySmall1">Full width</Text>
               </div>
-            </button>
+            </div>
           </div>
-          <button type="button" aria-label={`Drag ${widget.title}`} css={styles.iconButton} {...attributes} {...listeners}>
+          <button
+            type="button"
+            aria-label={`Drag ${widget.title}`}
+            css={{
+              ...styles.iconButton,
+              cursor: isDragging ? 'grabbing' : 'grab',
+            }}
+            {...attributes}
+            {...listeners}
+          >
             <div css={styles.gripDots}>
               {Array.from({ length: 6 }).map((_, index) => (
                 <div key={index} css={styles.gripDot} />
