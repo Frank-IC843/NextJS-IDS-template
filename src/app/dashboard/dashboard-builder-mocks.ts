@@ -121,7 +121,7 @@ const donutSegmentsByGroup: Record<GroupByKey, { label: string; value: number; t
 const insightSets: Record<MetricKey, string[]> = {
   spend: [
     'Spend is growing more slowly than order volume, which suggests healthier basket mix and fewer delivery touches.',
-    'Midweek replenishment remains the most efficient ordering window across the mock locations.',
+    'Midweek replenishment remains the most efficient ordering window across locations.',
     'Fresh categories continue to explain most of the lift without pushing the budget off track.',
   ],
   orders: [
@@ -131,7 +131,7 @@ const insightSets: Record<MetricKey, string[]> = {
   ],
   fillRate: [
     'Morning deliveries consistently outperform late-afternoon orders in fill rate.',
-    'Needs-review volume stays small, which keeps the mock fill-rate trend stable across the month.',
+    'Needs-review volume stays small, which helps keep fill-rate performance stable across the month.',
     'The best-performing windows are concentrated in locations with tighter basket composition.',
   ],
   averageBasket: [
@@ -142,7 +142,7 @@ const insightSets: Record<MetricKey, string[]> = {
   budget: [
     'Budget pacing remains controlled even as order activity climbs.',
     'The clearest savings opportunity continues to come from consolidating midweek replenishment.',
-    'A future saved-dashboard flow could flag when this mock budget trend starts to drift.',
+    'Budget pacing is steady enough to support planning conversations without introducing unnecessary risk.',
   ],
 };
 

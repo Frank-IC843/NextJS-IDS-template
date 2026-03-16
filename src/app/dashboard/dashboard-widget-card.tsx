@@ -102,6 +102,13 @@ export function DashboardWidgetCard({ widget, onRemove }: DashboardWidgetCardPro
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
   });
+  const translatedTransform = transform
+    ? CSS.Transform.toString({
+        ...transform,
+        scaleX: 1,
+        scaleY: 1,
+      })
+    : undefined;
 
   return (
     <article
@@ -109,7 +116,7 @@ export function DashboardWidgetCard({ widget, onRemove }: DashboardWidgetCardPro
       css={{
         ...styles.card,
         gridColumn: widget.layout === 'full' ? '1 / -1' : undefined,
-        transform: CSS.Transform.toString(transform),
+        transform: translatedTransform,
         transition,
         opacity: isDragging ? 0.82 : 1,
         boxShadow: isDragging ? '0 18px 44px rgba(17, 24, 39, 0.16)' : styles.card.boxShadow,
