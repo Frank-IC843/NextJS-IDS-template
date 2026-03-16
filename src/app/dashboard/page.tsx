@@ -1,10 +1,6 @@
 import { DashboardContent } from '@/app/dashboard/dashboard-content';
-import { BUSINESS_MONTHS_QUERY } from '@/app/queries';
-import { getClient } from '@/lib/apollo-client';
+import { mockDashboardData } from '@/app/dashboard/dashboard-mock-data';
 
-export default async function Dashboard() {
-  const client = getClient();
-  const [businessMonthsResult] = await Promise.all([client.query({ query: BUSINESS_MONTHS_QUERY })]);
-
-  return <DashboardContent businessMonthsData={businessMonthsResult.data} />;
+export default function Dashboard() {
+  return <DashboardContent dashboard={mockDashboardData} />;
 }

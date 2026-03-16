@@ -38,7 +38,7 @@ export const LoginButton = () => {
     try {
       await createUserSession({
         variables: {
-          identifier: 'frank.su+1@fernet.io',
+          identifier: 'frank.su@instacart.com',
           identifier_type: UsersIdentityType.Email,
           verification_code: '671415',
           accountType: UsersAccountTypes.Business,

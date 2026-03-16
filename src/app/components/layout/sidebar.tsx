@@ -190,7 +190,6 @@ export function Sidebar() {
             key={item.label}
             Icon={item.Icon}
             label={item.label}
-            isNew={item.isNew}
             onClick={() => handleMenuItemClick(item.label)}
             isSelected={selectedMenuItem === item.label}
           />
@@ -203,7 +202,6 @@ export function Sidebar() {
             key={item.label}
             Icon={item.Icon}
             label={item.label}
-            isNew={item.isNew}
             onClick={() => handleMenuItemClick(item.label)}
             isSelected={selectedMenuItem === item.label}
           />

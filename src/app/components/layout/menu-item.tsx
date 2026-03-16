@@ -1,14 +1,13 @@
 'use client';
 
 import { ArrowLeftIcon, useTheme } from '@instacart/ids-core';
-import { BadgeNotifier, Text } from '@instacart/ids-customers';
+import { Text } from '@instacart/ids-customers';
 
 export type MenuItemProps = {
   Icon: typeof ArrowLeftIcon;
   label: string;
-  isNew?: boolean;
   isSelected?: boolean;
-  onClick: (label: string) => void;
+  onClick: () => void;
 };
 
 const useStyles = (isSelected?: boolean) => {
@@ -36,22 +35,13 @@ const useStyles = (isSelected?: boolean) => {
         },
       }),
     },
-    newBadge: {
-      backgroundColor: '#EF4444',
-      color: 'white',
-      fontSize: '10px',
-      fontWeight: 'bold',
-      padding: '2px 6px',
-      borderRadius: '12px',
-      marginLeft: 'auto',
-    },
   } as const;
 };
 
-export function MenuItem({ Icon, label, isNew, isSelected, onClick }: MenuItemProps) {
+export function MenuItem({ Icon, label, isSelected, onClick }: MenuItemProps) {
   const styles = useStyles(isSelected);
   return (
-    <div css={styles.menuItem} onClick={() => onClick(label)}>
+    <div css={styles.menuItem} onClick={onClick}>
       <div css={styles.menuItemContent}>
         <>
           <Icon size="24px" color={isSelected ? 'systemGrayscale00' : 'systemGrayscale80'} />
@@ -59,7 +49,6 @@ export function MenuItem({ Icon, label, isNew, isSelected, onClick }: MenuItemPr
             {label}
           </Text>
         </>
-        {isNew && <BadgeNotifier value="New" css={{ marginLeft: 'auto' }} />}
       </div>
     </div>
   );

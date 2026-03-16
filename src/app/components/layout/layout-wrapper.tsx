@@ -1,6 +1,5 @@
 'use client';
 
-import { AIButton } from '@/app/components/layout/ai-button';
 import { Header } from '@/app/components/layout/header';
 import { Sidebar } from '@/app/components/layout/sidebar';
 
@@ -51,7 +50,6 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
         <Sidebar />
       </div>
       <main css={styles.main}>{children}</main>
-      <AIButton />
     </div>
   );
 }

@@ -3,8 +3,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 /**
  * Vercel AI SDK OpenAI provider configured for Instacart's AI Gateway
  *
- * This mirrors the configuration from openai-client.ts but uses Vercel AI SDK's
- * provider system which enables tool calling, streaming, and other advanced features.
+ * This provider powers the future dashboard generation flow with tool calling
+ * and structured model responses.
  */
 export const openaiProvider = createOpenAI({
   apiKey: '', // AI Gateway does not need or want an API key
@@ -13,8 +13,3 @@ export const openaiProvider = createOpenAI({
 
 // Export pre-configured models for easy use
 export const gpt4_1 = openaiProvider('gpt-4o');
-
-/**
- * You can still use the original OpenAI client from openai-client.ts for
- * operations that don't need Vercel AI SDK features. Both can coexist.
- */
