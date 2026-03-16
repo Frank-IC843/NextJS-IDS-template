@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { GRAPHQL_ENDPOINTS } from '@/lib/constants';
+import { GRAPHQL_URL } from '@/lib/constants';
 
 /**
  * GraphQL Proxy Route
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward the request to the GraphQL server
-    const response = await fetch(GRAPHQL_ENDPOINTS.hackathonStg, {
+    const response = await fetch(GRAPHQL_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

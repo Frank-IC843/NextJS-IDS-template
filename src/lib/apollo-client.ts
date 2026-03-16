@@ -1,24 +1,14 @@
-import { HttpLink, createHttpLink } from '@apollo/client';
+import { createHttpLink } from '@apollo/client';
 import { registerApolloClient, ApolloClient, InMemoryCache } from '@apollo/client-integration-nextjs';
 import { cookies } from 'next/headers';
-import { GRAPHQL_URL, GRAPHQL_ENDPOINTS, type GraphQLEndpoint } from './constants';
+import { GRAPHQL_URL } from './constants';
 
 export const { getClient, query, PreloadQuery } = registerApolloClient(() => {
   return new ApolloClient({
     cache: new InMemoryCache(),
     link: createHttpLink({
       // Dynamic URI selection based on context
-      uri: operation => {
-        const context = operation.getContext();
-        const endpoint = context.endpoint as GraphQLEndpoint | undefined;
-
-        // Use the specified endpoint or fall back to default
-        if (endpoint && GRAPHQL_ENDPOINTS[endpoint]) {
-          return GRAPHQL_ENDPOINTS[endpoint];
-        }
-
-        return GRAPHQL_URL;
-      },
+      uri: GRAPHQL_URL,
       fetchOptions: {
         credentials: 'include',
       },
