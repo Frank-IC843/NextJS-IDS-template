@@ -16,7 +16,7 @@ export const supportedDashboardWidgets: SupportedWidgetDefinition[] = [
   {
     type: 'metric',
     label: 'Metric',
-    description: 'Single KPI cards for totals, rates, and budget signals.',
+    description: 'Single KPI widgets for totals, rates, and budget signals.',
     promptHint: 'Best for headline measures such as spend, orders, or fill rate.',
     defaultTitle: 'Total spend',
     defaultLayout: 'half',

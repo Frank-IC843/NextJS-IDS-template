@@ -13,7 +13,7 @@ function useStyles() {
   const businessPalette = getDashboardBusinessPalette(theme);
 
   return {
-    card: {
+    container: {
       display: 'flex',
       flexDirection: 'column' as const,
       gap: '18px',
@@ -91,12 +91,12 @@ function useStyles() {
   } as const;
 }
 
-interface DashboardWidgetCardProps {
+interface DashboardWidgetShellProps {
   widget: DashboardWidget;
   onRemove: (widgetId: string) => void;
 }
 
-export function DashboardWidgetCard({ widget, onRemove }: DashboardWidgetCardProps) {
+export function DashboardWidgetShell({ widget, onRemove }: DashboardWidgetShellProps) {
   const styles = useStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
@@ -115,13 +115,13 @@ export function DashboardWidgetCard({ widget, onRemove }: DashboardWidgetCardPro
     <article
       ref={setNodeRef}
       css={{
-        ...styles.card,
+        ...styles.container,
         gridColumn: widget.layout === 'full' ? '1 / -1' : undefined,
         transform: translatedTransform,
         transition,
         opacity: 1,
         zIndex: isDragging ? 20 : 1,
-        boxShadow: isDragging ? '0 18px 44px rgba(17, 24, 39, 0.16)' : styles.card.boxShadow,
+        boxShadow: isDragging ? '0 18px 44px rgba(17, 24, 39, 0.16)' : styles.container.boxShadow,
         borderColor: isDragging ? businessPalette.blueberry : businessPalette.blueberryBorder,
       }}
     >

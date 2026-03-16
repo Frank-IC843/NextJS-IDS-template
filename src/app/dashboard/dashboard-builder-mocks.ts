@@ -153,9 +153,9 @@ export const dashboardPromptSuggestions = [
 ];
 
 export const dashboardBuilderHighlights = [
-  'Add new cards without breaking focus on the dashboard itself.',
+  'Add new widgets without breaking focus on the dashboard itself.',
   'Choose from a curated set of chart types designed for operational and spend reviews.',
-  'Reorder cards to match the story your team needs to see first.',
+  'Reorder widgets to match the story your team needs to see first.',
 ];
 
 export function getStarterDashboardWidgets(): DashboardWidget[] {
