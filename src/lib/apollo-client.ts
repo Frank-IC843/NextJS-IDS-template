@@ -12,24 +12,27 @@ export const { getClient, query, PreloadQuery } = registerApolloClient(() => {
       uri: GRAPHQL_URL,
       fetchOptions: {
         credentials: 'include',
+        cache: 'no-store',
       },
       // Forward cookies from Next.js server context to GraphQL requests
       fetch: async (uri, options) => {
         const cookieStore = await cookies();
         const headerStore = await headers();
         const incomingCookieHeader = headerStore.get('cookie');
+        const mergedHeaders = new Headers(options?.headers);
+
+        Object.entries(getGraphQLAuthHeaders(cookieStore)).forEach(([key, value]) => {
+          mergedHeaders.set(key, value);
+        });
+
+        if (incomingCookieHeader) {
+          mergedHeaders.set('Cookie', incomingCookieHeader);
+        }
 
         return fetch(uri, {
           ...options,
-          headers: {
-            ...options?.headers,
-            ...getGraphQLAuthHeaders(cookieStore),
-            ...(incomingCookieHeader
-              ? {
-                  Cookie: incomingCookieHeader,
-                }
-              : {}),
-          },
+          cache: 'no-store',
+          headers: mergedHeaders,
         });
       },
     }),

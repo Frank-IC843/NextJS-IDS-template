@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
     // Get the request body (GraphQL query)
     const body = await request.json();
 
-    console.log('body', JSON.stringify(body));
     // Get cookies from the request
     const cookieStore = await cookies();
     const incomingCookieHeader = request.headers.get('cookie');
@@ -34,7 +33,6 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
-    console.log('data', data);
 
     // Create the response
     const nextResponse = NextResponse.json(data, {

@@ -68,11 +68,13 @@ export type PersistedDashboardAnalyticsQuery = z.infer<typeof persistedDashboard
 export const persistedDashboardChartTypeSchema = z.enum(['NUMBER', 'BAR_CHART', 'LINE_CHART', 'PIE_CHART', 'TABLE']);
 export type PersistedDashboardChartType = z.infer<typeof persistedDashboardChartTypeSchema>;
 
+const persistedDashboardIntegerSchema = z.coerce.number().int();
+
 export const persistedDashboardPositionSchema = z.object({
-  x: z.number().int().nonnegative(),
-  y: z.number().int().nonnegative(),
-  w: z.number().int().positive(),
-  h: z.number().int().positive(),
+  x: persistedDashboardIntegerSchema.nonnegative(),
+  y: persistedDashboardIntegerSchema.nonnegative(),
+  w: persistedDashboardIntegerSchema.positive(),
+  h: persistedDashboardIntegerSchema.positive(),
 });
 export type PersistedDashboardPosition = z.infer<typeof persistedDashboardPositionSchema>;
 
@@ -87,7 +89,9 @@ export const persistedDashboardWidgetSchema = z.object({
 export type PersistedDashboardWidget = z.infer<typeof persistedDashboardWidgetSchema>;
 
 export const persistedDashboardLayoutSchema = z.object({
-  version: z.literal(1),
+  version: persistedDashboardIntegerSchema.refine(version => version === 1, {
+    message: 'Unsupported dashboard layout version.',
+  }),
   widgets: z.array(persistedDashboardWidgetSchema).default([]),
 });
 export type PersistedDashboardLayout = z.infer<typeof persistedDashboardLayoutSchema>;

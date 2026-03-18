@@ -47,7 +47,7 @@ export async function loadDashboardPageData(): Promise<DashboardPageData> {
           : null,
     };
   } catch (error) {
-    console.error('Failed to load business dashboard:', error);
+    console.error('[dashboard-load] Failed to load business dashboard:', error);
 
     return {
       widgets: [],

@@ -3,6 +3,8 @@ import { loadDashboardPageData } from '@/app/dashboard/dashboard-data';
 import { dashboardPromptSuggestions } from '@/app/dashboard/dashboard-builder-mocks';
 import { supportedDashboardWidgets } from '@/app/dashboard/dashboard-supported-widgets';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Dashboard() {
   const { widgets, errorMessage } = await loadDashboardPageData();
 
