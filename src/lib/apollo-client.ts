@@ -1,6 +1,6 @@
 import { createHttpLink } from '@apollo/client';
 import { registerApolloClient, ApolloClient, InMemoryCache } from '@apollo/client-integration-nextjs';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { GRAPHQL_URL } from './constants';
 import { getGraphQLAuthHeaders } from './instacart-auth-cookies';
 
@@ -16,12 +16,19 @@ export const { getClient, query, PreloadQuery } = registerApolloClient(() => {
       // Forward cookies from Next.js server context to GraphQL requests
       fetch: async (uri, options) => {
         const cookieStore = await cookies();
+        const headerStore = await headers();
+        const incomingCookieHeader = headerStore.get('cookie');
 
         return fetch(uri, {
           ...options,
           headers: {
             ...options?.headers,
             ...getGraphQLAuthHeaders(cookieStore),
+            ...(incomingCookieHeader
+              ? {
+                  Cookie: incomingCookieHeader,
+                }
+              : {}),
           },
         });
       },

@@ -15,15 +15,16 @@ export const heroCarouselSteps = [
     navLabel: 'Enable',
     title: 'Enable the right widget types.',
     description: 'Choose which widget types the AI can use before you submit a prompt.',
-    prompt: 'Add a metric widget for total spend this week.',
+    prompt: 'Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.',
   },
   {
     id: 'describe',
     stepLabel: '02',
     navLabel: 'Prompt',
-    title: 'Prompt one widget.',
-    description: 'Use the prompt box or example requests to describe the single widget you want.',
-    prompt: 'Add a line chart showing order count over the past 7 days.',
+    title: 'Prompt the dashboard you want.',
+    description: 'Use the prompt box or example requests to describe one widget or a whole dashboard plan.',
+    prompt:
+      'Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.',
   },
   {
     id: 'arrange',
@@ -31,7 +32,7 @@ export const heroCarouselSteps = [
     navLabel: 'Arrange',
     title: 'Generate, then arrange.',
     description: 'The widget lands on the canvas and can be reordered as your dashboard grows.',
-    prompt: 'Add a donut chart for spend share by service type over the past 3 days.',
+    prompt: 'Add a bar chart showing which team members spent the most over the past 7 days.',
   },
 ] as const;
 

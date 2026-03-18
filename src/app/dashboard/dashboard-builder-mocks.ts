@@ -23,7 +23,7 @@ const completedOrdersFilter: DashboardAnalyticsFilter = {
 };
 
 export const dashboardPromptSuggestions = [
-  'Build me a simple dashboard for team grocery spend this week.',
+  'Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.',
   'Show a dashboard with order trend plus department share over the past 7 days.',
   'Create an executive dashboard for retailer spend and service-type mix.',
 ];
@@ -162,11 +162,7 @@ export function mockGenerateDashboardDrafts(
   }
 
   const uniqueSpecs = dedupePlannerSpecs(candidateSpecs).slice(0, desiredWidgetCount);
-  const drafts = uniqueSpecs.map(spec =>
-    buildWidgetDraftFromSpec(spec, prompt, {
-      forceFullWidth: uniqueSpecs.length === 1,
-    }),
-  );
+  const drafts = uniqueSpecs.map(spec => buildWidgetDraftFromSpec(spec, prompt));
 
   return optimizeDraftsForCanvas(drafts);
 }
@@ -413,12 +409,11 @@ function buildWidgetDescription(
 function getDefaultLayout(widgetType: SupportedWidgetType): DashboardLayout {
   switch (widgetType) {
     case 'metric':
-    case 'donutChart':
-      return 'half';
     case 'lineChart':
     case 'barChart':
+    case 'donutChart':
     default:
-      return 'full';
+      return 'half';
   }
 }
 
@@ -453,11 +448,8 @@ function buildPlannerWidgetSpec(
 function buildWidgetDraftFromSpec(
   spec: PlannerWidgetSpec,
   prompt: string,
-  options?: {
-    forceFullWidth?: boolean;
-  },
 ): DashboardWidgetDraft {
-  const layout: DashboardLayout = options?.forceFullWidth ? 'full' : getDefaultLayout(spec.widgetType);
+  const layout: DashboardLayout = getDefaultLayout(spec.widgetType);
 
   return {
     id: buildWidgetId(spec.widgetType),
@@ -498,10 +490,7 @@ function dedupePlannerSpecs(specs: PlannerWidgetSpec[]) {
 
 function optimizeDraftsForCanvas(drafts: DashboardWidgetDraft[]) {
   if (drafts.length <= 1) {
-    return drafts.map<DashboardWidgetDraft>(draft => ({
-      ...draft,
-      layout: 'full',
-    }));
+    return drafts;
   }
 
   const nextDrafts = drafts.map<DashboardWidgetDraft>(draft => ({ ...draft }));

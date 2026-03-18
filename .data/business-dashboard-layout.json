@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "widgets": [
+    {
+      "id": "donutChart-f125394b",
+      "title": "Order status share",
+      "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 1
+      },
+      "chart_type": "PIE_CHART",
+      "query": {
+        "measures": [
+          "TOTAL_SPEND"
+        ],
+        "dimensions": [
+          "ORDER_STATUS"
+        ],
+        "filters": [
+          {
+            "field": "ORDER_STATUS",
+            "operator": "EQUALS",
+            "value": "completed"
+          }
+        ],
+        "time_range": "PAST_7_DAYS"
+      }
+    },
+    {
+      "id": "lineChart-1bd59a72",
+      "title": "Total spend over time",
+      "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
+      "position": {
+        "x": 1,
+        "y": 0,
+        "w": 1,
+        "h": 1
+      },
+      "chart_type": "LINE_CHART",
+      "query": {
+        "measures": [
+          "TOTAL_SPEND"
+        ],
+        "dimensions": [
+          "DATE"
+        ],
+        "filters": [
+          {
+            "field": "ORDER_STATUS",
+            "operator": "EQUALS",
+            "value": "completed"
+          }
+        ],
+        "time_range": "PAST_7_DAYS"
+      }
+    },
+    {
+      "id": "barChart-445afe3d",
+      "title": "Total spend by Order status",
+      "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
+      "position": {
+        "x": 0,
+        "y": 1,
+        "w": 1,
+        "h": 1
+      },
+      "chart_type": "BAR_CHART",
+      "query": {
+        "measures": [
+          "TOTAL_SPEND"
+        ],
+        "dimensions": [
+          "ORDER_STATUS"
+        ],
+        "filters": [
+          {
+            "field": "ORDER_STATUS",
+            "operator": "EQUALS",
+            "value": "completed"
+          }
+        ],
+        "time_range": "PAST_7_DAYS"
+      }
+    }
+  ]
+}

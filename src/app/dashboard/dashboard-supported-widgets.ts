@@ -27,7 +27,7 @@ export const supportedDashboardWidgets: SupportedWidgetDefinition[] = [
     description: 'Trend visualizations over the supported 1, 3, and 7 day windows.',
     promptHint: 'Best for daily movement such as order pace, spend, or savings over time.',
     defaultTitle: 'Orders over time',
-    defaultLayout: 'full',
+    defaultLayout: 'half',
   },
   {
     type: 'barChart',
@@ -35,7 +35,7 @@ export const supportedDashboardWidgets: SupportedWidgetDefinition[] = [
     description: 'Compare departments, retailers, members, statuses, or service types side by side.',
     promptHint: 'Best for rankings, side-by-side comparisons, and grouped performance.',
     defaultTitle: 'Spend by department',
-    defaultLayout: 'full',
+    defaultLayout: 'half',
   },
   {
     type: 'donutChart',

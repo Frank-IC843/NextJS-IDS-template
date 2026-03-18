@@ -18,7 +18,7 @@ export const LoginButton = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          identifier: 'test@instacart.com',
+          identifier: 'frank.su@instacart.com',
           verification_code: '671415',
         }),
       });

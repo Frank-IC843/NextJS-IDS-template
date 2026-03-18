@@ -1,13 +1,8 @@
 import 'server-only';
 
-import {
-  type BusinessDashboardQuery,
-  type BusinessDashboardQueryVariables,
-} from '@/__generated__/graphql-types';
 import type { DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
+import { readLocalDashboardLayout } from '@/app/dashboard/dashboard-local-storage';
 import { getDashboardWidgetDraftsFromLayout } from '@/app/dashboard/dashboard-schema';
-import { BUSINESS_DASHBOARD_QUERY } from '@/app/dashboard/queries';
-import { getClient } from '@/lib/apollo-client';
 
 export interface DashboardPageData {
   widgets: DashboardWidgetDraft[];
@@ -15,14 +10,8 @@ export interface DashboardPageData {
 }
 
 export async function loadDashboardPageData(): Promise<DashboardPageData> {
-  const client = getClient();
-
   try {
-    const { data } = await client.query<BusinessDashboardQuery, BusinessDashboardQueryVariables>({
-      query: BUSINESS_DASHBOARD_QUERY,
-      fetchPolicy: 'no-cache',
-    });
-    const rawLayout = data.businessDashboard?.layout;
+    const rawLayout = await readLocalDashboardLayout();
 
     if (!rawLayout) {
       return {
@@ -48,7 +37,7 @@ export async function loadDashboardPageData(): Promise<DashboardPageData> {
           : null,
     };
   } catch (error) {
-    console.error('Failed to load business dashboard:', error);
+    console.error('Failed to load local business dashboard:', error);
 
     return {
       widgets: [],

@@ -1,15 +1,10 @@
 'use client';
 
-import { useMutation } from '@apollo/client';
 import { DndContext } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { useTheme } from '@instacart/ids-core';
 import { SecondaryButtonSmall, Text } from '@instacart/ids-customers';
 import { useRef, useState } from 'react';
-import type {
-  CreateOrUpdateBusinessDashboardMutation,
-  CreateOrUpdateBusinessDashboardMutationVariables,
-} from '@/__generated__/graphql-types';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import {
@@ -21,7 +16,6 @@ import {
 import { useDashboardContentStyles } from '@/app/dashboard/dashboard-content-styles';
 import { DashboardEmptyLaunchpad } from '@/app/dashboard/dashboard-empty-launchpad';
 import { DashboardPromptComposer } from '@/app/dashboard/dashboard-prompt-composer';
-import { CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION } from '@/app/dashboard/queries';
 import { buildPersistedDashboardLayout } from '@/app/dashboard/dashboard-schema';
 import type { SupportedWidgetDefinition } from '@/app/dashboard/dashboard-supported-widgets';
 import { DashboardWidgetShell } from '@/app/dashboard/dashboard-widget-shell';
@@ -68,10 +62,6 @@ export function DashboardContent({
   const [previewWidgets, setPreviewWidgets] = useState<DashboardWidgetDraft[]>([]);
   const [pendingBuilderAction, setPendingBuilderAction] = useState<BuilderAction | null>(null);
   const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
-  const [saveDashboardLayout] = useMutation<
-    CreateOrUpdateBusinessDashboardMutation,
-    CreateOrUpdateBusinessDashboardMutationVariables
-  >(CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION);
   const {
     activeDragId,
     dragOverWidgetId,
@@ -273,7 +263,8 @@ export function DashboardContent({
   }
 
   function handleReset() {
-    handleWidgetsChange(initialWidgets);
+    handleWidgetsChange([]);
+    setDashboardNotice(null);
     setPrompt(defaultPrompt);
     setPreviewWidgets([]);
     setRequestError(null);
@@ -305,17 +296,25 @@ export function DashboardContent({
       .catch(() => undefined)
       .then(async () => {
         try {
-          await saveDashboardLayout({
-            variables: {
-              layout: buildPersistedDashboardLayout(nextWidgets),
+          const response = await fetch('/api/dashboard/layout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+              layout: buildPersistedDashboardLayout(nextWidgets),
+            }),
           });
+
+          if (!response.ok) {
+            throw new Error('Dashboard save failed');
+          }
 
           if (saveRequestIdRef.current === saveRequestId) {
             setDashboardNotice(null);
           }
         } catch (error) {
-          console.error('Failed to save business dashboard:', error);
+          console.error('Failed to save local business dashboard:', error);
 
           if (saveRequestIdRef.current === saveRequestId) {
             setDashboardNotice('Unable to save dashboard changes right now.');

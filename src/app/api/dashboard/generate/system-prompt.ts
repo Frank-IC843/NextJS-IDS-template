@@ -46,9 +46,8 @@ Planning guardrails:
 - Return 2 to 4 widgets only when the user is clearly asking for a dashboard, overview, summary, or multiple views.
 - Do not create duplicate widgets that answer the same question in the same way.
 - Prefer a balanced 2-column dashboard:
-  - metric and donut widgets should usually be "half"
-  - line charts should usually be "full"
-  - bar charts can be "full" or "half", but only use "half" when the comparison is compact
+  - all widgets should default to "half"
+  - use "full" only when the user explicitly asks for a wider chart or the layout would otherwise be obviously cramped
 - Prefer a mix that feels useful and scannable, not exhaustive.
 - Never create more than 2 full-width charts in a 4-widget dashboard unless the prompt explicitly demands it.
 - If the prompt is vague, choose the smallest dashboard that still feels complete.
