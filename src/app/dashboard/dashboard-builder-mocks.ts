@@ -31,32 +31,6 @@ export const dashboardPromptSuggestions = [
 export function getStarterDashboardWidgets(): DashboardWidget[] {
   return [
     dashboardWidgetSchema.parse({
-      id: 'starter-line-orders',
-      widgetType: 'lineChart',
-      title: 'Orders over time',
-      description: 'Order count over time for the past 7 days.',
-      layout: 'full',
-      query: {
-        measures: [BusinessAnalyticsMeasure.OrderCount],
-        dimensions: [BusinessAnalyticsDimension.Date],
-        filters: [],
-        timeRange: BusinessAnalyticsTimeRange.Past_7Days,
-      },
-      timeRangeLabel: buildDashboardTimeRangeLabel(BusinessAnalyticsTimeRange.Past_7Days),
-      data: {
-        points: [
-          { label: 'Mar 11', value: 18 },
-          { label: 'Mar 12', value: 24 },
-          { label: 'Mar 13', value: 21 },
-          { label: 'Mar 14', value: 27 },
-          { label: 'Mar 15', value: 31 },
-          { label: 'Mar 16', value: 29 },
-          { label: 'Mar 17', value: 34 },
-        ],
-        footer: 'Order count over time for the past 7 days.',
-      },
-    }),
-    dashboardWidgetSchema.parse({
       id: 'starter-bar-departments',
       widgetType: 'barChart',
       title: 'Spend by department',
