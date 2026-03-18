@@ -53,7 +53,7 @@ export function DashboardWidgetPlanPreview({ widgets }: DashboardWidgetPlanPrevi
               </div>
               <div css={{ ...styles.previewWidgetBadge, ...styles.previewWidgetBadgeAccent }}>
                 <Text typography="bodyMedium1" css={{ color: businessPalette.elderberryDark }}>
-                  {widget.layout === 'full' ? 'Full width' : 'One column'}
+                  {widget.layout === 'full' ? 'Full width' : 'Half width'}
                 </Text>
               </div>
             </div>

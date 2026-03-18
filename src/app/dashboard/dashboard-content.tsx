@@ -26,6 +26,7 @@ import {
   type DashboardReportSkippedWidget,
   type DashboardReportWidgetState,
 } from '@/app/dashboard/dashboard-report-types';
+import { DashboardConfirmModal } from '@/app/dashboard/dashboard-confirm-modal';
 import { CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION } from '@/app/dashboard/queries';
 import { buildPersistedDashboardLayout, getDashboardWidgetDraftsFromLayout } from '@/app/dashboard/dashboard-schema';
 import type { SupportedWidgetDefinition } from '@/app/dashboard/dashboard-supported-widgets';
@@ -37,6 +38,15 @@ type PreviewCacheEntry = {
   requestKey: string;
   widgets: DashboardWidgetDraft[];
 };
+type DashboardConfirmationState =
+  | {
+      kind: 'reset';
+    }
+  | {
+      kind: 'remove';
+      widgetId: string;
+      widgetTitle: string;
+    };
 
 interface DashboardContentProps {
   initialWidgets: DashboardWidgetDraft[];
@@ -63,7 +73,6 @@ export function DashboardContent({
   const isEmpty = widgets.length === 0;
   const remainingWidgetCapacity = MAX_WIDGETS_PER_DASHBOARD - widgets.length;
   const [dashboardNotice, setDashboardNotice] = useState<string | null>(initialErrorMessage);
-  const [isSaving, setIsSaving] = useState(false);
   const [reportWidgetStates, setReportWidgetStates] = useState<Record<string, DashboardReportWidgetState>>(() =>
     buildInitialReportWidgetStates(initialWidgets),
   );
@@ -76,6 +85,7 @@ export function DashboardContent({
   const [allowedWidgetTypes, setAllowedWidgetTypes] = useState<SupportedWidgetDefinition['type'][]>(allWidgetTypes);
   const [previewWidgets, setPreviewWidgets] = useState<DashboardWidgetDraft[]>([]);
   const [pendingBuilderAction, setPendingBuilderAction] = useState<BuilderAction | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<DashboardConfirmationState | null>(null);
   const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
   const readyReportWidgets = widgets.flatMap(widget => {
     const reportState = reportWidgetStates[widget.id];
@@ -295,7 +305,17 @@ export function DashboardContent({
   }
 
   function handleRemove(widgetId: string) {
-    handleWidgetsChange(widgets.filter(widget => widget.id !== widgetId));
+    const widget = widgets.find(currentWidget => currentWidget.id === widgetId);
+
+    if (!widget) {
+      return;
+    }
+
+    setPendingConfirmation({
+      kind: 'remove',
+      widgetId,
+      widgetTitle: widget.title,
+    });
   }
 
   function handleLayoutChange(widgetId: string, layout: DashboardLayout) {
@@ -319,7 +339,15 @@ export function DashboardContent({
     handleWidgetsChange(nextWidgets);
   }
 
-  function handleReset() {
+  function handleResetRequest() {
+    if (widgets.length === 0) {
+      return;
+    }
+
+    setPendingConfirmation({ kind: 'reset' });
+  }
+
+  function resetCanvas() {
     handleWidgetsChange([]);
     setDashboardNotice(null);
     setReportErrorMessage(null);
@@ -328,6 +356,21 @@ export function DashboardContent({
     setRequestError(null);
     setIsBuilderOpen(false);
     previewCacheRef.current = null;
+  }
+
+  function handleConfirmDangerAction() {
+    if (!pendingConfirmation) {
+      return;
+    }
+
+    if (pendingConfirmation.kind === 'reset') {
+      resetCanvas();
+      setPendingConfirmation(null);
+      return;
+    }
+
+    handleWidgetsChange(widgets.filter(widget => widget.id !== pendingConfirmation.widgetId));
+    setPendingConfirmation(null);
   }
 
   async function handleGenerateReport() {
@@ -386,7 +429,6 @@ export function DashboardContent({
   function queuePersistWidgets(nextWidgets: DashboardWidgetDraft[]) {
     const saveRequestId = saveRequestIdRef.current + 1;
     saveRequestIdRef.current = saveRequestId;
-    setIsSaving(true);
 
     saveQueueRef.current = saveQueueRef.current
       .catch(() => undefined)
@@ -408,11 +450,6 @@ export function DashboardContent({
             setDashboardNotice('Unable to save dashboard changes right now.');
           }
         }
-      })
-      .finally(() => {
-        if (saveRequestIdRef.current === saveRequestId) {
-          setIsSaving(false);
-        }
       });
   }
 
@@ -423,6 +460,20 @@ export function DashboardContent({
         ? `${reportSkippedWidgets.length} dashboard view${reportSkippedWidgets.length === 1 ? '' : 's'} failed to load and will be called out as incomplete coverage in the PDF.`
         : null;
   const statusMessage = reportErrorMessage ?? dashboardNotice ?? reportStatusMessage;
+  const confirmationDialog =
+    pendingConfirmation?.kind === 'reset'
+      ? {
+          title: 'Reset canvas?',
+          description: `This will remove all ${widgets.length} widget${widgets.length === 1 ? '' : 's'} from the dashboard canvas.`,
+          confirmLabel: 'Reset canvas',
+        }
+      : pendingConfirmation
+        ? {
+            title: 'Remove widget?',
+            description: `This will remove "${pendingConfirmation.widgetTitle}" from the dashboard canvas.`,
+            confirmLabel: 'Remove widget',
+          }
+        : null;
 
   return (
     <div ref={pageRef} css={styles.container}>
@@ -446,7 +497,7 @@ export function DashboardContent({
                 </Text>
                 <Text typography="titleMedium">{widgets.length} active widget{widgets.length === 1 ? '' : 's'}</Text>
                 <Text typography="bodyRegular" color="systemGrayscale60">
-                  Keep the story focused. This canvas supports up to {MAX_WIDGETS_PER_DASHBOARD} widgets in the current two-column layout.
+                  Keep the story focused. This canvas supports up to {MAX_WIDGETS_PER_DASHBOARD} widgets.
                 </Text>
               </div>
 
@@ -461,18 +512,14 @@ export function DashboardContent({
                 <SecondaryButtonSmall onClick={() => void handleGenerateReport()} disabled={!canGenerateReport}>
                   {getReportActionLabel({ isGenerating: isReportGenerating })}
                 </SecondaryButtonSmall>
-                <DetrimentalButtonSmall onClick={handleReset} disabled={isGenerating || isReportGenerating}>
+                <DetrimentalButtonSmall onClick={handleResetRequest} disabled={isGenerating || isReportGenerating}>
                   Reset canvas
                 </DetrimentalButtonSmall>
               </div>
             </div>
           ) : null}
         </div>
-        {isSaving ? (
-          <Text typography="bodyMedium1" color="systemGrayscale60">
-            Saving dashboard...
-          </Text>
-        ) : statusMessage ? (
+        {statusMessage ? (
           <div>
             <Text typography="bodyMedium1" color="systemGrayscale60">
               {statusMessage}
@@ -553,6 +600,15 @@ export function DashboardContent({
           }
         }}
       />
+      {confirmationDialog ? (
+        <DashboardConfirmModal
+          title={confirmationDialog.title}
+          description={confirmationDialog.description}
+          confirmLabel={confirmationDialog.confirmLabel}
+          onConfirm={handleConfirmDangerAction}
+          onClose={() => setPendingConfirmation(null)}
+        />
+      ) : null}
     </div>
   );
 }

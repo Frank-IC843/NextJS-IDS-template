@@ -314,7 +314,7 @@ export function DashboardWidgetShell({
                 <DashboardLayoutGlyph layout="half" />
               </button>
               <div data-layout-tooltip css={{ ...styles.layoutTooltip, ...(isDragging ? styles.layoutTooltipHidden : {}) }}>
-                <Text typography="bodyMedium1">One column</Text>
+                <Text typography="bodyMedium1">Half width</Text>
               </div>
             </div>
             <div css={styles.layoutOptionWrap}>
