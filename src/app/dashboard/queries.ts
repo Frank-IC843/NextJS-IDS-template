@@ -17,7 +17,9 @@ export const BUSINESS_ANALYTICS_QUERY = gql`
         label
         dataType
       }
-      rows
+      rows {
+        values
+      }
     }
   }
 `

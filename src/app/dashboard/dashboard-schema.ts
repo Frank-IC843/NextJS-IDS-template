@@ -134,7 +134,7 @@ export function hydrateDashboardWidget(
   const timeRangeLabel = buildDashboardTimeRangeLabel(draft.query.timeRange);
   const primaryMeasure = draft.query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
   const primaryDimension = draft.query.dimensions[0];
-  const rows = analyticsResult?.rows ?? [];
+  const rows = analyticsResult?.rows?.map(row => row.values ?? []) ?? [];
 
   switch (draft.widgetType) {
     case 'metric': {
