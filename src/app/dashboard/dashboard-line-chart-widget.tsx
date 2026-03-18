@@ -1,9 +1,11 @@
 'use client';
 
+import { BusinessAnalyticsMeasure } from '@/__generated__/graphql-types';
 import { useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Label, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
+import { getDashboardChartMeasurePresentation } from '@/app/dashboard/dashboard-chart-measure-formatting';
 import {
   getDashboardChartContainerStyles,
   getDashboardChartSurfaceStyles,
@@ -14,6 +16,8 @@ import type { LineChartWidget } from '@/app/dashboard/dashboard-builder-types';
 export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidget }) {
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
+  const primaryMeasure = widget.query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
+  const measurePresentation = getDashboardChartMeasurePresentation(primaryMeasure);
   const containerStyles = getDashboardChartContainerStyles();
   const chartSurfaceStyles = getDashboardChartSurfaceStyles(theme, businessPalette, {
     borderColor: businessPalette.elderberryBorder,
@@ -26,18 +30,54 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
       <div css={chartSurfaceStyles}>
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
-            <LineChart data={widget.data.points} margin={{ top: 16, right: 12, left: -24, bottom: 0 }}>
+            <LineChart data={widget.data.points} margin={{ top: 16, right: 12, left: 4, bottom: 12 }}>
               <CartesianGrid stroke={theme.colors.systemGrayscale20} strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="label"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: theme.colors.systemGrayscale60, fontSize: 12 }}
-              />
-              <YAxis hide />
+                interval="preserveStartEnd"
+                tickMargin={10}
+                height={52}
+                padding={{ left: 12, right: 12 }}
+              >
+                <Label
+                  value="Date"
+                  position="insideBottom"
+                  offset={-4}
+                  style={{
+                    fill: theme.colors.systemGrayscale60,
+                    fontSize: 11,
+                    fontWeight: 600,
+                  }}
+                />
+              </XAxis>
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: theme.colors.systemGrayscale60, fontSize: 12 }}
+                tickMargin={8}
+                width={88}
+                tickFormatter={measurePresentation.formatValue}
+              >
+                <Label
+                  value={measurePresentation.yAxisLabel}
+                  angle={-90}
+                  position="insideLeft"
+                  offset={12}
+                  style={{
+                    fill: theme.colors.systemGrayscale60,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    textAnchor: 'middle',
+                  }}
+                />
+              </YAxis>
               <Tooltip
                 cursor={{ stroke: theme.colors.systemGrayscale30, strokeWidth: 1 }}
                 contentStyle={getDashboardChartTooltipContentStyle(businessPalette.elderberryBorder)}
+                formatter={value => [measurePresentation.formatValue(Number(value)), measurePresentation.tooltipLabel]}
               />
               <Line
                 type="monotone"
