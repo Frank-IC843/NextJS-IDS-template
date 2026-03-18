@@ -2,8 +2,8 @@
   "version": 1,
   "widgets": [
     {
-      "id": "donutChart-f125394b",
-      "title": "Order status share",
+      "id": "donutChart-49c16e50",
+      "title": "Retailer share",
       "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
       "position": {
         "x": 0,
@@ -17,7 +17,7 @@
           "TOTAL_SPEND"
         ],
         "dimensions": [
-          "ORDER_STATUS"
+          "RETAILER"
         ],
         "filters": [
           {
@@ -30,7 +30,7 @@
       }
     },
     {
-      "id": "lineChart-1bd59a72",
+      "id": "lineChart-d0fa4ceb",
       "title": "Total spend over time",
       "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
       "position": {
@@ -58,8 +58,8 @@
       }
     },
     {
-      "id": "barChart-445afe3d",
-      "title": "Total spend by Order status",
+      "id": "barChart-a2435b9c",
+      "title": "Total spend by Member",
       "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
       "position": {
         "x": 0,
@@ -73,7 +73,7 @@
           "TOTAL_SPEND"
         ],
         "dimensions": [
-          "ORDER_STATUS"
+          "MEMBER"
         ],
         "filters": [
           {

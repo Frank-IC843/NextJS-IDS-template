@@ -235,27 +235,59 @@ function inferPrimaryDimension(prompt: string, widgetType: SupportedWidgetType) 
     return BusinessAnalyticsDimension.Date;
   }
 
+  if (widgetType === 'barChart') {
+    if (hasPromptKeyword(prompt, ['member', 'team member', 'team members', 'who on my team', 'who spent the most'])) {
+      return BusinessAnalyticsDimension.Member;
+    }
+
+    if (hasPromptKeyword(prompt, ['retailer', 'retailers', 'store', 'stores', 'location', 'locations'])) {
+      return BusinessAnalyticsDimension.Retailer;
+    }
+
+    if (hasPromptKeyword(prompt, ['department', 'departments'])) {
+      return BusinessAnalyticsDimension.Department;
+    }
+
+    if (hasPromptKeyword(prompt, ['category', 'categories'])) {
+      return BusinessAnalyticsDimension.ProductCategory;
+    }
+
+    if (hasPromptKeyword(prompt, ['delivery vs pickup', 'pickup vs delivery', 'service type'])) {
+      return BusinessAnalyticsDimension.ServiceType;
+    }
+
+    if (hasExplicitOrderStatusBreakdownIntent(prompt)) {
+      return BusinessAnalyticsDimension.OrderStatus;
+    }
+
+    return BusinessAnalyticsDimension.Member;
+  }
+
+  if (hasPromptKeyword(prompt, ['retailer share', 'retailer mix', 'retailer breakdown', 'retailer got the biggest share'])) {
+    return BusinessAnalyticsDimension.Retailer;
+  }
+
   if (hasPromptKeyword(prompt, ['delivery vs pickup', 'pickup vs delivery', 'service type'])) {
     return BusinessAnalyticsDimension.ServiceType;
   }
 
-  if (hasPromptKeyword(prompt, ['status', 'completed', 'canceled', 'cancelled'])) {
-    return BusinessAnalyticsDimension.OrderStatus;
-  }
-
-  if (hasPromptKeyword(prompt, ['retailer', 'store', 'location'])) {
-    return BusinessAnalyticsDimension.Retailer;
-  }
-
-  if (hasPromptKeyword(prompt, ['member', 'team', 'who on my team'])) {
-    return BusinessAnalyticsDimension.Member;
+  if (hasPromptKeyword(prompt, ['department', 'departments'])) {
+    return BusinessAnalyticsDimension.Department;
   }
 
   if (hasPromptKeyword(prompt, ['category', 'categories'])) {
     return BusinessAnalyticsDimension.ProductCategory;
   }
 
-  return BusinessAnalyticsDimension.Department;
+  if (hasExplicitOrderStatusBreakdownIntent(prompt)) {
+    return BusinessAnalyticsDimension.OrderStatus;
+  }
+
+  if (hasPromptKeyword(prompt, ['retailer', 'retailers', 'store', 'stores', 'location', 'locations'])) {
+    return BusinessAnalyticsDimension.Retailer;
+  }
+
+  return BusinessAnalyticsDimension.ServiceType;
 }
 
 function inferComparisonDimension(prompt: string) {
@@ -263,7 +295,7 @@ function inferComparisonDimension(prompt: string) {
     return BusinessAnalyticsDimension.ServiceType;
   }
 
-  if (hasPromptKeyword(prompt, ['status', 'completed', 'canceled', 'cancelled'])) {
+  if (hasExplicitOrderStatusBreakdownIntent(prompt)) {
     return BusinessAnalyticsDimension.OrderStatus;
   }
 
@@ -363,6 +395,19 @@ function inferFilters(
   }
 
   return filters;
+}
+
+function hasExplicitOrderStatusBreakdownIntent(prompt: string) {
+  return hasPromptKeyword(prompt, [
+    'order status',
+    'status share',
+    'status breakdown',
+    'status mix',
+    'status comparison',
+    'completed vs canceled',
+    'completed vs cancelled',
+    'placed vs completed',
+  ]);
 }
 
 function buildWidgetTitle(
