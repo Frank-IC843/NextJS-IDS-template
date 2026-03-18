@@ -12,9 +12,7 @@ function useStyles() {
     container: {
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '16px',
-      minHeight: '180px',
-      justifyContent: 'space-between',
+      height: '100%',
     },
     value: {
       lineHeight: 1,
@@ -27,16 +25,17 @@ function useStyles() {
       borderRadius: '999px',
       border: '1px solid transparent',
     },
-    detail: {
-      maxWidth: '32rem',
-    },
     dataCard: {
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '12px',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '16px',
+      minHeight: '240px',
       borderRadius: theme.radius.r12,
-      padding: '18px',
+      padding: '24px',
       backgroundColor: theme.colors.systemGrayscale10,
+      textAlign: 'center' as const,
     },
   } as const;
 }
@@ -63,10 +62,6 @@ export function DashboardMetricWidgetView({ widget }: { widget: MetricWidget }) 
           </Text>
         </div>
       </div>
-
-      <Text typography="bodyRegular" color="systemGrayscale70" css={styles.detail}>
-        {widget.data.detail}
-      </Text>
     </div>
   );
 }

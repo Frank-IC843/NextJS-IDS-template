@@ -49,10 +49,6 @@ export function DashboardBarChartWidgetView({ widget }: { widget: BarChartWidget
           </div>
         )}
       </div>
-
-      <Text typography="bodyRegular" color="systemGrayscale60">
-        {widget.data.footer}
-      </Text>
     </div>
   );
 }

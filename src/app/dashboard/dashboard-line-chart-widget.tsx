@@ -67,10 +67,6 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
           </div>
         )}
       </div>
-
-      <Text typography="bodyRegular" color="systemGrayscale60">
-        {widget.data.footer}
-      </Text>
     </div>
   );
 }

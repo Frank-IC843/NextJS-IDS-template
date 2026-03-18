@@ -99,10 +99,6 @@ export function DashboardDonutChartWidgetView({ widget }: { widget: DonutChartWi
           })}
         </div>
       ) : null}
-
-      <Text typography="bodyRegular" color="systemGrayscale60">
-        {widget.data.footer}
-      </Text>
     </div>
   );
 }
