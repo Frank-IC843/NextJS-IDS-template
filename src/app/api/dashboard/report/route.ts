@@ -4,7 +4,7 @@ import { generateObject } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { renderDashboardReportPdfHtml } from '@/app/api/dashboard/report/pdf-template';
 import { buildDashboardReportSystemPrompt } from '@/app/api/dashboard/report/system-prompt';
-import { dashboardReportRequestSchema, dashboardReportSchema, type DashboardReportRequest } from '@/app/dashboard/dashboard-report-types';
+import { dashboardReportRequestSchema, dashboardReportSchema, type DashboardReport, type DashboardReportRequest } from '@/app/dashboard/dashboard-report-types';
 import { gpt4_1 } from '@/lib/ai-sdk-config';
 
 export const runtime = 'nodejs';
@@ -19,13 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'At least one hydrated widget is required to generate a report.' }, { status: 400 });
     }
 
-    const { object } = await generateObject({
-      model: gpt4_1,
-      system: buildDashboardReportSystemPrompt(),
-      prompt: buildDashboardReportPrompt(parsedInput.data),
-      schema: dashboardReportSchema,
-      temperature: 0,
-    });
+    const object = await generateDashboardReport(parsedInput.data);
 
     const generatedAt = new Date();
     const logoDataUrl = await readBrandLogoDataUrl();
@@ -58,6 +52,100 @@ function buildDashboardReportPrompt(input: DashboardReportRequest) {
 
 Dashboard context:
 ${JSON.stringify(input, null, 2)}`;
+}
+
+async function generateDashboardReport(input: DashboardReportRequest): Promise<DashboardReport> {
+  try {
+    const { object } = await requestDashboardReport(input);
+
+    return object;
+  } catch (error) {
+    if (!shouldRetryDashboardReport(error)) {
+      throw error;
+    }
+
+    const validationIssues = extractDashboardReportValidationIssues(error);
+    const { object } = await requestDashboardReport(input, validationIssues);
+
+    return object;
+  }
+}
+
+function requestDashboardReport(input: DashboardReportRequest, validationIssues: string[] = []) {
+  return generateObject({
+    model: gpt4_1,
+    system: buildDashboardReportSystemPrompt(),
+    prompt: buildDashboardReportPromptWithValidation(input, validationIssues),
+    schema: dashboardReportSchema,
+    temperature: 0,
+  });
+}
+
+function buildDashboardReportPromptWithValidation(input: DashboardReportRequest, validationIssues: string[]) {
+  if (validationIssues.length === 0) {
+    return buildDashboardReportPrompt(input);
+  }
+
+  return `${buildDashboardReportPrompt(input)}
+
+The previous attempt failed schema validation.
+Fix every issue below while keeping the report grounded in the supplied dashboard context:
+${validationIssues.map(issue => `- ${issue}`).join('\n')}
+
+Return a corrected response that fully satisfies the required structure.`;
+}
+
+function shouldRetryDashboardReport(error: unknown) {
+  return (
+    error instanceof Error &&
+    (error.name === 'AI_NoObjectGeneratedError' ||
+      error.message.includes('did not match schema') ||
+      error.message.includes('Type validation failed'))
+  );
+}
+
+function extractDashboardReportValidationIssues(error: unknown) {
+  const issues = collectValidationIssues(error);
+
+  return issues.length > 0 ? issues : ['Return an object that fully matches the required report schema.'];
+}
+
+function collectValidationIssues(error: unknown) {
+  const queue: unknown[] = [error];
+  const issues: string[] = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    if (!isRecord(current)) {
+      continue;
+    }
+
+    const maybeIssues = current.issues;
+
+    if (Array.isArray(maybeIssues)) {
+      maybeIssues.forEach(issue => {
+        if (!isRecord(issue)) {
+          return;
+        }
+
+        const issuePath = Array.isArray(issue.path) ? issue.path.join('.') : 'report';
+        const issueMessage = typeof issue.message === 'string' ? issue.message : 'Validation issue';
+
+        issues.push(issuePath ? `${issuePath}: ${issueMessage}` : issueMessage);
+      });
+    }
+
+    if ('cause' in current) {
+      queue.push(current.cause);
+    }
+  }
+
+  return issues;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 async function renderDashboardReportPdf(html: string) {
