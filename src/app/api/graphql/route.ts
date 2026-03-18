@@ -15,12 +15,19 @@ export async function POST(request: NextRequest) {
 
     // Get cookies from the request
     const cookieStore = await cookies();
+    const incomingCookieHeader = request.headers.get('cookie');
+    const authHeaders = getGraphQLAuthHeaders(cookieStore);
     // Forward the request to the GraphQL server
     const response = await fetch(GRAPHQL_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getGraphQLAuthHeaders(cookieStore),
+        ...authHeaders,
+        ...(incomingCookieHeader
+          ? {
+              Cookie: incomingCookieHeader,
+            }
+          : {}),
       },
       body: JSON.stringify(body),
     });

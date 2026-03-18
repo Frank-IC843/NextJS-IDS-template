@@ -21,6 +21,8 @@ export function getGraphQLAuthHeaders(cookieStore: CookieStoreReader) {
   const authCookies: string[] = [];
   const instacartSession = cookieStore.get('_instacart_session');
   const instacartSid = cookieStore.get('instacart_sid') || cookieStore.get('__Host-instacart_sid');
+  const cookieToken = instacartSid?.value || instacartSession?.value;
+  const authToken = cookieToken ?? process.env.GRAPHQL_AUTH_TOKEN;
 
   if (instacartSession) {
     authCookies.push(`_instacart_session=${instacartSession.value}`);
@@ -31,9 +33,9 @@ export function getGraphQLAuthHeaders(cookieStore: CookieStoreReader) {
   }
 
   return {
-    ...(process.env.GRAPHQL_AUTH_TOKEN
+    ...(authToken
       ? {
-          Authorization: `Bearer ${process.env.GRAPHQL_AUTH_TOKEN}`,
+          Authorization: `Bearer ${authToken}`,
         }
       : {}),
     ...(authCookies.length > 0

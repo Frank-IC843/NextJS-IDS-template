@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { print } from 'graphql';
 import { CREATE_USER_SESSION_FROM_CODE } from '@/app/api/login/queries';
-import { getClient } from '@/lib/apollo-client';
+import { GRAPHQL_URL } from '@/lib/constants';
 import { setInstacartAuthCookies } from '@/lib/instacart-auth-cookies';
 import { UsersAccountTypes, UsersIdentityType } from '@/__generated__/graphql-types';
 
 export async function POST(request: NextRequest) {
   try {
     const { identifier, verification_code } = await request.json();
-
-    const client = getClient();
-    const { data, errors } = await client.mutate({
-      mutation: CREATE_USER_SESSION_FROM_CODE,
-      variables: {
-        identifier,
-        identifier_type: UsersIdentityType.Email,
-        verification_code,
-        accountType: UsersAccountTypes.Business,
+    const response = await fetch(GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        query: print(CREATE_USER_SESSION_FROM_CODE),
+        variables: {
+          identifier,
+          identifier_type: UsersIdentityType.Email,
+          verification_code,
+          accountType: UsersAccountTypes.Business,
+        },
+      }),
     });
+    const { data, errors } = await response.json();
 
     if (errors) {
       return NextResponse.json({ error: 'GraphQL error' }, { status: 400 });
@@ -30,17 +35,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No token received' }, { status: 400 });
     }
 
-    // Set Instacart cookies
-    const cookieStore = await cookies();
     const environment = process.env.NODE_ENV || 'development';
 
-    setInstacartAuthCookies(cookieStore, result.token, environment);
-
-    return NextResponse.json({
+    const nextResponse = NextResponse.json({
       success: true,
       token: result.token,
       expires: result.expires,
     });
+
+    setInstacartAuthCookies(nextResponse.cookies, result.token, environment);
+
+    const setCookieHeaders =
+      typeof response.headers.getSetCookie === 'function'
+        ? response.headers.getSetCookie()
+        : response.headers.get('set-cookie')
+          ? [response.headers.get('set-cookie') as string]
+          : [];
+
+    setCookieHeaders.forEach(setCookieHeader => {
+      nextResponse.headers.append('set-cookie', setCookieHeader);
+    });
+
+    return nextResponse;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });
