@@ -482,7 +482,7 @@ export function renderDashboardReportPdfHtml({
       .metric-visual {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
         padding: 18px;
         border-radius: 12px;
         background: linear-gradient(135deg, ${PDF_COLORS.brandSoft} 0%, ${PDF_COLORS.white} 100%);
@@ -491,25 +491,58 @@ export function renderDashboardReportPdfHtml({
         justify-content: space-between;
       }
 
+      .metric-visual-single {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex: 1;
+        text-align: center;
+      }
+
+      .metric-visual-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        flex: 1;
+      }
+
+      .metric-visual-grid-three .metric-visual-kpi:first-child {
+        grid-column: 1 / -1;
+        min-height: 98px;
+      }
+
+      .metric-visual-kpi {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 10px;
+        min-width: 0;
+        padding: 14px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid ${PDF_COLORS.line};
+      }
+
+      .metric-visual-kpi-label {
+        color: ${PDF_COLORS.softText};
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
       .metric-visual-value {
         font-size: 34px;
         line-height: 1;
         font-weight: 800;
       }
 
-      .metric-visual-range {
-        display: inline-flex;
-        align-items: center;
-        width: fit-content;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: ${PDF_COLORS.white};
-        border: 1px solid ${PDF_COLORS.line};
-        color: ${PDF_COLORS.brandDark};
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+      .metric-visual-kpi-value {
+        font-size: 24px;
+        line-height: 1;
+        font-weight: 800;
       }
 
       .donut-layout {
@@ -764,11 +797,7 @@ function renderVisualForWidget(widget: DashboardReportWidgetContext) {
             <div class="visual-time-range">${escapeHtml(widget.timeRangeLabel)}</div>
           </div>
           ${widget.description ? `<div class="visual-description">${escapeHtml(widget.description)}</div>` : ''}
-          <div class="metric-visual">
-            <div class="metric-visual-value">${escapeHtml(widget.summary.value)}</div>
-            <div class="metric-visual-range">${escapeHtml(widget.timeRangeLabel)}</div>
-            <div class="chart-footer">${escapeHtml(widget.summary.detail)}</div>
-          </div>
+          ${renderMetricVisual(widget)}
         </div>
       `;
     case 'lineChart':
@@ -815,6 +844,47 @@ function renderVisualForWidget(widget: DashboardReportWidgetContext) {
         </div>
       `;
   }
+}
+
+function renderMetricVisual(widget: Extract<DashboardReportWidgetContext, { widgetType: 'metric' }>) {
+  if (widget.summary.metrics.length === 1) {
+    const metric = widget.summary.metrics[0];
+
+    if (!metric) {
+      return '';
+    }
+
+    return `
+      <div class="metric-visual">
+        <div class="metric-visual-single">
+          <div class="metric-visual-kpi-label">${escapeHtml(metric.label)}</div>
+          <div class="metric-visual-value">${escapeHtml(metric.value)}</div>
+        </div>
+        <div class="chart-footer">${escapeHtml(widget.summary.footer)}</div>
+      </div>
+    `;
+  }
+
+  const gridClassName =
+    widget.summary.metrics.length === 3 ? 'metric-visual-grid metric-visual-grid-three' : 'metric-visual-grid';
+
+  return `
+    <div class="metric-visual">
+      <div class="${gridClassName}">
+        ${widget.summary.metrics
+          .map(
+            metric => `
+              <div class="metric-visual-kpi">
+                <div class="metric-visual-kpi-label">${escapeHtml(metric.label)}</div>
+                <div class="metric-visual-kpi-value">${escapeHtml(metric.value)}</div>
+              </div>
+            `,
+          )
+          .join('')}
+      </div>
+      <div class="chart-footer">${escapeHtml(widget.summary.footer)}</div>
+    </div>
+  `;
 }
 
 function renderLineChartSvg(points: Array<{ label: string; value: number }>) {

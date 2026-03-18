@@ -138,17 +138,13 @@ export function hydrateDashboardWidget(
 
   switch (draft.widgetType) {
     case 'metric': {
-      const rawValue = rows[0]?.[draft.query.dimensions.length] ?? null;
-
       return dashboardWidgetSchema.parse({
         ...draft,
         description: draft.description ?? buildWidgetDescription(draft),
         timeRangeLabel,
         data: {
-          value: formatMetricValue(primaryMeasure, rawValue),
-          change: timeRangeLabel,
-          detail: buildMetricDetail(draft.query, rows.length > 0),
-          tone: getMeasureTone(primaryMeasure),
+          metrics: buildMetricItems(draft.query, rows[0]),
+          footer: buildMetricFooter(draft.query, rows.length > 0),
         },
       });
     }
@@ -280,7 +276,9 @@ function buildWidgetDescription(draft: Pick<DashboardWidgetDraft, 'query' | 'wid
 
   switch (draft.widgetType) {
     case 'metric':
-      return `${getMeasureLabel(primaryMeasure)} for ${timeRangeLabel}${filterSuffix}.`;
+      return draft.query.measures.length > 1
+        ? `Top-line snapshot of ${formatMeasureList(draft.query.measures)} for ${timeRangeLabel}${filterSuffix}.`
+        : `${getMeasureLabel(primaryMeasure)} for ${timeRangeLabel}${filterSuffix}.`;
     case 'lineChart':
       return `${getMeasureLabel(primaryMeasure)} over time for ${timeRangeLabel}${filterSuffix}.`;
     case 'barChart':
@@ -291,14 +289,24 @@ function buildWidgetDescription(draft: Pick<DashboardWidgetDraft, 'query' | 'wid
   }
 }
 
-function buildMetricDetail(query: DashboardAnalyticsQuery, hasData: boolean) {
+function buildMetricItems(query: DashboardAnalyticsQuery, rowValues: string[] | undefined) {
+  return query.measures.slice(0, 4).map((measure, index) => ({
+    label: getMeasureLabel(measure),
+    value: formatMetricValue(measure, rowValues?.[query.dimensions.length + index] ?? null),
+    tone: getMeasureTone(measure),
+  }));
+}
+
+function buildMetricFooter(query: DashboardAnalyticsQuery, hasData: boolean) {
   if (!hasData) {
     return 'No matching data was returned for the selected widget query.';
   }
 
   const primaryMeasure = query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
 
-  return `${getMeasureLabel(primaryMeasure)} for ${buildDashboardTimeRangeLabel(query.timeRange).toLowerCase()}${buildFilterSuffix(query.filters)}.`;
+  return query.measures.length > 1
+    ? `Top-line snapshot of ${formatMeasureList(query.measures)} for ${buildDashboardTimeRangeLabel(query.timeRange).toLowerCase()}${buildFilterSuffix(query.filters)}.`
+    : `${getMeasureLabel(primaryMeasure)} for ${buildDashboardTimeRangeLabel(query.timeRange).toLowerCase()}${buildFilterSuffix(query.filters)}.`;
 }
 
 function buildChartFooter(query: DashboardAnalyticsQuery, groupingText: string | null) {
@@ -441,6 +449,20 @@ function getMeasureLabel(measure: BusinessAnalyticsMeasure) {
     default:
       return 'Order count';
   }
+}
+
+function formatMeasureList(measures: BusinessAnalyticsMeasure[]) {
+  const labels = measures.slice(0, 4).map(measure => getMeasureLabel(measure).toLowerCase());
+
+  if (labels.length <= 1) {
+    return labels[0] ?? 'top-line metrics';
+  }
+
+  if (labels.length === 2) {
+    return `${labels[0]} and ${labels[1]}`;
+  }
+
+  return `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`;
 }
 
 function getDimensionLabel(dimension: BusinessAnalyticsDimension) {

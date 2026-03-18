@@ -18,6 +18,7 @@ export type DashboardLayout = z.infer<typeof dashboardLayoutSchema>;
 
 export const MAX_WIDGETS_PER_GENERATION = 4;
 export const MAX_WIDGETS_PER_DASHBOARD = 12;
+export const MAX_METRICS_PER_WIDGET = 4;
 
 export const businessAnalyticsMeasureSchema = z.nativeEnum(BusinessAnalyticsMeasure);
 export type DashboardAnalyticsMeasure = z.infer<typeof businessAnalyticsMeasureSchema>;
@@ -120,10 +121,17 @@ const dashboardWidgetBaseSchema = dashboardWidgetDraftSchema.extend({
 export const metricWidgetSchema = dashboardWidgetBaseSchema.extend({
   widgetType: z.literal('metric'),
   data: z.object({
-    value: z.string().min(1),
-    change: z.string().min(1),
-    detail: z.string().min(1),
-    tone: dashboardToneSchema,
+    metrics: z
+      .array(
+        z.object({
+          label: z.string().min(1).max(48),
+          value: z.string().min(1).max(80),
+          tone: dashboardToneSchema,
+        }),
+      )
+      .min(1)
+      .max(MAX_METRICS_PER_WIDGET),
+    footer: z.string().min(1),
   }),
 });
 export type MetricWidget = z.infer<typeof metricWidgetSchema>;

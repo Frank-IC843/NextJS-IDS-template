@@ -31,28 +31,81 @@ export function DashboardWidgetSkeleton({ widget }: { widget: DashboardWidgetDra
   } as const;
 
   switch (widget.widgetType) {
-    case 'metric':
+    case 'metric': {
+      const metricCount = Math.min(Math.max(widget.query.measures.length, 1), 4);
+      const isComposite = metricCount > 1;
+
       return (
-        <div css={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '180px', justifyContent: 'space-between' }}>
+        <div css={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div
             css={{
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              padding: '18px',
+              flex: 1,
+              minHeight: '240px',
+              padding: isComposite ? '18px' : '24px',
               borderRadius: theme.radius.r12,
-              backgroundColor: businessPalette.elderberrySoft,
+              background: isComposite ? businessPalette.canvasGradient : businessPalette.elderberrySoft,
             }}
           >
-            <div css={{ ...skeletonBlock, width: '58%', height: '42px', borderRadius: theme.radius.r12 }} />
-            <div css={{ ...skeletonBlock, width: '38%', height: '30px' }} />
-          </div>
-          <div css={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div css={{ ...skeletonBlock, width: '92%', height: '12px' }} />
-            <div css={{ ...skeletonBlock, width: '74%', height: '12px' }} />
+            {isComposite ? (
+              <div css={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px', flex: 1 }}>
+                {Array.from({ length: metricCount }).map((_, index) => (
+                  <div
+                    key={index}
+                    css={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      minWidth: 0,
+                      minHeight: index === 0 && metricCount === 3 ? '108px' : undefined,
+                      padding: '16px',
+                      borderRadius: theme.radius.r12,
+                      backgroundColor: 'rgba(255, 255, 255, 0.82)',
+                      border: '1px solid rgba(43, 120, 198, 0.18)',
+                      gridColumn: index === 0 && metricCount === 3 ? '1 / -1' : undefined,
+                    }}
+                  >
+                    <div css={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div css={{ ...skeletonBlock, width: '10px', height: '10px', borderRadius: '999px' }} />
+                      <div css={{ ...skeletonBlock, width: '56%', height: '10px' }} />
+                    </div>
+                    <div
+                      css={{
+                        ...skeletonBlock,
+                        width: metricCount >= 4 ? '72%' : '84%',
+                        height: metricCount >= 4 ? '26px' : '34px',
+                        borderRadius: theme.radius.r12,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div css={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', flex: 1 }}>
+                <div
+                  css={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    borderRadius: '999px',
+                    border: `1px solid ${businessPalette.elderberryBorder}`,
+                    backgroundColor: theme.colors.systemGrayscale00,
+                  }}
+                >
+                  <div css={{ ...skeletonBlock, width: '10px', height: '10px', borderRadius: '999px' }} />
+                  <div css={{ ...skeletonBlock, width: '84px', height: '10px' }} />
+                </div>
+                <div css={{ ...skeletonBlock, width: '56%', height: '42px', borderRadius: theme.radius.r12 }} />
+              </div>
+            )}
           </div>
         </div>
       );
+    }
     case 'lineChart':
       return (
         <div css={containerStyles}>

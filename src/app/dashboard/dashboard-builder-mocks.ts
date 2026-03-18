@@ -7,6 +7,7 @@ import {
 } from '@/__generated__/graphql-types';
 import {
   dashboardWidgetSchema,
+  MAX_METRICS_PER_WIDGET,
   MAX_WIDGETS_PER_GENERATION,
   type DashboardAnalyticsFilter,
   type DashboardLayout,
@@ -104,7 +105,7 @@ export function getStarterDashboardWidgets(): DashboardWidget[] {
 
 interface PlannerWidgetSpec {
   widgetType: SupportedWidgetType;
-  measure: BusinessAnalyticsMeasure;
+  measures: BusinessAnalyticsMeasure[];
   dimension?: BusinessAnalyticsDimension;
   timeRange: BusinessAnalyticsTimeRange;
   filters: DashboardAnalyticsFilter[];
@@ -415,19 +416,21 @@ function hasExplicitOrderStatusBreakdownIntent(prompt: string) {
 
 function buildWidgetTitle(
   widgetType: SupportedWidgetType,
-  measure: BusinessAnalyticsMeasure,
+  measures: BusinessAnalyticsMeasure[],
   dimension: BusinessAnalyticsDimension | undefined,
 ) {
+  const primaryMeasure = measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
+
   if (widgetType === 'metric') {
-    return getMeasureLabel(measure);
+    return buildMetricWidgetTitle(measures);
   }
 
   if (widgetType === 'lineChart') {
-    return `${getMeasureLabel(measure)} over time`;
+    return `${getMeasureLabel(primaryMeasure)} over time`;
   }
 
   if (widgetType === 'barChart') {
-    return `${getMeasureLabel(measure)} by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department)}`;
+    return `${getMeasureLabel(primaryMeasure)} by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department)}`;
   }
 
   return `${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department)} share`;
@@ -435,23 +438,113 @@ function buildWidgetTitle(
 
 function buildWidgetDescription(
   widgetType: SupportedWidgetType,
-  measure: BusinessAnalyticsMeasure,
+  measures: BusinessAnalyticsMeasure[],
   dimension: BusinessAnalyticsDimension | undefined,
   timeRange: BusinessAnalyticsTimeRange,
 ) {
   const timeRangeLabel = buildDashboardTimeRangeLabel(timeRange).toLowerCase();
+  const primaryMeasure = measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
 
   switch (widgetType) {
     case 'metric':
-      return `${getMeasureLabel(measure)} for ${timeRangeLabel}.`;
+      return measures.length > 1
+        ? `Top-line snapshot of ${formatMetricMeasureList(measures)} for ${timeRangeLabel}.`
+        : `${getMeasureLabel(primaryMeasure)} for ${timeRangeLabel}.`;
     case 'lineChart':
-      return `${getMeasureLabel(measure)} over time for ${timeRangeLabel}.`;
+      return `${getMeasureLabel(primaryMeasure)} over time for ${timeRangeLabel}.`;
     case 'barChart':
-      return `${getMeasureLabel(measure)} by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department).toLowerCase()} for ${timeRangeLabel}.`;
+      return `${getMeasureLabel(primaryMeasure)} by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department).toLowerCase()} for ${timeRangeLabel}.`;
     case 'donutChart':
     default:
-      return `${getMeasureLabel(measure)} share by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department).toLowerCase()} for ${timeRangeLabel}.`;
+      return `${getMeasureLabel(primaryMeasure)} share by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department).toLowerCase()} for ${timeRangeLabel}.`;
   }
+}
+
+function buildMetricMeasureSet(prompt: string, primaryMeasure: BusinessAnalyticsMeasure) {
+  const measures = [primaryMeasure];
+
+  if (!shouldUseCompositeMetricCard(prompt)) {
+    return measures;
+  }
+
+  switch (primaryMeasure) {
+    case BusinessAnalyticsMeasure.TotalSavings:
+      measures.push(BusinessAnalyticsMeasure.TotalSpend, BusinessAnalyticsMeasure.OrderCount);
+      break;
+    case BusinessAnalyticsMeasure.AvgOrderValue:
+      measures.push(BusinessAnalyticsMeasure.TotalSpend, BusinessAnalyticsMeasure.OrderCount);
+      break;
+    case BusinessAnalyticsMeasure.AvgItemsPerOrder:
+      measures.push(BusinessAnalyticsMeasure.OrderCount, BusinessAnalyticsMeasure.AvgOrderValue);
+      break;
+    case BusinessAnalyticsMeasure.OrdersPlaced:
+    case BusinessAnalyticsMeasure.OrdersCompleted:
+    case BusinessAnalyticsMeasure.OrderCount:
+      measures.push(BusinessAnalyticsMeasure.TotalSpend, BusinessAnalyticsMeasure.AvgOrderValue);
+      break;
+    case BusinessAnalyticsMeasure.TotalSpend:
+    default:
+      measures.push(BusinessAnalyticsMeasure.OrderCount, BusinessAnalyticsMeasure.AvgOrderValue);
+      break;
+  }
+
+  return Array.from(new Set(measures)).slice(0, MAX_METRICS_PER_WIDGET);
+}
+
+function shouldUseCompositeMetricCard(prompt: string) {
+  return (
+    shouldBuildDashboardSet(prompt) ||
+    hasPromptKeyword(prompt, ['summary', 'snapshot', 'scorecard', 'kpi', 'kpis', 'top line', 'topline', 'performance']) ||
+    countRequestedMetricThemes(prompt) >= 2
+  );
+}
+
+function countRequestedMetricThemes(prompt: string) {
+  return [
+    hasPromptKeyword(prompt, ['spend', 'spent', 'cost']),
+    hasPromptKeyword(prompt, ['orders', 'order count', 'completed orders', 'placed orders']),
+    hasPromptKeyword(prompt, ['average order', 'aov']),
+    hasPromptKeyword(prompt, ['items per order', 'avg items', 'basket size']),
+    hasPromptKeyword(prompt, ['saving', 'savings']),
+  ].filter(Boolean).length;
+}
+
+function buildMetricWidgetTitle(measures: BusinessAnalyticsMeasure[]) {
+  if (measures.length <= 1) {
+    return getMeasureLabel(measures[0] ?? BusinessAnalyticsMeasure.OrderCount);
+  }
+
+  if (measures.includes(BusinessAnalyticsMeasure.TotalSavings)) {
+    return 'Savings snapshot';
+  }
+
+  if (measures.includes(BusinessAnalyticsMeasure.TotalSpend)) {
+    return 'Performance snapshot';
+  }
+
+  if (
+    measures.includes(BusinessAnalyticsMeasure.OrderCount) ||
+    measures.includes(BusinessAnalyticsMeasure.OrdersPlaced) ||
+    measures.includes(BusinessAnalyticsMeasure.OrdersCompleted)
+  ) {
+    return 'Order snapshot';
+  }
+
+  return 'KPI snapshot';
+}
+
+function formatMetricMeasureList(measures: BusinessAnalyticsMeasure[]) {
+  const labels = measures.slice(0, MAX_METRICS_PER_WIDGET).map(measure => getMeasureLabel(measure).toLowerCase());
+
+  if (labels.length <= 1) {
+    return labels[0] ?? 'top-line metrics';
+  }
+
+  if (labels.length === 2) {
+    return `${labels[0]} and ${labels[1]}`;
+  }
+
+  return `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`;
 }
 
 function getDefaultLayout(widgetType: SupportedWidgetType): DashboardLayout {
@@ -475,19 +568,20 @@ function buildPlannerWidgetSpec(
   const inferredDimension =
     widgetType === 'lineChart' ? BusinessAnalyticsDimension.Date : inferPrimaryDimension(prompt, widgetType);
   const dimension = widgetType === 'metric' ? undefined : inferredDimension;
-  const measure =
+  const primaryMeasure =
     preferredMeasure === BusinessAnalyticsMeasure.TotalSavings && dimension && dimension !== BusinessAnalyticsDimension.Date
       ? BusinessAnalyticsMeasure.TotalSpend
       : preferredMeasure;
+  const measures = widgetType === 'metric' ? buildMetricMeasureSet(prompt, primaryMeasure) : [primaryMeasure];
 
   return {
     widgetType,
-    measure,
+    measures,
     dimension,
     timeRange,
     filters: inferFilters(
       prompt,
-      measure,
+      primaryMeasure,
       widgetType === 'metric' ? undefined : dimension ?? primaryComparisonDimension,
     ),
   } satisfies PlannerWidgetSpec;
@@ -501,13 +595,13 @@ function buildWidgetDraftFromSpec(
 
   return {
     id: buildWidgetId(spec.widgetType),
-    title: buildWidgetTitle(spec.widgetType, spec.measure, spec.dimension),
-    description: buildWidgetDescription(spec.widgetType, spec.measure, spec.dimension, spec.timeRange),
+    title: buildWidgetTitle(spec.widgetType, spec.measures, spec.dimension),
+    description: buildWidgetDescription(spec.widgetType, spec.measures, spec.dimension, spec.timeRange),
     prompt,
     layout,
     widgetType: spec.widgetType,
     query: {
-      measures: [spec.measure],
+      measures: spec.measures,
       dimensions: spec.dimension ? [spec.dimension] : [],
       filters: spec.filters,
       timeRange: spec.timeRange,
@@ -521,7 +615,7 @@ function dedupePlannerSpecs(specs: PlannerWidgetSpec[]) {
   return specs.filter(spec => {
     const key = JSON.stringify({
       widgetType: spec.widgetType,
-      measure: spec.measure,
+      measures: spec.measures,
       dimension: spec.dimension ?? null,
       timeRange: spec.timeRange,
       filters: spec.filters,

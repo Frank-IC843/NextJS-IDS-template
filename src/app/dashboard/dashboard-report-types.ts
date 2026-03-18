@@ -1,4 +1,9 @@
-import { chartPointSchema, donutChartSegmentSchema, MAX_WIDGETS_PER_DASHBOARD } from '@/app/dashboard/dashboard-builder-types';
+import {
+  chartPointSchema,
+  donutChartSegmentSchema,
+  MAX_METRICS_PER_WIDGET,
+  MAX_WIDGETS_PER_DASHBOARD,
+} from '@/app/dashboard/dashboard-builder-types';
 import { z } from 'zod';
 
 const dashboardReportWidgetBaseSchema = z.object({
@@ -8,11 +13,16 @@ const dashboardReportWidgetBaseSchema = z.object({
   timeRangeLabel: z.string().trim().min(1).max(40),
 });
 
+const dashboardReportMetricItemSchema = z.object({
+  label: z.string().trim().min(1).max(48),
+  value: z.string().trim().min(1).max(80),
+});
+
 const dashboardReportMetricWidgetContextSchema = dashboardReportWidgetBaseSchema.extend({
   widgetType: z.literal('metric'),
   summary: z.object({
-    value: z.string().trim().min(1).max(80),
-    detail: z.string().trim().min(1).max(200),
+    metrics: z.array(dashboardReportMetricItemSchema).min(1).max(MAX_METRICS_PER_WIDGET),
+    footer: z.string().trim().min(1).max(200),
   }),
 });
 

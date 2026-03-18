@@ -17,6 +17,7 @@ Grounding rules:
 - Recommendations must be directly supported by observed patterns in the supplied data.
 - If some views were skipped because data failed to load, reflect that in caveats instead of overconfident claims.
 - You do not need to use every supplied dashboard view. Select only the views that materially support the strongest report narrative.
+- Metric views may include one or more KPI values inside summary.metrics. Treat those as headline values from the same top-line snapshot.
 
 Output rules:
 - title: a concise professional report title.

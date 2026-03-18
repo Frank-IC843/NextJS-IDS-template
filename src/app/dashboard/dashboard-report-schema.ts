@@ -11,8 +11,11 @@ export function buildDashboardReportWidgetContext(widget: DashboardWidget) {
         widgetType: widget.widgetType,
         timeRangeLabel: widget.timeRangeLabel,
         summary: {
-          value: widget.data.value,
-          detail: widget.data.detail,
+          metrics: widget.data.metrics.map(metric => ({
+            label: metric.label,
+            value: metric.value,
+          })),
+          footer: widget.data.footer,
         },
       });
     case 'lineChart':

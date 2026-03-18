@@ -68,7 +68,7 @@ export function DashboardWidgetPlanPreview({ widgets }: DashboardWidgetPlanPrevi
           </div>
           <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
             {widget.widgetType === 'metric'
-              ? 'Headline summary'
+              ? 'KPI snapshot'
               : widget.widgetType === 'lineChart'
                 ? 'Trend view'
                 : widget.widgetType === 'barChart'

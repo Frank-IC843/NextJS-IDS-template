@@ -2,6 +2,8 @@ import { generateObject } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { BusinessAnalyticsDimension } from '@/__generated__/graphql-types';
 import {
+  MAX_METRICS_PER_WIDGET,
+  MAX_WIDGETS_PER_GENERATION,
   businessAnalyticsDimensionSchema,
   businessAnalyticsMeasureSchema,
   businessAnalyticsTimeRangeSchema,
@@ -10,43 +12,41 @@ import {
   dashboardGenerateInputSchema,
   dashboardWidgetDraftSchema,
   supportedWidgetTypeSchema,
+  type SupportedWidgetType,
 } from '@/app/dashboard/dashboard-builder-types';
 import { buildDashboardWidgetSystemPrompt } from '@/app/api/dashboard/generate/system-prompt';
 import { buildPersistedDashboardLayout } from '@/app/dashboard/dashboard-schema';
 import { gpt4_1 } from '@/lib/ai-sdk-config';
 import { z } from 'zod';
 
-const plannerWidgetPlanSchema = z
-  .object({
-    widgetType: supportedWidgetTypeSchema,
-    title: z.string().trim().min(1).max(80),
-    description: z.string().trim().min(1).max(200),
-    timeRange: businessAnalyticsTimeRangeSchema,
-    metric: businessAnalyticsMeasureSchema,
-    groupBy: businessAnalyticsDimensionSchema.optional(),
-    filters: z.array(dashboardAnalyticsFilterSchema).default([]),
-    layoutHint: dashboardLayoutSchema.optional(),
-  })
-  .superRefine((widget, context) => {
-    if ((widget.widgetType === 'barChart' || widget.widgetType === 'donutChart') && !widget.groupBy) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Bar and donut widgets require a groupBy dimension.',
-        path: ['groupBy'],
-      });
-    }
+const plannerWidgetBaseSchema = z.object({
+  title: z.string().trim().min(1).max(80),
+  description: z.string().trim().min(1).max(200),
+  timeRange: businessAnalyticsTimeRangeSchema,
+  filters: z.array(dashboardAnalyticsFilterSchema).default([]),
+  layoutHint: dashboardLayoutSchema.optional(),
+});
 
-    if ((widget.widgetType === 'metric' || widget.widgetType === 'lineChart') && widget.groupBy) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Metric and line widgets should not specify groupBy.',
-        path: ['groupBy'],
-      });
-    }
-  });
+const metricPlannerWidgetPlanSchema = plannerWidgetBaseSchema.extend({
+  widgetType: z.literal('metric'),
+  metrics: z.array(businessAnalyticsMeasureSchema).min(1).max(MAX_METRICS_PER_WIDGET),
+});
 
-const plannerResponseSchema = z.object({
-  widgets: z.array(plannerWidgetPlanSchema).min(1).max(4),
+const lineChartPlannerWidgetPlanSchema = plannerWidgetBaseSchema.extend({
+  widgetType: z.literal('lineChart'),
+  metric: businessAnalyticsMeasureSchema,
+});
+
+const barChartPlannerWidgetPlanSchema = plannerWidgetBaseSchema.extend({
+  widgetType: z.literal('barChart'),
+  metric: businessAnalyticsMeasureSchema,
+  groupBy: businessAnalyticsDimensionSchema,
+});
+
+const donutChartPlannerWidgetPlanSchema = plannerWidgetBaseSchema.extend({
+  widgetType: z.literal('donutChart'),
+  metric: businessAnalyticsMeasureSchema,
+  groupBy: businessAnalyticsDimensionSchema,
 });
 
 export async function POST(request: NextRequest) {
@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
     if (!parsedInput.success) {
       return NextResponse.json({ error: 'A prompt and at least one allowed widget type are required.' }, { status: 400 });
     }
+
+    const plannerResponseSchema = buildPlannerResponseSchema(parsedInput.data.allowedWidgetTypes);
 
     const { object } = await generateObject({
       model: gpt4_1,
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
         layout: 'half',
         widgetType: widget.widgetType,
         query: {
-          measures: [widget.metric],
+          measures: widget.widgetType === 'metric' ? widget.metrics : [widget.metric],
           dimensions:
             widget.widgetType === 'metric'
               ? []
@@ -100,4 +102,47 @@ export async function POST(request: NextRequest) {
 
 function buildWidgetId(prefix: z.infer<typeof supportedWidgetTypeSchema>) {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+type PlannerWidgetPlanSchemaByType = {
+  metric: typeof metricPlannerWidgetPlanSchema;
+  lineChart: typeof lineChartPlannerWidgetPlanSchema;
+  barChart: typeof barChartPlannerWidgetPlanSchema;
+  donutChart: typeof donutChartPlannerWidgetPlanSchema;
+};
+
+const plannerWidgetPlanSchemaByType: PlannerWidgetPlanSchemaByType = {
+  metric: metricPlannerWidgetPlanSchema,
+  lineChart: lineChartPlannerWidgetPlanSchema,
+  barChart: barChartPlannerWidgetPlanSchema,
+  donutChart: donutChartPlannerWidgetPlanSchema,
+};
+
+function buildPlannerResponseSchema(allowedWidgetTypes: SupportedWidgetType[]) {
+  const widgetPlanSchema = buildPlannerWidgetPlanSchema(allowedWidgetTypes);
+
+  return z.object({
+    widgets: z.array(widgetPlanSchema).min(1).max(getMaxPlannerWidgetCount(allowedWidgetTypes)),
+  });
+}
+
+function buildPlannerWidgetPlanSchema(allowedWidgetTypes: SupportedWidgetType[]) {
+  const uniqueAllowedWidgetTypes = Array.from(new Set(allowedWidgetTypes));
+  const allowedSchemas = uniqueAllowedWidgetTypes.map(widgetType => plannerWidgetPlanSchemaByType[widgetType]);
+
+  if (allowedSchemas.length === 1) {
+    return allowedSchemas[0];
+  }
+
+  const [firstSchema, secondSchema, ...restSchemas] = allowedSchemas;
+
+  if (!firstSchema || !secondSchema) {
+    throw new Error('At least one supported widget type is required.');
+  }
+
+  return z.discriminatedUnion('widgetType', [firstSchema, secondSchema, ...restSchemas]);
+}
+
+function getMaxPlannerWidgetCount(allowedWidgetTypes: SupportedWidgetType[]) {
+  return Math.min(MAX_WIDGETS_PER_GENERATION, Array.from(new Set(allowedWidgetTypes)).length);
 }

@@ -16,9 +16,9 @@ export const supportedDashboardWidgets: SupportedWidgetDefinition[] = [
   {
     type: 'metric',
     label: 'Metric',
-    description: 'Single KPI widgets for totals, counts, savings, and averages.',
-    promptHint: 'Best for headline measures such as spend, order count, or average order value.',
-    defaultTitle: 'Total spend',
+    description: 'Headline KPI widgets that can surface one strong metric or a compact bundle of top-line metrics.',
+    promptHint: 'Best for top-line answers such as spend, order count, and average order value in a compact snapshot.',
+    defaultTitle: 'Performance snapshot',
     defaultLayout: 'half',
   },
   {
