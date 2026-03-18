@@ -594,10 +594,10 @@ function buildLoadingReportWidgetState(widget: DashboardWidgetDraft): DashboardR
 
 function getReportActionLabel({ isGenerating }: { isGenerating: boolean }) {
   if (isGenerating) {
-    return 'Generating PDF...';
+    return 'Generating Report...';
   }
 
-  return 'Generate report PDF';
+  return 'Generate report';
 }
 
 function buildReportDownloadFilename(date = new Date()) {
