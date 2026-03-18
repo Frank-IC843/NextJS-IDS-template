@@ -64,7 +64,7 @@ export function getDashboardWidgetDraftsFromLayout(layout: unknown) {
   };
 }
 
-export function buildPersistedDashboardLayout(widgets: DashboardWidget[]): PersistedDashboardLayout {
+export function buildPersistedDashboardLayout(widgets: DashboardWidgetDraft[]): PersistedDashboardLayout {
   let currentRow = 0;
   let currentColumn = 0;
 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mockGenerateWidgetDraft } from '@/app/dashboard/dashboard-builder-mocks';
-import { hydrateDashboardWidgetDraft } from '@/app/dashboard/dashboard-data';
+import { mockGenerateDashboardDrafts } from '@/app/dashboard/dashboard-builder-mocks';
 import {
   dashboardGenerateInputSchema,
   dashboardGenerateResponseSchema,
@@ -16,30 +15,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'A prompt and at least one allowed widget type are required.' }, { status: 400 });
     }
 
-    const parsedWidgetDraft = dashboardWidgetDraftSchema.safeParse(
-      mockGenerateWidgetDraft(parsedInput.data.prompt, {
-        allowedWidgetTypes: parsedInput.data.allowedWidgetTypes,
-      }),
-    );
+    const generatedWidgets = mockGenerateDashboardDrafts(parsedInput.data.prompt, {
+      allowedWidgetTypes: parsedInput.data.allowedWidgetTypes,
+    });
+    const parsedWidgetDrafts = generatedWidgets.map(widget => dashboardWidgetDraftSchema.safeParse(widget));
+    const hasInvalidWidgetDraft = parsedWidgetDrafts.some(result => !result.success);
 
-    if (!parsedWidgetDraft.success) {
-      console.error('Dashboard widget draft validation failed:', parsedWidgetDraft.error.flatten());
-      return NextResponse.json({ error: 'Unable to generate a supported widget.' }, { status: 500 });
+    if (hasInvalidWidgetDraft) {
+      const firstInvalidResult = parsedWidgetDrafts.find(result => !result.success);
+      console.error('Dashboard widget drafts validation failed:', firstInvalidResult?.error.flatten());
+      return NextResponse.json({ error: 'Unable to generate a supported dashboard plan.' }, { status: 500 });
     }
+    const successfulDrafts = parsedWidgetDrafts.flatMap(result => (result.success ? [result.data] : []));
 
-    const hydratedWidgetResult = await hydrateDashboardWidgetDraft(parsedWidgetDraft.data);
-    const hydratedResponse = dashboardGenerateResponseSchema.safeParse({
-      widget: hydratedWidgetResult.widget,
+    const generatedResponse = dashboardGenerateResponseSchema.safeParse({
+      widgets: successfulDrafts,
     });
 
-    if (!hydratedResponse.success) {
-      console.error('Dashboard widget hydration failed:', hydratedResponse.error.flatten());
-      return NextResponse.json({ error: 'Unable to hydrate widget data.' }, { status: 500 });
+    if (!generatedResponse.success) {
+      console.error('Dashboard widget response validation failed:', generatedResponse.error.flatten());
+      return NextResponse.json({ error: 'Unable to build a supported dashboard plan.' }, { status: 500 });
     }
 
-    return NextResponse.json(hydratedResponse.data);
+    return NextResponse.json(generatedResponse.data);
   } catch (error) {
     console.error('Dashboard generate route failed:', error);
-    return NextResponse.json({ error: 'Unable to generate a widget right now.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to generate a dashboard plan right now.' }, { status: 500 });
   }
 }

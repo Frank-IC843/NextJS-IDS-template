@@ -13,9 +13,10 @@ import type {
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import {
+  MAX_WIDGETS_PER_DASHBOARD,
   dashboardGenerateResponseSchema,
   type DashboardLayout,
-  type DashboardWidget,
+  type DashboardWidgetDraft,
 } from '@/app/dashboard/dashboard-builder-types';
 import { useDashboardContentStyles } from '@/app/dashboard/dashboard-content-styles';
 import { DashboardEmptyLaunchpad } from '@/app/dashboard/dashboard-empty-launchpad';
@@ -29,11 +30,11 @@ import { useDashboardCanvasDnd } from '@/app/dashboard/use-dashboard-canvas-dnd'
 type BuilderAction = 'generate' | 'preview';
 type PreviewCacheEntry = {
   requestKey: string;
-  widget: DashboardWidget;
+  widgets: DashboardWidgetDraft[];
 };
 
 interface DashboardContentProps {
-  initialWidgets: DashboardWidget[];
+  initialWidgets: DashboardWidgetDraft[];
   initialErrorMessage?: string | null;
   promptSuggestions: string[];
   supportedWidgets: SupportedWidgetDefinition[];
@@ -56,6 +57,7 @@ export function DashboardContent({
   const saveRequestIdRef = useRef(0);
   const [widgets, setWidgets] = useState(initialWidgets);
   const isEmpty = widgets.length === 0;
+  const remainingWidgetCapacity = MAX_WIDGETS_PER_DASHBOARD - widgets.length;
   const [dashboardNotice, setDashboardNotice] = useState<string | null>(initialErrorMessage);
   const [isSaving, setIsSaving] = useState(false);
   const [prompt, setPrompt] = useState(defaultPrompt);
@@ -63,7 +65,7 @@ export function DashboardContent({
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [allowedWidgetTypes, setAllowedWidgetTypes] = useState<SupportedWidgetDefinition['type'][]>(allWidgetTypes);
-  const [previewWidget, setPreviewWidget] = useState<DashboardWidget | null>(null);
+  const [previewWidgets, setPreviewWidgets] = useState<DashboardWidgetDraft[]>([]);
   const [pendingBuilderAction, setPendingBuilderAction] = useState<BuilderAction | null>(null);
   const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
   const [saveDashboardLayout] = useMutation<
@@ -90,18 +92,18 @@ export function DashboardContent({
 
   function openBuilder(nextPrompt?: string) {
     setRequestError(null);
-    setPreviewWidget(null);
+    setPreviewWidgets([]);
     if (typeof nextPrompt === 'string') {
       setPrompt(nextPrompt);
     }
     setIsBuilderOpen(true);
   }
 
-  async function requestGeneratedWidget(action: BuilderAction) {
+  async function requestGeneratedWidgets(action: BuilderAction) {
     const trimmedPrompt = prompt.trim();
 
     if (!trimmedPrompt) {
-      setRequestError('Enter a prompt before generating a widget.');
+      setRequestError('Enter a prompt before generating widgets.');
       return null;
     }
 
@@ -110,12 +112,24 @@ export function DashboardContent({
       return null;
     }
 
+    if (remainingWidgetCapacity <= 0) {
+      setRequestError(`This dashboard supports up to ${MAX_WIDGETS_PER_DASHBOARD} widgets. Remove one before adding more.`);
+      return null;
+    }
+
     const requestKey = getBuilderRequestKey(trimmedPrompt, allowedWidgetTypes);
     const cachedPreview = previewCacheRef.current;
 
     if (cachedPreview?.requestKey === requestKey) {
+      if (cachedPreview.widgets.length > remainingWidgetCapacity) {
+        setRequestError(
+          `The cached dashboard plan includes ${cachedPreview.widgets.length} widgets, but only ${remainingWidgetCapacity} more fit on this dashboard.`,
+        );
+        return null;
+      }
+
       setRequestError(null);
-      return cachedPreview.widget;
+      return cachedPreview.widgets;
     }
 
     setIsGenerating(true);
@@ -143,21 +157,28 @@ export function DashboardContent({
       const parsedResponse = dashboardGenerateResponseSchema.safeParse(payload);
 
       if (!parsedResponse.success) {
-        setRequestError('The widget response did not match the supported schema.');
+        setRequestError('The dashboard plan response did not match the supported schema.');
+        return null;
+      }
+
+      if (parsedResponse.data.widgets.length > remainingWidgetCapacity) {
+        setRequestError(
+          `The AI planned ${parsedResponse.data.widgets.length} widgets, but only ${remainingWidgetCapacity} more fit on this dashboard.`,
+        );
         return null;
       }
 
       if (action === 'preview') {
         previewCacheRef.current = {
           requestKey,
-          widget: parsedResponse.data.widget,
+          widgets: parsedResponse.data.widgets,
         };
       }
 
-      return parsedResponse.data.widget;
+      return parsedResponse.data.widgets;
     } catch (error) {
       console.error('Dashboard prompt request failed:', error);
-      setRequestError('Unable to generate a widget right now.');
+      setRequestError('Unable to generate a dashboard plan right now.');
       return null;
     } finally {
       setIsGenerating(false);
@@ -166,42 +187,52 @@ export function DashboardContent({
   }
 
   async function handlePromptSubmit() {
-    const widget = await requestGeneratedWidget('generate');
+    const nextWidgets = await requestGeneratedWidgets('generate');
 
-    if (!widget) {
+    if (!nextWidgets) {
       return;
     }
 
-    handleWidgetsChange([...widgets, widget]);
-    setPreviewWidget(null);
+    const hasAddedWidgets = appendWidgets(nextWidgets);
+
+    if (!hasAddedWidgets) {
+      return;
+    }
+
+    setPreviewWidgets([]);
     setPrompt(defaultPrompt);
     setIsBuilderOpen(false);
   }
 
   async function handlePreviewSubmit() {
-    const widget = await requestGeneratedWidget('preview');
+    const nextWidgets = await requestGeneratedWidgets('preview');
 
-    if (!widget) {
+    if (!nextWidgets) {
       return;
     }
 
-    setPreviewWidget(widget);
+    setPreviewWidgets(nextWidgets);
   }
 
   function handlePreviewConfirm() {
-    if (!previewWidget) {
+    if (previewWidgets.length === 0) {
       return;
     }
 
-    handleWidgetsChange([...widgets, previewWidget]);
-    setPreviewWidget(null);
+    const hasAddedWidgets = appendWidgets(previewWidgets);
+
+    if (!hasAddedWidgets) {
+      return;
+    }
+
+    setPreviewWidgets([]);
     setPrompt(defaultPrompt);
     setRequestError(null);
     setIsBuilderOpen(false);
   }
 
   function handlePreviewBack() {
-    setPreviewWidget(null);
+    setPreviewWidgets([]);
   }
 
   function handleAllowedWidgetTypeToggle(widgetType: SupportedWidgetDefinition['type']) {
@@ -212,7 +243,7 @@ export function DashboardContent({
 
       return allWidgetTypes.filter(type => nextTypes.includes(type));
     });
-    setPreviewWidget(null);
+    setPreviewWidgets([]);
     setRequestError(null);
   }
 
@@ -244,18 +275,28 @@ export function DashboardContent({
   function handleReset() {
     handleWidgetsChange(initialWidgets);
     setPrompt(defaultPrompt);
-    setPreviewWidget(null);
+    setPreviewWidgets([]);
     setRequestError(null);
     setIsBuilderOpen(false);
     previewCacheRef.current = null;
   }
 
-  function handleWidgetsChange(nextWidgets: DashboardWidget[]) {
+  function appendWidgets(nextWidgets: DashboardWidgetDraft[]) {
+    if (widgets.length + nextWidgets.length > MAX_WIDGETS_PER_DASHBOARD) {
+      setRequestError(`This dashboard supports up to ${MAX_WIDGETS_PER_DASHBOARD} widgets. Remove one before adding more.`);
+      return false;
+    }
+
+    handleWidgetsChange([...widgets, ...nextWidgets]);
+    return true;
+  }
+
+  function handleWidgetsChange(nextWidgets: DashboardWidgetDraft[]) {
     setWidgets(nextWidgets);
     queuePersistWidgets(nextWidgets);
   }
 
-  function queuePersistWidgets(nextWidgets: DashboardWidget[]) {
+  function queuePersistWidgets(nextWidgets: DashboardWidgetDraft[]) {
     const saveRequestId = saveRequestIdRef.current + 1;
     saveRequestIdRef.current = saveRequestId;
     setIsSaving(true);
@@ -298,7 +339,7 @@ export function DashboardContent({
             </Text>
             <Text typography="headline">Build dashboards around your team&apos;s metrics.</Text>
             <Text typography="bodyRegular" color="systemGrayscale70">
-              Start with one widget, then expand the page as new questions come up.
+              Ask for one chart or a whole dashboard plan. Widgets load their analytics in parallel as soon as they land on the canvas.
             </Text>
           </div>
 
@@ -310,13 +351,17 @@ export function DashboardContent({
                 </Text>
                 <Text typography="titleMedium">{widgets.length} active widget{widgets.length === 1 ? '' : 's'}</Text>
                 <Text typography="bodyRegular" color="systemGrayscale60">
-                  Add charts or summary widgets as needed, then reset the canvas whenever you want to return to the default view.
+                  Keep the story focused. This canvas supports up to {MAX_WIDGETS_PER_DASHBOARD} widgets in the current two-column layout.
                 </Text>
               </div>
 
               <div css={styles.actionRow}>
-                <PrimaryButtonSmall onClick={() => openBuilder()} css={styles.primaryAction}>
-                  Add widget
+                <PrimaryButtonSmall
+                  onClick={() => openBuilder()}
+                  css={styles.primaryAction}
+                  disabled={remainingWidgetCapacity <= 0}
+                >
+                  Add widgets
                 </PrimaryButtonSmall>
                 <SecondaryButtonSmall onClick={handleReset} disabled={isGenerating}>
                   Reset canvas
@@ -380,10 +425,12 @@ export function DashboardContent({
         isGenerating={isGenerating}
         pendingAction={pendingBuilderAction}
         errorMessage={requestError}
-        previewWidget={previewWidget}
+        previewWidgets={previewWidgets}
         promptSuggestions={promptSuggestions}
         supportedWidgets={supportedWidgets}
         selectedWidgetTypes={allowedWidgetTypes}
+        currentWidgetCount={widgets.length}
+        maxWidgetCount={MAX_WIDGETS_PER_DASHBOARD}
         onPromptChange={value => {
           setPrompt(value);
           setRequestError(null);
@@ -399,7 +446,7 @@ export function DashboardContent({
         onWidgetTypeToggle={handleAllowedWidgetTypeToggle}
         onClose={() => {
           if (!isGenerating) {
-            setPreviewWidget(null);
+            setPreviewWidgets([]);
             setRequestError(null);
             setIsBuilderOpen(false);
           }

@@ -6,9 +6,10 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useState } from 'react';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
-import { DashboardWidgetRenderer } from '@/app/dashboard/dashboard-widget-renderer';
-import type { DashboardLayout, DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
+import { DashboardWidgetHydrator } from '@/app/dashboard/dashboard-widget-hydrator';
+import type { DashboardLayout, DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 import { DashboardLayoutGlyph } from '@/app/dashboard/dashboard-layout-glyph';
+import { buildDashboardTimeRangeLabel } from '@/app/dashboard/dashboard-schema';
 
 function useStyles() {
   const theme = useTheme();
@@ -200,7 +201,7 @@ function useStyles() {
 }
 
 interface DashboardWidgetShellProps {
-  widget: DashboardWidget;
+  widget: DashboardWidgetDraft;
   isDropTarget?: boolean;
   onLayoutChange: (widgetId: string, layout: DashboardLayout) => void;
   onRemove: (widgetId: string) => void;
@@ -210,6 +211,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
   const styles = useStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
+  const timeRangeLabel = buildDashboardTimeRangeLabel(widget.query.timeRange);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
   });
@@ -259,10 +261,10 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
         >
           <div css={styles.metaRow}>
             <Text typography="titleMedium">{widget.title}</Text>
-            {widget.timeRangeLabel ? (
+            {timeRangeLabel ? (
               <div css={styles.pill}>
                 <Text typography="bodyMedium1" color="systemGrayscale60">
-                  {widget.timeRangeLabel}
+                  {timeRangeLabel}
                 </Text>
               </div>
             ) : null}
@@ -362,7 +364,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
       </div>
 
       <div css={styles.body}>
-        <DashboardWidgetRenderer widget={widget} />
+        <DashboardWidgetHydrator widget={widget} />
       </div>
     </article>
   );

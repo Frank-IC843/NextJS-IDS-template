@@ -16,6 +16,9 @@ export type SupportedWidgetType = z.infer<typeof supportedWidgetTypeSchema>;
 export const dashboardLayoutSchema = z.enum(['half', 'full']);
 export type DashboardLayout = z.infer<typeof dashboardLayoutSchema>;
 
+export const MAX_WIDGETS_PER_GENERATION = 4;
+export const MAX_WIDGETS_PER_DASHBOARD = 12;
+
 export const businessAnalyticsMeasureSchema = z.nativeEnum(BusinessAnalyticsMeasure);
 export type DashboardAnalyticsMeasure = z.infer<typeof businessAnalyticsMeasureSchema>;
 
@@ -154,6 +157,6 @@ export const dashboardWidgetSchema = z.discriminatedUnion('widgetType', [
 export type DashboardWidget = z.infer<typeof dashboardWidgetSchema>;
 
 export const dashboardGenerateResponseSchema = z.object({
-  widget: dashboardWidgetSchema,
+  widgets: z.array(dashboardWidgetDraftSchema).min(1).max(MAX_WIDGETS_PER_GENERATION),
 });
 export type DashboardGenerateResponse = z.infer<typeof dashboardGenerateResponseSchema>;

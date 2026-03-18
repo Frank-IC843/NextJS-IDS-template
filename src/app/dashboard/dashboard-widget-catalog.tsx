@@ -28,7 +28,7 @@ export function DashboardWidgetCatalog({
         <div css={styles.section}>
           <Text typography="bodyEmphasized">Widget types the AI can use</Text>
           <Text typography="bodyMedium1" css={styles.helperText}>
-            Select one or more widget types. The AI will stay within this set when generating the widget.
+            Select one or more widget types. The planner will stay within this set when generating a chart or dashboard set.
           </Text>
         </div>
         <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>

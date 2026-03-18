@@ -16,13 +16,13 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useState, type RefObject } from 'react';
-import type { DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
+import type { DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 
 interface UseDashboardCanvasDndOptions {
   pageRef: RefObject<HTMLDivElement | null>;
   canvasGridRef: RefObject<HTMLDivElement | null>;
-  widgets: DashboardWidget[];
-  onWidgetsChange: (widgets: DashboardWidget[]) => void;
+  widgets: DashboardWidgetDraft[];
+  onWidgetsChange: (widgets: DashboardWidgetDraft[]) => void;
 }
 
 export function useDashboardCanvasDnd({ pageRef, canvasGridRef, widgets, onWidgetsChange }: UseDashboardCanvasDndOptions) {

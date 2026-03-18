@@ -77,7 +77,6 @@ export function DashboardWidgetTypePreview({ widgetType }: DashboardWidgetTypePr
           </div>
         </div>
       );
-    case 'insightList':
     default:
       return (
         <div css={styles.previewInsightList}>
