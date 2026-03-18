@@ -16,6 +16,7 @@ export function DashboardDonutChartWidgetView({ widget }: { widget: DonutChartWi
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
   const total = Math.max(widget.data.segments.reduce((sum, segment) => sum + segment.value, 0), 1);
+  const hasData = widget.data.segments.length > 0;
   const containerStyles = getDashboardChartContainerStyles();
   const chartSurfaceStyles = getDashboardChartSurfaceStyles(theme, businessPalette, {
     background: businessPalette.canvasGradient,
@@ -47,47 +48,57 @@ export function DashboardDonutChartWidgetView({ widget }: { widget: DonutChartWi
   return (
     <div css={containerStyles}>
       <div css={chartSurfaceStyles}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
-          <PieChart>
-            <Tooltip contentStyle={getDashboardChartTooltipContentStyle(businessPalette.blueberryBorder)} />
-            <Pie
-              data={widget.data.segments}
-              dataKey="value"
-              nameKey="label"
-              innerRadius={58}
-              outerRadius={84}
-              paddingAngle={2}
-              cx="50%"
-              cy="50%"
-            >
-              {widget.data.segments.map(segment => {
-                const palette = getTonePalette(theme, segment.tone);
+        {hasData ? (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+            <PieChart>
+              <Tooltip contentStyle={getDashboardChartTooltipContentStyle(businessPalette.blueberryBorder)} />
+              <Pie
+                data={widget.data.segments}
+                dataKey="value"
+                nameKey="label"
+                innerRadius={58}
+                outerRadius={84}
+                paddingAngle={2}
+                cx="50%"
+                cy="50%"
+              >
+                {widget.data.segments.map(segment => {
+                  const palette = getTonePalette(theme, segment.tone);
 
-                return <Cell key={segment.label} fill={palette.accent} />;
-              })}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+                  return <Cell key={segment.label} fill={palette.accent} />;
+                })}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        ) : (
+          <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <Text typography="bodyRegular" color="systemGrayscale60">
+              No analytics data for this widget.
+            </Text>
+          </div>
+        )}
       </div>
 
-      <div css={legendListStyles}>
-        {widget.data.segments.map(segment => {
-          const palette = getTonePalette(theme, segment.tone);
-          const percent = Math.round((segment.value / total) * 100);
+      {hasData ? (
+        <div css={legendListStyles}>
+          {widget.data.segments.map(segment => {
+            const palette = getTonePalette(theme, segment.tone);
+            const percent = Math.round((segment.value / total) * 100);
 
-          return (
-            <div key={segment.label} css={legendRowStyles}>
-              <div css={legendLabelStyles}>
-                <div css={{ ...toneDotStyles, backgroundColor: palette.accent }} />
-                <Text typography="bodyRegular">{segment.label}</Text>
+            return (
+              <div key={segment.label} css={legendRowStyles}>
+                <div css={legendLabelStyles}>
+                  <div css={{ ...toneDotStyles, backgroundColor: palette.accent }} />
+                  <Text typography="bodyRegular">{segment.label}</Text>
+                </div>
+                <Text typography="bodyMedium1" color="systemGrayscale60">
+                  {percent}%
+                </Text>
               </div>
-              <Text typography="bodyMedium1" color="systemGrayscale60">
-                {percent}%
-              </Text>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : null}
 
       <Text typography="bodyRegular" color="systemGrayscale60">
         {widget.data.footer}

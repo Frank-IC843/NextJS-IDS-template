@@ -1,10 +1,15 @@
 'use client';
 
+import { useMutation } from '@apollo/client';
 import { DndContext } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { useTheme } from '@instacart/ids-core';
 import { SecondaryButtonSmall, Text } from '@instacart/ids-customers';
 import { useRef, useState } from 'react';
+import type {
+  CreateOrUpdateBusinessDashboardMutation,
+  CreateOrUpdateBusinessDashboardMutationVariables,
+} from '@/__generated__/graphql-types';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import {
@@ -15,6 +20,8 @@ import {
 import { useDashboardContentStyles } from '@/app/dashboard/dashboard-content-styles';
 import { DashboardEmptyLaunchpad } from '@/app/dashboard/dashboard-empty-launchpad';
 import { DashboardPromptComposer } from '@/app/dashboard/dashboard-prompt-composer';
+import { CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION } from '@/app/dashboard/queries';
+import { buildPersistedDashboardLayout } from '@/app/dashboard/dashboard-schema';
 import type { SupportedWidgetDefinition } from '@/app/dashboard/dashboard-supported-widgets';
 import { DashboardWidgetShell } from '@/app/dashboard/dashboard-widget-shell';
 import { useDashboardCanvasDnd } from '@/app/dashboard/use-dashboard-canvas-dnd';
@@ -27,11 +34,17 @@ type PreviewCacheEntry = {
 
 interface DashboardContentProps {
   initialWidgets: DashboardWidget[];
+  initialErrorMessage?: string | null;
   promptSuggestions: string[];
   supportedWidgets: SupportedWidgetDefinition[];
 }
 
-export function DashboardContent({ initialWidgets, promptSuggestions, supportedWidgets }: DashboardContentProps) {
+export function DashboardContent({
+  initialWidgets,
+  initialErrorMessage = null,
+  promptSuggestions,
+  supportedWidgets,
+}: DashboardContentProps) {
   const styles = useDashboardContentStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
@@ -39,8 +52,12 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const allWidgetTypes = supportedWidgets.map(widget => widget.type);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const canvasGridRef = useRef<HTMLDivElement | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveRequestIdRef = useRef(0);
   const [widgets, setWidgets] = useState(initialWidgets);
   const isEmpty = widgets.length === 0;
+  const [dashboardNotice, setDashboardNotice] = useState<string | null>(initialErrorMessage);
+  const [isSaving, setIsSaving] = useState(false);
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [isGenerating, setIsGenerating] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -49,6 +66,10 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   const [previewWidget, setPreviewWidget] = useState<DashboardWidget | null>(null);
   const [pendingBuilderAction, setPendingBuilderAction] = useState<BuilderAction | null>(null);
   const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
+  const [saveDashboardLayout] = useMutation<
+    CreateOrUpdateBusinessDashboardMutation,
+    CreateOrUpdateBusinessDashboardMutationVariables
+  >(CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION);
   const {
     activeDragId,
     dragOverWidgetId,
@@ -63,7 +84,8 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   } = useDashboardCanvasDnd({
     pageRef,
     canvasGridRef,
-    setWidgets,
+    widgets,
+    onWidgetsChange: handleWidgetsChange,
   });
 
   function openBuilder(nextPrompt?: string) {
@@ -150,7 +172,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
       return;
     }
 
-    setWidgets(currentWidgets => [...currentWidgets, widget]);
+    handleWidgetsChange([...widgets, widget]);
     setPreviewWidget(null);
     setPrompt(defaultPrompt);
     setIsBuilderOpen(false);
@@ -171,7 +193,7 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
       return;
     }
 
-    setWidgets(currentWidgets => [...currentWidgets, previewWidget]);
+    handleWidgetsChange([...widgets, previewWidget]);
     setPreviewWidget(null);
     setPrompt(defaultPrompt);
     setRequestError(null);
@@ -195,31 +217,75 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
   }
 
   function handleRemove(widgetId: string) {
-    setWidgets(currentWidgets => currentWidgets.filter(widget => widget.id !== widgetId));
+    handleWidgetsChange(widgets.filter(widget => widget.id !== widgetId));
   }
 
   function handleLayoutChange(widgetId: string, layout: DashboardLayout) {
-    setWidgets(currentWidgets =>
-      currentWidgets.map(widget => {
-        if (widget.id !== widgetId || widget.layout === layout) {
-          return widget;
-        }
+    const hasChanged = widgets.some(widget => widget.id === widgetId && widget.layout !== layout);
 
-        return {
-          ...widget,
-          layout,
-        };
-      }),
-    );
+    if (!hasChanged) {
+      return;
+    }
+
+    const nextWidgets = widgets.map(widget => {
+      if (widget.id !== widgetId || widget.layout === layout) {
+        return widget;
+      }
+
+      return {
+        ...widget,
+        layout,
+      };
+    });
+
+    handleWidgetsChange(nextWidgets);
   }
 
   function handleReset() {
-    setWidgets(initialWidgets);
+    handleWidgetsChange(initialWidgets);
     setPrompt(defaultPrompt);
     setPreviewWidget(null);
     setRequestError(null);
     setIsBuilderOpen(false);
     previewCacheRef.current = null;
+  }
+
+  function handleWidgetsChange(nextWidgets: DashboardWidget[]) {
+    setWidgets(nextWidgets);
+    queuePersistWidgets(nextWidgets);
+  }
+
+  function queuePersistWidgets(nextWidgets: DashboardWidget[]) {
+    const saveRequestId = saveRequestIdRef.current + 1;
+    saveRequestIdRef.current = saveRequestId;
+    setIsSaving(true);
+
+    saveQueueRef.current = saveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          await saveDashboardLayout({
+            variables: {
+              layout: buildPersistedDashboardLayout(nextWidgets),
+            },
+          });
+
+          if (saveRequestIdRef.current === saveRequestId) {
+            setDashboardNotice(null);
+          }
+        } catch (error) {
+          console.error('Failed to save business dashboard:', error);
+
+          if (saveRequestIdRef.current === saveRequestId) {
+            setDashboardNotice('Unable to save dashboard changes right now.');
+          }
+        }
+      })
+      .finally(() => {
+        if (saveRequestIdRef.current === saveRequestId) {
+          setIsSaving(false);
+        }
+      });
   }
 
   return (
@@ -259,6 +325,15 @@ export function DashboardContent({ initialWidgets, promptSuggestions, supportedW
             </div>
           ) : null}
         </div>
+        {isSaving ? (
+          <Text typography="bodyMedium1" color="systemGrayscale60">
+            Saving dashboard...
+          </Text>
+        ) : dashboardNotice ? (
+          <Text typography="bodyMedium1" color="systemGrayscale60">
+            {dashboardNotice}
+          </Text>
+        ) : null}
       </section>
 
       <section css={styles.canvasSection}>

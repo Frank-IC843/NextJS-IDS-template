@@ -19,44 +19,53 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
     borderColor: businessPalette.elderberryBorder,
     background: `linear-gradient(180deg, ${businessPalette.elderberrySoft} 0%, rgba(255, 255, 255, 0.98) 100%)`,
   });
+  const hasData = widget.data.points.length > 0;
 
   return (
     <div css={containerStyles}>
       <div css={chartSurfaceStyles}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
-          <LineChart data={widget.data.points} margin={{ top: 16, right: 12, left: -24, bottom: 0 }}>
-            <CartesianGrid stroke={theme.colors.systemGrayscale20} strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: theme.colors.systemGrayscale60, fontSize: 12 }}
-            />
-            <YAxis hide />
-            <Tooltip
-              cursor={{ stroke: theme.colors.systemGrayscale30, strokeWidth: 1 }}
-              contentStyle={getDashboardChartTooltipContentStyle(businessPalette.elderberryBorder)}
-            />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={businessPalette.elderberry}
-              strokeWidth={3}
-              dot={{
-                r: 3.5,
-                strokeWidth: 2,
-                stroke: businessPalette.blueberry,
-                fill: theme.colors.systemGrayscale00,
-              }}
-              activeDot={{
-                r: 5,
-                strokeWidth: 2,
-                stroke: businessPalette.blueberryDark,
-                fill: theme.colors.systemGrayscale00,
-              }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {hasData ? (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+            <LineChart data={widget.data.points} margin={{ top: 16, right: 12, left: -24, bottom: 0 }}>
+              <CartesianGrid stroke={theme.colors.systemGrayscale20} strokeDasharray="3 3" vertical={false} />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: theme.colors.systemGrayscale60, fontSize: 12 }}
+              />
+              <YAxis hide />
+              <Tooltip
+                cursor={{ stroke: theme.colors.systemGrayscale30, strokeWidth: 1 }}
+                contentStyle={getDashboardChartTooltipContentStyle(businessPalette.elderberryBorder)}
+              />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke={businessPalette.elderberry}
+                strokeWidth={3}
+                dot={{
+                  r: 3.5,
+                  strokeWidth: 2,
+                  stroke: businessPalette.blueberry,
+                  fill: theme.colors.systemGrayscale00,
+                }}
+                activeDot={{
+                  r: 5,
+                  strokeWidth: 2,
+                  stroke: businessPalette.blueberryDark,
+                  fill: theme.colors.systemGrayscale00,
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <Text typography="bodyRegular" color="systemGrayscale60">
+              No analytics data for this widget.
+            </Text>
+          </div>
+        )}
       </div>
 
       <Text typography="bodyRegular" color="systemGrayscale60">

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  hydrateWidgetRequest,
-  mockGenerateWidgetRequest,
-} from '@/app/dashboard/dashboard-builder-mocks';
+import { mockGenerateWidgetDraft } from '@/app/dashboard/dashboard-builder-mocks';
+import { hydrateDashboardWidgetDraft } from '@/app/dashboard/dashboard-data';
 import {
   dashboardGenerateInputSchema,
   dashboardGenerateResponseSchema,
-  singleWidgetRequestSchema,
+  dashboardWidgetDraftSchema,
 } from '@/app/dashboard/dashboard-builder-types';
-import { buildDashboardWidgetSystemPrompt } from '@/app/api/dashboard/generate/system-prompt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,25 +16,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'A prompt and at least one allowed widget type are required.' }, { status: 400 });
     }
 
-    const systemPrompt = buildDashboardWidgetSystemPrompt(parsedInput.data.allowedWidgetTypes);
-
-    if (!systemPrompt) {
-      return NextResponse.json({ error: 'Dashboard widget generation is unavailable.' }, { status: 500 });
-    }
-
-    const parsedWidgetRequest = singleWidgetRequestSchema.safeParse(
-      mockGenerateWidgetRequest(parsedInput.data.prompt, {
+    const parsedWidgetDraft = dashboardWidgetDraftSchema.safeParse(
+      mockGenerateWidgetDraft(parsedInput.data.prompt, {
         allowedWidgetTypes: parsedInput.data.allowedWidgetTypes,
       }),
     );
 
-    if (!parsedWidgetRequest.success) {
-      console.error('Dashboard widget request validation failed:', parsedWidgetRequest.error.flatten());
+    if (!parsedWidgetDraft.success) {
+      console.error('Dashboard widget draft validation failed:', parsedWidgetDraft.error.flatten());
       return NextResponse.json({ error: 'Unable to generate a supported widget.' }, { status: 500 });
     }
 
+    const hydratedWidgetResult = await hydrateDashboardWidgetDraft(parsedWidgetDraft.data);
     const hydratedResponse = dashboardGenerateResponseSchema.safeParse({
-      widget: hydrateWidgetRequest(parsedWidgetRequest.data),
+      widget: hydratedWidgetResult.widget,
     });
 
     if (!hydratedResponse.success) {
