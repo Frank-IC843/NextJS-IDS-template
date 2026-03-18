@@ -78,7 +78,7 @@ export function useDashboardContentStyles() {
       display: 'grid',
       gap: '16px',
       [responsive.up('r')]: {
-        gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 360px)',
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(380px, 420px)',
         alignItems: 'stretch',
       },
     },
@@ -458,8 +458,11 @@ export function useDashboardContentStyles() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      gap: '12px',
+      gap: '8px',
       flexWrap: 'wrap' as const,
+      [responsive.up('r')]: {
+        flexWrap: 'nowrap' as const,
+      },
     },
     primaryAction: {
       backgroundColor: businessPalette.elderberry,

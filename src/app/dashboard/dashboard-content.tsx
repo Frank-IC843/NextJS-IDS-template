@@ -4,7 +4,7 @@ import { useMutation } from '@apollo/client';
 import { DndContext } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { useTheme } from '@instacart/ids-core';
-import { SecondaryButtonSmall, Text } from '@instacart/ids-customers';
+import { DetrimentalButtonSmall, SecondaryButtonSmall, Text } from '@instacart/ids-customers';
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type {
@@ -461,9 +461,9 @@ export function DashboardContent({
                 <SecondaryButtonSmall onClick={() => void handleGenerateReport()} disabled={!canGenerateReport}>
                   {getReportActionLabel({ isGenerating: isReportGenerating })}
                 </SecondaryButtonSmall>
-                <SecondaryButtonSmall onClick={handleReset} disabled={isGenerating || isReportGenerating}>
+                <DetrimentalButtonSmall onClick={handleReset} disabled={isGenerating || isReportGenerating}>
                   Reset canvas
-                </SecondaryButtonSmall>
+                </DetrimentalButtonSmall>
               </div>
             </div>
           ) : null}
