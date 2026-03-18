@@ -307,25 +307,6 @@ function DashboardPromptComposerModal({
                         },
                   }}
                 >
-                  <div css={styles.previewPromptPanel}>
-                    <div css={styles.sectionHeader}>
-                      <Text typography="bodyEmphasized" css={styles.fieldLabel}>
-                        Planning guardrails
-                      </Text>
-                      <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
-                        {currentWidgetCount} / {maxWidgetCount} widgets on canvas
-                      </Text>
-                    </div>
-                    <Text typography="bodyMedium1" css={styles.helperText}>
-                      The planner keeps each request between 1 and 4 widgets and aims for a clean 2-column dashboard. Narrow asks
-                      should stay narrow; overview requests can expand into a small, balanced set.
-                    </Text>
-                    {isAtCapacity ? (
-                      <Text typography="bodyMedium1" css={styles.warningText}>
-                        This dashboard is full. Remove a widget before generating another plan.
-                      </Text>
-                    ) : null}
-                  </div>
                 </motion.div>
               </>
             )}

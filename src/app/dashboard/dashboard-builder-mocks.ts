@@ -23,7 +23,6 @@ const completedOrdersFilter: DashboardAnalyticsFilter = {
 };
 
 export const dashboardPromptSuggestions = [
-  'Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.',
   'Show a dashboard with order trend plus department share over the past 7 days.',
   'Create an executive dashboard for retailer spend and service-type mix.',
 ];
@@ -277,6 +276,10 @@ function inferPrimaryDimension(prompt: string, widgetType: SupportedWidgetType) 
 
   if (hasPromptKeyword(prompt, ['category', 'categories'])) {
     return BusinessAnalyticsDimension.ProductCategory;
+  }
+
+  if (hasPromptKeyword(prompt, ['member', 'team member', 'team members', 'who on my team'])) {
+    return BusinessAnalyticsDimension.Member;
   }
 
   if (hasExplicitOrderStatusBreakdownIntent(prompt)) {

@@ -1,3 +1,10 @@
+import {
+  BusinessAnalyticsDimension,
+  BusinessAnalyticsFilterField,
+  BusinessAnalyticsFilterOperator,
+  BusinessAnalyticsMeasure,
+  BusinessAnalyticsTimeRange,
+} from '@/__generated__/graphql-types';
 import type { SupportedWidgetType } from '@/app/dashboard/dashboard-builder-types';
 import { supportedDashboardWidgets } from '@/app/dashboard/dashboard-supported-widgets';
 
@@ -9,6 +16,13 @@ export function buildDashboardWidgetSystemPrompt(allowedWidgetTypes: SupportedWi
         `- ${widget.type}: ${widget.description} Default title: ${widget.defaultTitle}. Guidance: ${widget.promptHint}`,
     )
     .join('\n');
+  const measureOptions = Object.values(BusinessAnalyticsMeasure).join(' | ');
+  const nonDateGroupByOptions = Object.values(BusinessAnalyticsDimension)
+    .filter(dimension => dimension !== BusinessAnalyticsDimension.Date)
+    .join(' | ');
+  const filterFieldOptions = Object.values(BusinessAnalyticsFilterField).join(' | ');
+  const filterOperatorOptions = Object.values(BusinessAnalyticsFilterOperator).join(' | ');
+  const timeRangeOptions = Object.values(BusinessAnalyticsTimeRange).join(' | ');
 
   return `You are an Instacart Business dashboard planner.
 
@@ -26,13 +40,13 @@ Return this exact shape:
       "widgetType": "<supported widget type>",
       "title": "<concise title>",
       "description": "<useful description>",
-      "timeRange": "<PAST_1_DAY | PAST_3_DAYS | PAST_7_DAYS>",
-      "metric": "<analytics measure>",
-      "groupBy": "<optional analytics dimension for non-line charts>",
+      "timeRange": "<${timeRangeOptions}>",
+      "metric": "<${measureOptions}>",
+      "groupBy": "<required for barChart and donutChart, omitted for metric and lineChart; choose from ${nonDateGroupByOptions}>",
       "filters": [
         {
-          "field": "<optional filter field>",
-          "operator": "<EQUALS | NOT_EQUALS>",
+          "field": "<${filterFieldOptions}>",
+          "operator": "<${filterOperatorOptions}>",
           "value": "<filter value>"
         }
       ],
@@ -69,6 +83,10 @@ Analytics quality rules:
 - If the prompt asks for trend, over time, daily movement, or pace, prefer a line chart grouped by date.
 - For share views, prefer retailer, service type, department, or category over member unless the user explicitly wants member contribution share.
 - Avoid making both a bar chart and a donut chart with the same dimension unless the user explicitly asks for both.
+- For line charts, always use date on the x-axis and do not return a groupBy field.
+- For metric widgets, do not return a groupBy field.
+- For bar and donut widgets, always return a groupBy field.
+- Use only the exact enum strings listed above.
 
 Supported widget catalog:
 ${widgetCatalog}
