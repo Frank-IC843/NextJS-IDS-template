@@ -97,7 +97,7 @@ const dashboardReportSectionSchema = z.object({
   title: z.string().trim().min(1).max(80),
   summary: z.string().trim().min(1).max(260),
   sourceWidgetIds: z.array(z.string().trim().min(1)).min(1).max(3),
-  callouts: z.array(z.string().trim().min(1).max(180)).min(2).max(4),
+  callouts: z.array(z.string().trim().min(1).max(180)).min(1).max(4),
   evidence: z.array(dashboardReportEvidenceSchema).min(1).max(4),
 });
 

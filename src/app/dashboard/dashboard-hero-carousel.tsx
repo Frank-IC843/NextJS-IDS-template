@@ -144,7 +144,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
 
       <div css={styles.heroCarouselFooter}>
         <div css={styles.heroCarouselActionRow}>
-          <button type="button" onClick={() => onOpenBuilder(activeStep.prompt)} css={styles.heroCarouselActionButton}>
+          <button type="button" onClick={() => onOpenBuilder()} css={styles.heroCarouselActionButton}>
             Open builder
           </button>
         </div>

@@ -26,6 +26,7 @@ Output rules:
 - executiveSummary.keyTakeaways: 2 to 5 crisp bullets as plain strings.
 - keyMetrics: surface the most decision-useful numbers already present in the data.
 - sections: each section should cover a distinct analytical theme suitable for a professional PDF report. sourceWidgetIds must reference widget ids from the provided input.
+- sections.callouts: provide 2 to 4 concise callouts when the data supports it. Return at least 1 grounded callout per section and never leave callouts empty.
 - sections.evidence: short label/value pairs pulled directly from the provided data.
 - recommendations: practical next steps with clear action and rationale. Keep them appropriately cautious when evidence is thin.
 - caveats: mention incomplete coverage, sparse data, or missing views when relevant.
@@ -40,6 +41,7 @@ Style rules:
 Quality bar:
 - Do not duplicate the same point across executive summary, sections, and recommendations unless it is the central story.
 - Prefer a small number of strong observations over a long list of weak ones.
+- Prefer multiple section callouts when there are multiple substantiated insights, but do not invent filler observations.
 - Make every recommendation feel actionable for a business team.
 - Tie each recommendation back to the evidence in the dashboard context.`;
 }

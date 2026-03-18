@@ -54,7 +54,6 @@ export function DashboardContent({
   const styles = useDashboardContentStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
-  const defaultPrompt = promptSuggestions[0] ?? '';
   const allWidgetTypes = supportedWidgets.map(widget => widget.type);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const canvasGridRef = useRef<HTMLDivElement | null>(null);
@@ -70,7 +69,7 @@ export function DashboardContent({
   );
   const [isReportGenerating, setIsReportGenerating] = useState(false);
   const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState(defaultPrompt);
+  const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
@@ -129,9 +128,7 @@ export function DashboardContent({
   function openBuilder(nextPrompt?: string) {
     setRequestError(null);
     setPreviewWidgets([]);
-    if (typeof nextPrompt === 'string') {
-      setPrompt(nextPrompt);
-    }
+    setPrompt(typeof nextPrompt === 'string' ? nextPrompt : '');
     setIsBuilderOpen(true);
   }
 
@@ -243,7 +240,7 @@ export function DashboardContent({
 
     flushSync(() => {
       setPreviewWidgets([]);
-      setPrompt(defaultPrompt);
+      setPrompt('');
       setRequestError(null);
       setIsBuilderOpen(false);
     });
@@ -273,7 +270,7 @@ export function DashboardContent({
 
     flushSync(() => {
       setPreviewWidgets([]);
-      setPrompt(defaultPrompt);
+      setPrompt('');
       setRequestError(null);
       setIsBuilderOpen(false);
     });
@@ -326,7 +323,7 @@ export function DashboardContent({
     handleWidgetsChange([]);
     setDashboardNotice(null);
     setReportErrorMessage(null);
-    setPrompt(defaultPrompt);
+    setPrompt('');
     setPreviewWidgets([]);
     setRequestError(null);
     setIsBuilderOpen(false);
