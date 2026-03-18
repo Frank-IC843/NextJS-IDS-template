@@ -262,7 +262,7 @@ function DashboardPromptComposerModal({
                       <textarea
                         value={prompt}
                         onChange={event => onPromptChange(event.target.value)}
-                        placeholder="Example: Add a line chart showing spend over the last 8 weeks."
+                        placeholder="Example: Add a line chart showing order count over the past 7 days."
                         css={styles.textarea}
                         autoFocus
                       />

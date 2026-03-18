@@ -15,16 +15,17 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
+import { useState, type RefObject } from 'react';
 import type { DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
 
 interface UseDashboardCanvasDndOptions {
   pageRef: RefObject<HTMLDivElement | null>;
   canvasGridRef: RefObject<HTMLDivElement | null>;
-  setWidgets: Dispatch<SetStateAction<DashboardWidget[]>>;
+  widgets: DashboardWidget[];
+  onWidgetsChange: (widgets: DashboardWidget[]) => void;
 }
 
-export function useDashboardCanvasDnd({ pageRef, canvasGridRef, setWidgets }: UseDashboardCanvasDndOptions) {
+export function useDashboardCanvasDnd({ pageRef, canvasGridRef, widgets, onWidgetsChange }: UseDashboardCanvasDndOptions) {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragOverWidgetId, setDragOverWidgetId] = useState<string | null>(null);
   const sensors = useSensors(
@@ -121,16 +122,14 @@ export function useDashboardCanvasDnd({ pageRef, canvasGridRef, setWidgets }: Us
       return;
     }
 
-    setWidgets(currentWidgets => {
-      const oldIndex = currentWidgets.findIndex(widget => widget.id === active.id);
-      const newIndex = currentWidgets.findIndex(widget => widget.id === over.id);
+    const oldIndex = widgets.findIndex(widget => widget.id === active.id);
+    const newIndex = widgets.findIndex(widget => widget.id === over.id);
 
-      if (oldIndex === -1 || newIndex === -1) {
-        return currentWidgets;
-      }
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
 
-      return arrayMove(currentWidgets, oldIndex, newIndex);
-    });
+    onWidgetsChange(arrayMove(widgets, oldIndex, newIndex));
   }
 
   return {

@@ -15,7 +15,7 @@ export const heroCarouselSteps = [
     navLabel: 'Enable',
     title: 'Enable the right widget types.',
     description: 'Choose which widget types the AI can use before you submit a prompt.',
-    prompt: 'Add a metric widget for total spend this month.',
+    prompt: 'Add a metric widget for total spend this week.',
   },
   {
     id: 'describe',
@@ -23,7 +23,7 @@ export const heroCarouselSteps = [
     navLabel: 'Prompt',
     title: 'Prompt one widget.',
     description: 'Use the prompt box or example requests to describe the single widget you want.',
-    prompt: 'Add a line chart showing order volume over the last 8 weeks.',
+    prompt: 'Add a line chart showing order count over the past 7 days.',
   },
   {
     id: 'arrange',
@@ -31,7 +31,7 @@ export const heroCarouselSteps = [
     navLabel: 'Arrange',
     title: 'Generate, then arrange.',
     description: 'The widget lands on the canvas and can be reordered as your dashboard grows.',
-    prompt: 'Add an insight list summarizing budget pacing this quarter.',
+    prompt: 'Add a donut chart for spend share by service type over the past 3 days.',
   },
 ] as const;
 
@@ -280,7 +280,7 @@ export function DashboardHeroCarousel({ onOpenBuilder }: DashboardHeroCarouselPr
                   }}
                 >
                   <Text typography="bodyMedium1" css={{ lineHeight: 1.4, color: theme.colors.systemGrayscale90 }}>
-                    Add a line chart showing order volume over the last 8 weeks.
+                    Add a line chart showing order count over the past 7 days.
                   </Text>
                 </div>
                 <div

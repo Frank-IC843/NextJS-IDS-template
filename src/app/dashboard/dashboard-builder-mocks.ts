@@ -1,592 +1,331 @@
 import {
+  BusinessAnalyticsDimension,
+  BusinessAnalyticsFilterField,
+  BusinessAnalyticsFilterOperator,
+  BusinessAnalyticsMeasure,
+  BusinessAnalyticsTimeRange,
+} from '@/__generated__/graphql-types';
+import {
   dashboardWidgetSchema,
-  type DashboardTimeRange,
-  type DashboardWidget,
+  type DashboardAnalyticsFilter,
   type DashboardLayout,
-  type DashboardTone,
+  type DashboardWidget,
+  type DashboardWidgetDraft,
   type SupportedWidgetType,
-  type WidgetRequest,
 } from '@/app/dashboard/dashboard-builder-types';
-import { getSupportedWidgetDefinition } from '@/app/dashboard/dashboard-supported-widgets';
+import { buildDashboardTimeRangeLabel } from '@/app/dashboard/dashboard-schema';
 
-type MetricKey = 'spend' | 'orders' | 'fillRate' | 'averageBasket' | 'budget';
-type GroupByKey = 'department' | 'location' | 'weekday' | 'status';
-
-interface HydrateWidgetOptions {
-  widgetId?: string;
-}
-
-const timeRangeLabels: Record<DashboardTimeRange, string> = {
-  last7Days: 'Last 7 days',
-  last30Days: 'Last 30 days',
-  last8Weeks: 'Last 8 weeks',
-  quarterToDate: 'Quarter to date',
-};
-
-const lineLabels: Record<DashboardTimeRange, string[]> = {
-  last7Days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  last30Days: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'],
-  last8Weeks: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'],
-  quarterToDate: ['Jan', 'Feb', 'Mar', 'Apr'],
-};
-
-const baseLineSeries: Record<MetricKey, Record<DashboardTimeRange, number[]>> = {
-  spend: {
-    last7Days: [74, 81, 79, 86, 94, 88, 92],
-    last30Days: [68, 73, 79, 84, 88, 93],
-    last8Weeks: [58, 61, 67, 72, 75, 82, 87, 92],
-    quarterToDate: [62, 70, 81, 89],
-  },
-  orders: {
-    last7Days: [32, 38, 36, 41, 49, 44, 47],
-    last30Days: [29, 34, 37, 42, 46, 51],
-    last8Weeks: [24, 28, 31, 36, 40, 44, 48, 53],
-    quarterToDate: [28, 34, 43, 50],
-  },
-  fillRate: {
-    last7Days: [94, 95, 96, 95, 97, 96, 97],
-    last30Days: [93, 94, 95, 96, 96, 97],
-    last8Weeks: [92, 93, 94, 95, 95, 96, 96, 97],
-    quarterToDate: [94, 95, 96, 97],
-  },
-  averageBasket: {
-    last7Days: [118, 124, 122, 131, 136, 133, 139],
-    last30Days: [114, 119, 126, 129, 135, 141],
-    last8Weeks: [104, 109, 115, 121, 128, 132, 138, 144],
-    quarterToDate: [110, 121, 133, 142],
-  },
-  budget: {
-    last7Days: [103, 101, 99, 98, 97, 96, 95],
-    last30Days: [106, 104, 101, 99, 97, 95],
-    last8Weeks: [109, 107, 104, 102, 100, 98, 96, 94],
-    quarterToDate: [106, 101, 98, 95],
-  },
-};
-
-const groupBars: Record<GroupByKey, { label: string; value: number }[]> = {
-  department: [
-    { label: 'Produce', value: 34 },
-    { label: 'Beverages', value: 28 },
-    { label: 'Prepared', value: 22 },
-    { label: 'Pantry', value: 18 },
-    { label: 'Dairy', value: 15 },
-  ],
-  location: [
-    { label: 'Union Sq', value: 41 },
-    { label: 'Downtown', value: 36 },
-    { label: 'West 7th', value: 33 },
-    { label: 'Riverside', value: 27 },
-    { label: 'South Mkt', value: 24 },
-  ],
-  weekday: [
-    { label: 'Mon', value: 18 },
-    { label: 'Tue', value: 26 },
-    { label: 'Wed', value: 31 },
-    { label: 'Thu', value: 29 },
-    { label: 'Fri', value: 24 },
-    { label: 'Sat', value: 20 },
-  ],
-  status: [
-    { label: 'Delivered', value: 57 },
-    { label: 'Scheduled', value: 21 },
-    { label: 'Review', value: 9 },
-    { label: 'In progress', value: 13 },
-  ],
-};
-
-const donutSegmentsByGroup: Record<GroupByKey, { label: string; value: number; tone: DashboardTone }[]> = {
-  department: [
-    { label: 'Produce', value: 34, tone: 'positive' },
-    { label: 'Beverages', value: 23, tone: 'brand' },
-    { label: 'Prepared', value: 18, tone: 'positive' },
-    { label: 'Pantry', value: 15, tone: 'neutral' },
-    { label: 'Dairy', value: 10, tone: 'neutral' },
-  ],
-  location: [
-    { label: 'Top 5 stores', value: 61, tone: 'brand' },
-    { label: 'Mid-tier', value: 24, tone: 'neutral' },
-    { label: 'Long tail', value: 15, tone: 'caution' },
-  ],
-  weekday: [
-    { label: 'Weekday', value: 72, tone: 'positive' },
-    { label: 'Weekend', value: 28, tone: 'brand' },
-  ],
-  status: [
-    { label: 'Delivered', value: 73, tone: 'positive' },
-    { label: 'Scheduled', value: 16, tone: 'brand' },
-    { label: 'Needs review', value: 11, tone: 'caution' },
-  ],
-};
-
-const insightSets: Record<MetricKey, string[]> = {
-  spend: [
-    'Spend is growing more slowly than order volume, which suggests healthier basket mix and fewer delivery touches.',
-    'Midweek replenishment remains the most efficient ordering window across locations.',
-    'Fresh categories continue to explain most of the lift without pushing the budget off track.',
-  ],
-  orders: [
-    'Order counts are rising fastest on Tuesday through Thursday, which makes the weekday view more actionable than weekends.',
-    'The highest-volume locations are placing larger baskets instead of simply ordering more often.',
-    'Recent order pace suggests the next dashboard iteration should surface delayed-delivery risk earlier.',
-  ],
-  fillRate: [
-    'Morning deliveries consistently outperform late-afternoon orders in fill rate.',
-    'Needs-review volume stays small, which helps keep fill-rate performance stable across the month.',
-    'The best-performing windows are concentrated in locations with tighter basket composition.',
-  ],
-  averageBasket: [
-    'Average basket growth is being driven by beverage and prepared-food overlap.',
-    'Larger baskets cluster around office restocks and event-prep orders rather than daily staples.',
-    'Basket size is rising without a matching spike in exception volume, which is a healthy signal.',
-  ],
-  budget: [
-    'Budget pacing remains controlled even as order activity climbs.',
-    'The clearest savings opportunity continues to come from consolidating midweek replenishment.',
-    'Budget pacing is steady enough to support planning conversations without introducing unnecessary risk.',
-  ],
+const completedOrdersFilter: DashboardAnalyticsFilter = {
+  field: BusinessAnalyticsFilterField.OrderStatus,
+  operator: BusinessAnalyticsFilterOperator.Equals,
+  value: 'completed',
 };
 
 export const dashboardPromptSuggestions = [
-  'Add a line chart showing order volume over the last 8 weeks.',
-  'Add a donut chart for department share this month.',
-  'Add an insight list summarizing budget pacing this quarter.',
-];
-
-export const dashboardBuilderHighlights = [
-  'Add new widgets without breaking focus on the dashboard itself.',
-  'Choose from a curated set of chart types designed for operational and spend reviews.',
-  'Reorder widgets to match the story your team needs to see first.',
+  'Add a metric widget for total spend this week.',
+  'Add a line chart showing order count over the past 7 days.',
+  'Add a donut chart for department spend over the past 3 days.',
 ];
 
 export function getStarterDashboardWidgets(): DashboardWidget[] {
   return [
-    hydrateWidgetRequest(
-      {
-        widgetType: 'lineChart',
-        title: 'Orders over time',
-        description: 'Order volume trend across the selected reporting window.',
-        metric: 'orders',
-        timeRange: 'last8Weeks',
+    dashboardWidgetSchema.parse({
+      id: 'starter-line-orders',
+      widgetType: 'lineChart',
+      title: 'Orders over time',
+      description: 'Order count over time for the past 7 days.',
+      layout: 'full',
+      query: {
+        measures: [BusinessAnalyticsMeasure.OrderCount],
+        dimensions: [BusinessAnalyticsDimension.Date],
         filters: [],
-        layoutHint: 'full',
+        timeRange: BusinessAnalyticsTimeRange.Past_7Days,
       },
-      { widgetId: 'starter-line-orders' },
-    ),
-    hydrateWidgetRequest(
-      {
-        widgetType: 'barChart',
-        title: 'Department contribution',
-        description: 'Compare the categories driving the most volume in the current window.',
-        groupBy: 'department',
-        timeRange: 'last30Days',
+      timeRangeLabel: buildDashboardTimeRangeLabel(BusinessAnalyticsTimeRange.Past_7Days),
+      data: {
+        points: [
+          { label: 'Mar 11', value: 18 },
+          { label: 'Mar 12', value: 24 },
+          { label: 'Mar 13', value: 21 },
+          { label: 'Mar 14', value: 27 },
+          { label: 'Mar 15', value: 31 },
+          { label: 'Mar 16', value: 29 },
+          { label: 'Mar 17', value: 34 },
+        ],
+        footer: 'Order count over time for the past 7 days.',
+      },
+    }),
+    dashboardWidgetSchema.parse({
+      id: 'starter-bar-departments',
+      widgetType: 'barChart',
+      title: 'Spend by department',
+      description: 'Total spend by department for the past 7 days.',
+      layout: 'half',
+      query: {
+        measures: [BusinessAnalyticsMeasure.TotalSpend],
+        dimensions: [BusinessAnalyticsDimension.Department],
+        filters: [completedOrdersFilter],
+        timeRange: BusinessAnalyticsTimeRange.Past_7Days,
+      },
+      timeRangeLabel: buildDashboardTimeRangeLabel(BusinessAnalyticsTimeRange.Past_7Days),
+      data: {
+        bars: [
+          { label: 'Produce', value: 42 },
+          { label: 'Dairy', value: 34 },
+          { label: 'Frozen', value: 28 },
+          { label: 'Pantry', value: 22 },
+        ],
+        footer: 'Total spend by department for the past 7 days.',
+      },
+    }),
+    dashboardWidgetSchema.parse({
+      id: 'starter-donut-service-type',
+      widgetType: 'donutChart',
+      title: 'Spend by service type',
+      description: 'Total spend share by service type for the past 3 days.',
+      layout: 'half',
+      query: {
+        measures: [BusinessAnalyticsMeasure.TotalSpend],
+        dimensions: [BusinessAnalyticsDimension.ServiceType],
         filters: [],
-        layoutHint: 'half',
+        timeRange: BusinessAnalyticsTimeRange.Past_3Days,
       },
-      { widgetId: 'starter-bar-departments' },
-    ),
-    hydrateWidgetRequest(
-      {
-        widgetType: 'donutChart',
-        title: 'Location mix',
-        description: 'See how volume is distributed across locations in the current window.',
-        groupBy: 'location',
-        timeRange: 'last30Days',
-        filters: [],
-        layoutHint: 'half',
+      timeRangeLabel: buildDashboardTimeRangeLabel(BusinessAnalyticsTimeRange.Past_3Days),
+      data: {
+        segments: [
+          { label: 'Delivery', value: 64, tone: 'brand' },
+          { label: 'Pickup', value: 36, tone: 'positive' },
+        ],
+        footer: 'Total spend share by service type for the past 3 days.',
       },
-      { widgetId: 'starter-donut-locations' },
-    ),
+    }),
   ];
 }
 
-export function mockGenerateWidgetRequest(
+export function mockGenerateWidgetDraft(
   prompt: string,
   options?: {
     allowedWidgetTypes?: SupportedWidgetType[];
   },
-): WidgetRequest {
+): DashboardWidgetDraft {
   const normalizedPrompt = prompt.toLowerCase();
+  const preferredWidgetType = inferWidgetType(normalizedPrompt);
+  const widgetType = resolveAllowedWidgetType(preferredWidgetType, options?.allowedWidgetTypes);
   const timeRange = inferTimeRange(normalizedPrompt);
-  const metric = inferMetricKey(normalizedPrompt);
-  const groupBy = inferGroupBy(normalizedPrompt);
-  const widgetType = resolveAllowedWidgetType(inferWidgetType(normalizedPrompt), options?.allowedWidgetTypes);
+  const primaryDimension = inferPrimaryDimension(normalizedPrompt, widgetType);
+  const measure = inferMeasure(normalizedPrompt, primaryDimension);
+  const filters = inferFilters(normalizedPrompt, measure, primaryDimension);
 
-  return buildDefaultWidgetRequest(widgetType, { metric, timeRange, groupBy });
-}
-
-export function hydrateWidgetRequest(widgetRequest: WidgetRequest, options?: HydrateWidgetOptions): DashboardWidget {
-  switch (widgetRequest.widgetType) {
-    case 'metric':
-      return buildMetricWidget(widgetRequest, options);
-    case 'lineChart':
-      return buildLineChartWidget(widgetRequest, options);
-    case 'barChart':
-      return buildBarChartWidget(widgetRequest, options);
-    case 'donutChart':
-      return buildDonutChartWidget(widgetRequest, options);
-    case 'insightList':
-      return buildInsightListWidget(widgetRequest, options);
-    default:
-      return buildInsightListWidget(widgetRequest, options);
-  }
-}
-
-function buildMetricWidget(widgetRequest: WidgetRequest, options?: HydrateWidgetOptions): DashboardWidget {
-  const metric = inferMetricKey(widgetRequest.metric);
-  const profile = getMetricProfile(metric);
-  const timeRange = widgetRequest.timeRange ?? 'last30Days';
-
-  return dashboardWidgetSchema.parse({
-    id: options?.widgetId ?? buildWidgetId('metric'),
-    widgetType: 'metric',
-    title: widgetRequest.title,
-    description: widgetRequest.description,
-    layout: resolveLayout(widgetRequest.layoutHint, 'metric'),
-    timeRangeLabel: timeRangeLabels[timeRange],
-    data: profile,
-  });
-}
-
-function buildLineChartWidget(widgetRequest: WidgetRequest, options?: HydrateWidgetOptions): DashboardWidget {
-  const metric = inferMetricKey(widgetRequest.metric);
-  const timeRange = widgetRequest.timeRange ?? 'last30Days';
-  const labels = lineLabels[timeRange];
-  const values = baseLineSeries[metric][timeRange];
-
-  return dashboardWidgetSchema.parse({
-    id: options?.widgetId ?? buildWidgetId('line'),
-    widgetType: 'lineChart',
-    title: widgetRequest.title,
-    description: widgetRequest.description,
-    layout: resolveLayout(widgetRequest.layoutHint, 'lineChart'),
-    timeRangeLabel: timeRangeLabels[timeRange],
-    data: {
-      points: labels.map((label, index) => ({
-        label,
-        value: values[index] ?? values[values.length - 1] ?? 0,
-      })),
-      footer: `${metricLabel(metric)} remains strongest through the middle of the period, with steady performance into the latest interval.`,
+  return {
+    id: buildWidgetId(widgetType),
+    title: buildWidgetTitle(widgetType, measure, primaryDimension),
+    description: buildWidgetDescription(widgetType, measure, primaryDimension, timeRange),
+    prompt,
+    layout: getDefaultLayout(widgetType),
+    widgetType,
+    query: {
+      measures: [measure],
+      dimensions: primaryDimension ? [primaryDimension] : [],
+      filters,
+      timeRange,
     },
-  });
-}
-
-function buildBarChartWidget(widgetRequest: WidgetRequest, options?: HydrateWidgetOptions): DashboardWidget {
-  const groupBy = inferGroupBy(widgetRequest.groupBy);
-  const timeRange = widgetRequest.timeRange ?? 'last30Days';
-
-  return dashboardWidgetSchema.parse({
-    id: options?.widgetId ?? buildWidgetId('bar'),
-    widgetType: 'barChart',
-    title: widgetRequest.title,
-    description: widgetRequest.description,
-    layout: resolveLayout(widgetRequest.layoutHint, 'barChart'),
-    timeRangeLabel: timeRangeLabels[timeRange],
-    data: {
-      bars: groupBars[groupBy],
-      footer: `${groupByLabel(groupBy)} performance is clearly segmented here, making outliers and top contributors easier to review.`,
-    },
-  });
-}
-
-function buildDonutChartWidget(widgetRequest: WidgetRequest, options?: HydrateWidgetOptions): DashboardWidget {
-  const groupBy = inferGroupBy(widgetRequest.groupBy);
-  const timeRange = widgetRequest.timeRange ?? 'last30Days';
-
-  return dashboardWidgetSchema.parse({
-    id: options?.widgetId ?? buildWidgetId('donut'),
-    widgetType: 'donutChart',
-    title: widgetRequest.title,
-    description: widgetRequest.description,
-    layout: resolveLayout(widgetRequest.layoutHint, 'donutChart'),
-    timeRangeLabel: timeRangeLabels[timeRange],
-    data: {
-      segments: donutSegmentsByGroup[groupBy],
-      footer: `A clear share view for ${groupByLabel(groupBy).toLowerCase()} contribution across the current reporting window.`,
-    },
-  });
-}
-
-function buildInsightListWidget(widgetRequest: WidgetRequest, options?: HydrateWidgetOptions): DashboardWidget {
-  const metric = inferMetricKey(widgetRequest.metric);
-  const timeRange = widgetRequest.timeRange ?? 'last30Days';
-
-  return dashboardWidgetSchema.parse({
-    id: options?.widgetId ?? buildWidgetId('insight'),
-    widgetType: 'insightList',
-    title: widgetRequest.title,
-    description: widgetRequest.description,
-    layout: resolveLayout(widgetRequest.layoutHint, 'insightList'),
-    timeRangeLabel: timeRangeLabels[timeRange],
-    data: {
-      items: insightSets[metric],
-      tone: metric === 'budget' ? 'brand' : 'positive',
-      footer: 'Concise takeaways that can be used in reviews, planning conversations, and follow-up actions.',
-    },
-  });
-}
-
-function buildDefaultWidgetRequest(
-  widgetType: SupportedWidgetType,
-  options?: {
-    metric?: string;
-    timeRange?: DashboardTimeRange;
-    groupBy?: string;
-  },
-): WidgetRequest {
-  const definition = getSupportedWidgetDefinition(widgetType);
-  const metric = inferMetricKey(options?.metric);
-  const groupBy = inferGroupBy(options?.groupBy);
-
-  switch (widgetType) {
-    case 'metric':
-      return {
-        widgetType,
-        title: getMetricTitle(metric),
-        description: 'Headline performance metric for the current reporting window.',
-        metric,
-        timeRange: options?.timeRange ?? 'last30Days',
-        filters: [],
-        layoutHint: definition?.defaultLayout ?? 'half',
-      };
-    case 'lineChart':
-      return {
-        widgetType,
-        title: `${metricLabel(metric)} trend`,
-        description: definition?.description,
-        metric,
-        timeRange: options?.timeRange ?? 'last8Weeks',
-        filters: [],
-        layoutHint: definition?.defaultLayout ?? 'full',
-      };
-    case 'barChart':
-      return {
-        widgetType,
-        title: `${groupByLabel(groupBy)} comparison`,
-        description: definition?.description,
-        metric,
-        groupBy,
-        timeRange: options?.timeRange ?? 'last30Days',
-        filters: [],
-        layoutHint: definition?.defaultLayout ?? 'full',
-      };
-    case 'donutChart':
-      return {
-        widgetType,
-        title: `${groupByLabel(groupBy)} mix`,
-        description: definition?.description,
-        metric,
-        groupBy,
-        timeRange: options?.timeRange ?? 'last30Days',
-        filters: [],
-        layoutHint: definition?.defaultLayout ?? 'half',
-      };
-    case 'insightList':
-    default:
-      return {
-        widgetType: 'insightList',
-        title: definition?.defaultTitle ?? 'What stands out',
-        description: definition?.description,
-        metric,
-        timeRange: options?.timeRange ?? 'last30Days',
-        filters: [],
-        layoutHint: definition?.defaultLayout ?? 'half',
-      };
-  }
-}
-
-function getMetricProfile(metric: MetricKey) {
-  switch (metric) {
-    case 'orders':
-      return {
-        value: '128',
-        change: '+14 vs prior period',
-        detail: 'Order volume is strongest in the core midweek replenishment window.',
-        tone: 'positive' as const,
-      };
-    case 'fillRate':
-      return {
-        value: '97.2%',
-        change: '+1.3 pts above target',
-        detail: 'Morning deliveries continue to outperform later order windows.',
-        tone: 'positive' as const,
-      };
-    case 'averageBasket':
-      return {
-        value: '$143.90',
-        change: '+8.4% basket growth',
-        detail: 'Larger replenishment orders are driving a higher average basket.',
-        tone: 'positive' as const,
-      };
-    case 'budget':
-      return {
-        value: '6.1% under',
-        change: 'Ahead of plan',
-        detail: 'Budget pacing remains healthy across the current reporting window.',
-        tone: 'brand' as const,
-      };
-    case 'spend':
-    default:
-      return {
-        value: '$18,420',
-        change: '6.1% under budget',
-        detail: 'Spend remains controlled while category and location performance stay balanced.',
-        tone: 'brand' as const,
-      };
-  }
-}
-
-function buildWidgetId(prefix: string) {
-  return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
-}
-
-function resolveLayout(layoutHint: DashboardLayout | undefined, widgetType: SupportedWidgetType) {
-  return layoutHint ?? getSupportedWidgetDefinition(widgetType)?.defaultLayout ?? 'half';
-}
-
-function inferTimeRange(prompt: string): DashboardTimeRange {
-  if (prompt.includes('quarter')) {
-    return 'quarterToDate';
-  }
-
-  if (prompt.includes('8 week') || prompt.includes('two month')) {
-    return 'last8Weeks';
-  }
-
-  if (prompt.includes('7 day') || prompt.includes('this week')) {
-    return 'last7Days';
-  }
-
-  return 'last30Days';
-}
-
-function inferMetricKey(prompt?: string): MetricKey {
-  const normalizedPrompt = prompt?.toLowerCase() ?? '';
-
-  if (normalizedPrompt.includes('fill')) {
-    return 'fillRate';
-  }
-
-  if (normalizedPrompt.includes('basket')) {
-    return 'averageBasket';
-  }
-
-  if (normalizedPrompt.includes('budget')) {
-    return 'budget';
-  }
-
-  if (normalizedPrompt.includes('order')) {
-    return 'orders';
-  }
-
-  return 'spend';
-}
-
-function inferGroupBy(prompt?: string): GroupByKey {
-  const normalizedPrompt = prompt?.toLowerCase() ?? '';
-
-  if (normalizedPrompt.includes('store') || normalizedPrompt.includes('location')) {
-    return 'location';
-  }
-
-  if (normalizedPrompt.includes('weekday') || normalizedPrompt.includes('day')) {
-    return 'weekday';
-  }
-
-  if (normalizedPrompt.includes('status')) {
-    return 'status';
-  }
-
-  return 'department';
-}
-
-function metricLabel(metric: MetricKey) {
-  switch (metric) {
-    case 'orders':
-      return 'Orders';
-    case 'fillRate':
-      return 'Fill rate';
-    case 'averageBasket':
-      return 'Average basket';
-    case 'budget':
-      return 'Budget pacing';
-    case 'spend':
-    default:
-      return 'Spend';
-  }
-}
-
-function getMetricTitle(metric: MetricKey) {
-  switch (metric) {
-    case 'orders':
-      return 'Orders placed';
-    case 'fillRate':
-      return 'On-time fill rate';
-    case 'averageBasket':
-      return 'Average basket';
-    case 'budget':
-      return 'Budget pacing';
-    case 'spend':
-    default:
-      return 'Total spend';
-  }
-}
-
-function groupByLabel(groupBy: GroupByKey) {
-  switch (groupBy) {
-    case 'location':
-      return 'Location';
-    case 'weekday':
-      return 'Weekday';
-    case 'status':
-      return 'Status';
-    case 'department':
-    default:
-      return 'Department';
-  }
-}
-
-function shouldIncludeMetric(prompt: string) {
-  return hasPromptKeyword(prompt, ['metric', 'kpi', 'total', 'spend', 'order', 'budget', 'fill', 'basket']);
-}
-
-function shouldIncludeLineChart(prompt: string) {
-  return hasPromptKeyword(prompt, ['trend', 'over time', 'week', 'month', 'quarter', 'daily', 'weekly']);
-}
-
-function shouldIncludeBarChart(prompt: string) {
-  return hasPromptKeyword(prompt, ['compare', 'comparison', 'top', 'department', 'store', 'location', 'weekday']);
-}
-
-function shouldIncludeDonutChart(prompt: string) {
-  return hasPromptKeyword(prompt, ['mix', 'breakdown', 'distribution', 'share', 'split', 'category']);
-}
-
-function shouldIncludeInsightList(prompt: string) {
-  return hasPromptKeyword(prompt, ['insight', 'takeaway', 'summary', 'attention', 'highlight', 'why']);
+  };
 }
 
 function inferWidgetType(prompt: string): SupportedWidgetType {
-  if (hasPromptKeyword(prompt, ['donut', 'pie']) || shouldIncludeDonutChart(prompt)) {
+  if (hasPromptKeyword(prompt, ['donut', 'pie', 'share', 'mix', 'breakdown', 'distribution'])) {
     return 'donutChart';
   }
 
-  if (hasPromptKeyword(prompt, ['bar']) || shouldIncludeBarChart(prompt)) {
+  if (hasPromptKeyword(prompt, ['bar', 'compare', 'comparison', 'top'])) {
     return 'barChart';
   }
 
-  if (hasPromptKeyword(prompt, ['line']) || shouldIncludeLineChart(prompt)) {
+  if (hasPromptKeyword(prompt, ['line', 'trend', 'over time', 'daily'])) {
     return 'lineChart';
   }
 
-  if (shouldIncludeInsightList(prompt)) {
-    return 'insightList';
+  return 'metric';
+}
+
+function inferTimeRange(prompt: string) {
+  if (hasPromptKeyword(prompt, ['24 hour', '1 day', 'today', 'past day'])) {
+    return BusinessAnalyticsTimeRange.Past_1Day;
   }
 
-  if (shouldIncludeMetric(prompt)) {
-    return 'metric';
+  if (hasPromptKeyword(prompt, ['3 day', 'three day', 'past few days'])) {
+    return BusinessAnalyticsTimeRange.Past_3Days;
   }
 
-  return 'lineChart';
+  return BusinessAnalyticsTimeRange.Past_7Days;
+}
+
+function inferPrimaryDimension(prompt: string, widgetType: SupportedWidgetType) {
+  if (widgetType === 'metric') {
+    return undefined;
+  }
+
+  if (widgetType === 'lineChart') {
+    return BusinessAnalyticsDimension.Date;
+  }
+
+  if (hasPromptKeyword(prompt, ['delivery vs pickup', 'pickup vs delivery', 'service type'])) {
+    return BusinessAnalyticsDimension.ServiceType;
+  }
+
+  if (hasPromptKeyword(prompt, ['status', 'completed', 'canceled', 'cancelled'])) {
+    return BusinessAnalyticsDimension.OrderStatus;
+  }
+
+  if (hasPromptKeyword(prompt, ['retailer', 'store', 'location'])) {
+    return BusinessAnalyticsDimension.Retailer;
+  }
+
+  if (hasPromptKeyword(prompt, ['member', 'team', 'who on my team'])) {
+    return BusinessAnalyticsDimension.Member;
+  }
+
+  if (hasPromptKeyword(prompt, ['category', 'categories'])) {
+    return BusinessAnalyticsDimension.ProductCategory;
+  }
+
+  return BusinessAnalyticsDimension.Department;
+}
+
+function inferMeasure(prompt: string, dimension: BusinessAnalyticsDimension | undefined) {
+  if (hasPromptKeyword(prompt, ['saving'])) {
+    return dimension && dimension !== BusinessAnalyticsDimension.Date
+      ? BusinessAnalyticsMeasure.TotalSpend
+      : BusinessAnalyticsMeasure.TotalSavings;
+  }
+
+  if (hasPromptKeyword(prompt, ['average order', 'aov'])) {
+    return BusinessAnalyticsMeasure.AvgOrderValue;
+  }
+
+  if (hasPromptKeyword(prompt, ['items per order', 'avg items'])) {
+    return BusinessAnalyticsMeasure.AvgItemsPerOrder;
+  }
+
+  if (hasPromptKeyword(prompt, ['orders placed', 'placed orders'])) {
+    return BusinessAnalyticsMeasure.OrdersPlaced;
+  }
+
+  if (hasPromptKeyword(prompt, ['orders completed', 'completed orders', 'delivered orders'])) {
+    return BusinessAnalyticsMeasure.OrdersCompleted;
+  }
+
+  if (hasPromptKeyword(prompt, ['spend', 'spent', 'cost'])) {
+    return BusinessAnalyticsMeasure.TotalSpend;
+  }
+
+  return BusinessAnalyticsMeasure.OrderCount;
+}
+
+function inferFilters(
+  prompt: string,
+  measure: BusinessAnalyticsMeasure,
+  dimension: BusinessAnalyticsDimension | undefined,
+) {
+  if (measure === BusinessAnalyticsMeasure.TotalSavings) {
+    return [];
+  }
+
+  const filters: DashboardAnalyticsFilter[] = [];
+  const includesBothServiceTypes = hasPromptKeyword(prompt, ['delivery vs pickup', 'pickup vs delivery']);
+
+  if (!includesBothServiceTypes && dimension !== BusinessAnalyticsDimension.ServiceType) {
+    if (hasPromptKeyword(prompt, ['delivery only', 'delivery orders'])) {
+      filters.push({
+        field: BusinessAnalyticsFilterField.ServiceType,
+        operator: BusinessAnalyticsFilterOperator.Equals,
+        value: 'delivery',
+      });
+    } else if (hasPromptKeyword(prompt, ['pickup only', 'pickup orders'])) {
+      filters.push({
+        field: BusinessAnalyticsFilterField.ServiceType,
+        operator: BusinessAnalyticsFilterOperator.Equals,
+        value: 'pickup',
+      });
+    }
+  }
+
+  if (hasPromptKeyword(prompt, ['all orders'])) {
+    return filters;
+  }
+
+  if (hasPromptKeyword(prompt, ['canceled', 'cancelled'])) {
+    filters.push({
+      field: BusinessAnalyticsFilterField.OrderStatus,
+      operator: BusinessAnalyticsFilterOperator.Equals,
+      value: 'canceled',
+    });
+    return filters;
+  }
+
+  if (hasPromptKeyword(prompt, ['completed', 'delivered'])) {
+    filters.push(completedOrdersFilter);
+    return filters;
+  }
+
+  if (measure !== BusinessAnalyticsMeasure.OrdersPlaced) {
+    filters.push(completedOrdersFilter);
+  }
+
+  return filters;
+}
+
+function buildWidgetTitle(
+  widgetType: SupportedWidgetType,
+  measure: BusinessAnalyticsMeasure,
+  dimension: BusinessAnalyticsDimension | undefined,
+) {
+  if (widgetType === 'metric') {
+    return getMeasureLabel(measure);
+  }
+
+  if (widgetType === 'lineChart') {
+    return `${getMeasureLabel(measure)} over time`;
+  }
+
+  if (widgetType === 'barChart') {
+    return `${getMeasureLabel(measure)} by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department)}`;
+  }
+
+  return `${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department)} share`;
+}
+
+function buildWidgetDescription(
+  widgetType: SupportedWidgetType,
+  measure: BusinessAnalyticsMeasure,
+  dimension: BusinessAnalyticsDimension | undefined,
+  timeRange: BusinessAnalyticsTimeRange,
+) {
+  const timeRangeLabel = buildDashboardTimeRangeLabel(timeRange).toLowerCase();
+
+  switch (widgetType) {
+    case 'metric':
+      return `${getMeasureLabel(measure)} for ${timeRangeLabel}.`;
+    case 'lineChart':
+      return `${getMeasureLabel(measure)} over time for ${timeRangeLabel}.`;
+    case 'barChart':
+      return `${getMeasureLabel(measure)} by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department).toLowerCase()} for ${timeRangeLabel}.`;
+    case 'donutChart':
+    default:
+      return `${getMeasureLabel(measure)} share by ${getDimensionLabel(dimension ?? BusinessAnalyticsDimension.Department).toLowerCase()} for ${timeRangeLabel}.`;
+  }
+}
+
+function getDefaultLayout(widgetType: SupportedWidgetType): DashboardLayout {
+  switch (widgetType) {
+    case 'metric':
+    case 'donutChart':
+      return 'half';
+    case 'lineChart':
+    case 'barChart':
+    default:
+      return 'full';
+  }
 }
 
 function resolveAllowedWidgetType(
@@ -602,6 +341,50 @@ function resolveAllowedWidgetType(
   }
 
   return allowedWidgetTypes[0];
+}
+
+function getMeasureLabel(measure: BusinessAnalyticsMeasure) {
+  switch (measure) {
+    case BusinessAnalyticsMeasure.TotalSpend:
+      return 'Total spend';
+    case BusinessAnalyticsMeasure.TotalSavings:
+      return 'Total savings';
+    case BusinessAnalyticsMeasure.OrdersPlaced:
+      return 'Orders placed';
+    case BusinessAnalyticsMeasure.OrdersCompleted:
+      return 'Orders completed';
+    case BusinessAnalyticsMeasure.AvgOrderValue:
+      return 'Average order value';
+    case BusinessAnalyticsMeasure.AvgItemsPerOrder:
+      return 'Average items per order';
+    case BusinessAnalyticsMeasure.OrderCount:
+    default:
+      return 'Order count';
+  }
+}
+
+function getDimensionLabel(dimension: BusinessAnalyticsDimension) {
+  switch (dimension) {
+    case BusinessAnalyticsDimension.Date:
+      return 'Date';
+    case BusinessAnalyticsDimension.ServiceType:
+      return 'Service type';
+    case BusinessAnalyticsDimension.OrderStatus:
+      return 'Order status';
+    case BusinessAnalyticsDimension.Retailer:
+      return 'Retailer';
+    case BusinessAnalyticsDimension.Member:
+      return 'Member';
+    case BusinessAnalyticsDimension.ProductCategory:
+      return 'Product category';
+    case BusinessAnalyticsDimension.Department:
+    default:
+      return 'Department';
+  }
+}
+
+function buildWidgetId(prefix: SupportedWidgetType) {
+  return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 function hasPromptKeyword(prompt: string, keywords: string[]) {
