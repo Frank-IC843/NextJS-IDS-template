@@ -4,8 +4,8 @@ import { responsive, useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
 import type { DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
-import { DashboardWidgetHydrator } from '@/app/dashboard/dashboard-widget-hydrator';
 import { buildDashboardTimeRangeLabel } from '@/app/dashboard/dashboard-schema';
+import { DashboardWidgetSkeleton } from '@/app/dashboard/dashboard-widget-skeleton';
 import { useDashboardPromptComposerStyles } from '@/app/dashboard/dashboard-prompt-composer.styles';
 
 interface DashboardWidgetPlanPreviewProps {
@@ -64,7 +64,7 @@ export function DashboardWidgetPlanPreview({ widgets }: DashboardWidgetPlanPrevi
               minHeight: widget.layout === 'full' ? '280px' : '240px',
             }}
           >
-            <DashboardWidgetHydrator widget={widget} />
+            <DashboardWidgetSkeleton widget={widget} />
           </div>
           <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
             {widget.widgetType === 'metric'

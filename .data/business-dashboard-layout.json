@@ -2,11 +2,37 @@
   "version": 1,
   "widgets": [
     {
-      "id": "lineChart-10603950",
-      "title": "Order Trend Over Time",
-      "prompt": "Show a dashboard with order trend plus department share over the past 7 days.",
+      "id": "metric-f9f7256d",
+      "title": "Total Spend",
+      "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
       "position": {
         "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 1
+      },
+      "chart_type": "NUMBER",
+      "query": {
+        "measures": [
+          "TOTAL_SPEND"
+        ],
+        "dimensions": [],
+        "filters": [
+          {
+            "field": "ORDER_STATUS",
+            "operator": "EQUALS",
+            "value": "COMPLETED"
+          }
+        ],
+        "time_range": "PAST_7_DAYS"
+      }
+    },
+    {
+      "id": "lineChart-98f4d176",
+      "title": "Spend Over Time",
+      "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
+      "position": {
+        "x": 1,
         "y": 0,
         "w": 1,
         "h": 1
@@ -14,34 +40,74 @@
       "chart_type": "LINE_CHART",
       "query": {
         "measures": [
-          "ORDER_COUNT"
+          "TOTAL_SPEND"
         ],
         "dimensions": [
           "DATE"
         ],
-        "filters": [],
+        "filters": [
+          {
+            "field": "ORDER_STATUS",
+            "operator": "EQUALS",
+            "value": "COMPLETED"
+          }
+        ],
         "time_range": "PAST_7_DAYS"
       }
     },
     {
-      "id": "donutChart-f202f4ab",
-      "title": "Department Share of Orders",
-      "prompt": "Show a dashboard with order trend plus department share over the past 7 days.",
+      "id": "barChart-ad3844a5",
+      "title": "Spend by Team Member",
+      "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
+      "position": {
+        "x": 0,
+        "y": 1,
+        "w": 1,
+        "h": 1
+      },
+      "chart_type": "BAR_CHART",
+      "query": {
+        "measures": [
+          "TOTAL_SPEND"
+        ],
+        "dimensions": [
+          "MEMBER"
+        ],
+        "filters": [
+          {
+            "field": "ORDER_STATUS",
+            "operator": "EQUALS",
+            "value": "COMPLETED"
+          }
+        ],
+        "time_range": "PAST_7_DAYS"
+      }
+    },
+    {
+      "id": "donutChart-b35d5382",
+      "title": "Retailer Spend Share",
+      "prompt": "Build me a dashboard for completed team grocery spend over the last 7 days, including top-line spend, spend over time, which team members spent the most, and which retailer got the biggest share.",
       "position": {
         "x": 1,
-        "y": 0,
+        "y": 1,
         "w": 1,
         "h": 1
       },
       "chart_type": "PIE_CHART",
       "query": {
         "measures": [
-          "ORDER_COUNT"
+          "TOTAL_SPEND"
         ],
         "dimensions": [
-          "DEPARTMENT"
+          "RETAILER"
         ],
-        "filters": [],
+        "filters": [
+          {
+            "field": "ORDER_STATUS",
+            "operator": "EQUALS",
+            "value": "COMPLETED"
+          }
+        ],
         "time_range": "PAST_7_DAYS"
       }
     }

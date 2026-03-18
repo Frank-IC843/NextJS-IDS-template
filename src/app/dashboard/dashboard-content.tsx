@@ -1,22 +1,29 @@
 'use client';
 
+import { useMutation } from '@apollo/client';
 import { DndContext } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { useTheme } from '@instacart/ids-core';
 import { SecondaryButtonSmall, Text } from '@instacart/ids-customers';
 import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import type {
+  CreateOrUpdateBusinessDashboardMutation,
+  CreateOrUpdateBusinessDashboardMutationVariables,
+} from '@/__generated__/graphql-types';
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
 import {
   MAX_WIDGETS_PER_DASHBOARD,
-  dashboardGenerateResponseSchema,
+  persistedDashboardLayoutSchema,
   type DashboardLayout,
   type DashboardWidgetDraft,
 } from '@/app/dashboard/dashboard-builder-types';
 import { useDashboardContentStyles } from '@/app/dashboard/dashboard-content-styles';
 import { DashboardEmptyLaunchpad } from '@/app/dashboard/dashboard-empty-launchpad';
 import { DashboardPromptComposer } from '@/app/dashboard/dashboard-prompt-composer';
-import { buildPersistedDashboardLayout } from '@/app/dashboard/dashboard-schema';
+import { CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION } from '@/app/dashboard/queries';
+import { buildPersistedDashboardLayout, getDashboardWidgetDraftsFromLayout } from '@/app/dashboard/dashboard-schema';
 import type { SupportedWidgetDefinition } from '@/app/dashboard/dashboard-supported-widgets';
 import { DashboardWidgetShell } from '@/app/dashboard/dashboard-widget-shell';
 import { useDashboardCanvasDnd } from '@/app/dashboard/use-dashboard-canvas-dnd';
@@ -62,6 +69,10 @@ export function DashboardContent({
   const [previewWidgets, setPreviewWidgets] = useState<DashboardWidgetDraft[]>([]);
   const [pendingBuilderAction, setPendingBuilderAction] = useState<BuilderAction | null>(null);
   const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
+  const [saveDashboardLayout] = useMutation<
+    CreateOrUpdateBusinessDashboardMutation,
+    CreateOrUpdateBusinessDashboardMutationVariables
+  >(CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION);
   const {
     activeDragId,
     dragOverWidgetId,
@@ -144,16 +155,23 @@ export function DashboardContent({
         return null;
       }
 
-      const parsedResponse = dashboardGenerateResponseSchema.safeParse(payload);
+      const parsedResponse = persistedDashboardLayoutSchema.safeParse(payload?.layout);
 
       if (!parsedResponse.success) {
-        setRequestError('The dashboard plan response did not match the supported schema.');
+        setRequestError('The dashboard plan response did not match the backend layout schema.');
         return null;
       }
 
-      if (parsedResponse.data.widgets.length > remainingWidgetCapacity) {
+      const { layout, drafts } = getDashboardWidgetDraftsFromLayout(parsedResponse.data);
+
+      if (!layout) {
+        setRequestError('The AI returned an invalid dashboard layout.');
+        return null;
+      }
+
+      if (drafts.length > remainingWidgetCapacity) {
         setRequestError(
-          `The AI planned ${parsedResponse.data.widgets.length} widgets, but only ${remainingWidgetCapacity} more fit on this dashboard.`,
+          `The AI planned ${drafts.length} widgets, but only ${remainingWidgetCapacity} more fit on this dashboard.`,
         );
         return null;
       }
@@ -161,11 +179,11 @@ export function DashboardContent({
       if (action === 'preview') {
         previewCacheRef.current = {
           requestKey,
-          widgets: parsedResponse.data.widgets,
+          widgets: drafts,
         };
       }
 
-      return parsedResponse.data.widgets;
+      return drafts;
     } catch (error) {
       console.error('Dashboard prompt request failed:', error);
       setRequestError('Unable to generate a dashboard plan right now.');
@@ -183,15 +201,19 @@ export function DashboardContent({
       return;
     }
 
-    const hasAddedWidgets = appendWidgets(nextWidgets);
-
-    if (!hasAddedWidgets) {
+    if (widgets.length + nextWidgets.length > MAX_WIDGETS_PER_DASHBOARD) {
+      setRequestError(`This dashboard supports up to ${MAX_WIDGETS_PER_DASHBOARD} widgets. Remove one before adding more.`);
       return;
     }
 
-    setPreviewWidgets([]);
-    setPrompt(defaultPrompt);
-    setIsBuilderOpen(false);
+    flushSync(() => {
+      setPreviewWidgets([]);
+      setPrompt(defaultPrompt);
+      setRequestError(null);
+      setIsBuilderOpen(false);
+    });
+
+    handleWidgetsChange([...widgets, ...nextWidgets]);
   }
 
   async function handlePreviewSubmit() {
@@ -209,16 +231,19 @@ export function DashboardContent({
       return;
     }
 
-    const hasAddedWidgets = appendWidgets(previewWidgets);
-
-    if (!hasAddedWidgets) {
+    if (widgets.length + previewWidgets.length > MAX_WIDGETS_PER_DASHBOARD) {
+      setRequestError(`This dashboard supports up to ${MAX_WIDGETS_PER_DASHBOARD} widgets. Remove one before adding more.`);
       return;
     }
 
-    setPreviewWidgets([]);
-    setPrompt(defaultPrompt);
-    setRequestError(null);
-    setIsBuilderOpen(false);
+    flushSync(() => {
+      setPreviewWidgets([]);
+      setPrompt(defaultPrompt);
+      setRequestError(null);
+      setIsBuilderOpen(false);
+    });
+
+    handleWidgetsChange([...widgets, ...previewWidgets]);
   }
 
   function handlePreviewBack() {
@@ -272,16 +297,6 @@ export function DashboardContent({
     previewCacheRef.current = null;
   }
 
-  function appendWidgets(nextWidgets: DashboardWidgetDraft[]) {
-    if (widgets.length + nextWidgets.length > MAX_WIDGETS_PER_DASHBOARD) {
-      setRequestError(`This dashboard supports up to ${MAX_WIDGETS_PER_DASHBOARD} widgets. Remove one before adding more.`);
-      return false;
-    }
-
-    handleWidgetsChange([...widgets, ...nextWidgets]);
-    return true;
-  }
-
   function handleWidgetsChange(nextWidgets: DashboardWidgetDraft[]) {
     setWidgets(nextWidgets);
     queuePersistWidgets(nextWidgets);
@@ -296,25 +311,17 @@ export function DashboardContent({
       .catch(() => undefined)
       .then(async () => {
         try {
-          const response = await fetch('/api/dashboard/layout', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+          await saveDashboardLayout({
+            variables: {
               layout: buildPersistedDashboardLayout(nextWidgets),
-            }),
+            },
           });
-
-          if (!response.ok) {
-            throw new Error('Dashboard save failed');
-          }
 
           if (saveRequestIdRef.current === saveRequestId) {
             setDashboardNotice(null);
           }
         } catch (error) {
-          console.error('Failed to save local business dashboard:', error);
+          console.error('Failed to save business dashboard:', error);
 
           if (saveRequestIdRef.current === saveRequestId) {
             setDashboardNotice('Unable to save dashboard changes right now.');

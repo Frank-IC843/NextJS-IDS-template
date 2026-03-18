@@ -8,11 +8,11 @@ import {
   dashboardAnalyticsFilterSchema,
   dashboardLayoutSchema,
   dashboardGenerateInputSchema,
-  dashboardGenerateResponseSchema,
   dashboardWidgetDraftSchema,
   supportedWidgetTypeSchema,
 } from '@/app/dashboard/dashboard-builder-types';
 import { buildDashboardWidgetSystemPrompt } from '@/app/api/dashboard/generate/system-prompt';
+import { buildPersistedDashboardLayout } from '@/app/dashboard/dashboard-schema';
 import { gpt4_1 } from '@/lib/ai-sdk-config';
 import { z } from 'zod';
 
@@ -25,7 +25,7 @@ const plannerWidgetPlanSchema = z
     metric: businessAnalyticsMeasureSchema,
     groupBy: businessAnalyticsDimensionSchema.optional(),
     filters: z.array(dashboardAnalyticsFilterSchema).default([]),
-    layoutHint: dashboardLayoutSchema.default('half'),
+    layoutHint: dashboardLayoutSchema.optional(),
   })
   .superRefine((widget, context) => {
     if ((widget.widgetType === 'barChart' || widget.widgetType === 'donutChart') && !widget.groupBy) {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         title: widget.title,
         description: widget.description,
         prompt: parsedInput.data.prompt,
-        layout: widget.layoutHint,
+        layout: 'half',
         widgetType: widget.widgetType,
         query: {
           measures: [widget.metric],
@@ -89,26 +89,9 @@ export async function POST(request: NextRequest) {
         },
       }),
     );
-    const parsedWidgetDrafts = generatedWidgets.map(widget => dashboardWidgetDraftSchema.safeParse(widget));
-    const hasInvalidWidgetDraft = parsedWidgetDrafts.some(result => !result.success);
-
-    if (hasInvalidWidgetDraft) {
-      const firstInvalidResult = parsedWidgetDrafts.find(result => !result.success);
-      console.error('Dashboard widget drafts validation failed:', firstInvalidResult?.error.flatten());
-      return NextResponse.json({ error: 'Unable to generate a supported dashboard plan.' }, { status: 500 });
-    }
-    const successfulDrafts = parsedWidgetDrafts.flatMap(result => (result.success ? [result.data] : []));
-
-    const generatedResponse = dashboardGenerateResponseSchema.safeParse({
-      widgets: successfulDrafts,
+    return NextResponse.json({
+      layout: buildPersistedDashboardLayout(generatedWidgets),
     });
-
-    if (!generatedResponse.success) {
-      console.error('Dashboard widget response validation failed:', generatedResponse.error.flatten());
-      return NextResponse.json({ error: 'Unable to build a supported dashboard plan.' }, { status: 500 });
-    }
-
-    return NextResponse.json(generatedResponse.data);
   } catch (error) {
     console.error('Dashboard generate route failed:', error);
     return NextResponse.json({ error: 'Unable to generate a dashboard plan right now.' }, { status: 500 });

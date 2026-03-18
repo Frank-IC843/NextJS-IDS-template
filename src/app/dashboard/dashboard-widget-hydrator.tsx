@@ -23,7 +23,7 @@ export function DashboardWidgetHydrator({ widget }: { widget: DashboardWidgetDra
       variables: {
         input: widget.query,
       },
-      fetchPolicy: 'cache-first',
+      fetchPolicy: 'cache-and-network',
       notifyOnNetworkStatusChange: true,
     },
   );
