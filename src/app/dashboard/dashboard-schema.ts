@@ -206,18 +206,15 @@ function persistedWidgetToDraft(widget: PersistedDashboardWidget): DashboardWidg
   }
 
   const layout: DashboardLayout = widget.position.w >= TWO_COLUMN_WIDTH ? 'full' : 'half';
+  const draft = {
+    query: widget.query,
+    widgetType,
+  } satisfies Pick<DashboardWidgetDraft, 'query' | 'widgetType'>;
 
   return {
     id: widget.id,
     title: widget.title,
-    description: buildWidgetDescription({
-      id: widget.id,
-      title: widget.title,
-      prompt: widget.prompt ?? undefined,
-      layout,
-      widgetType,
-      query: widget.query,
-    }),
+    description: buildWidgetDescription(draft),
     prompt: widget.prompt ?? undefined,
     layout,
     widgetType,

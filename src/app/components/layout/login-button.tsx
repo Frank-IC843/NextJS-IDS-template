@@ -3,50 +3,42 @@
 import { PrimaryButtonSmall } from '@/app/components/ui/buttons';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@apollo/client';
-import { CREATE_USER_SESSION_FROM_CODE } from '@/app/api/login/queries';
-import { UsersAccountTypes, UsersIdentityType } from '@/__generated__/graphql-types';
 
 export const LoginButton = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const [createUserSession] = useMutation(CREATE_USER_SESSION_FROM_CODE, {
-    onCompleted: async data => {
-      const result = data?.createUserSessionFromVerificationCode;
-      if (result?.token) {
-        console.log('Login successful:', result);
-        // Fetch user location and shop after successful login
-        router.push('/dashboard');
-      } else if (result?.errorTypes) {
-        console.error('Login failed:', result.errorTypes);
-        alert(`Login failed: ${result.errorTypes.join(', ')}`);
-      }
-      setLoading(false);
-    },
-    onError: error => {
-      console.error('Login error:', error);
-      alert(`Login error: ${error.message}`);
-      setLoading(false);
-    },
-  });
-
   const handleLogin = async () => {
-    console.log('Login button clicked!');
     setLoading(true);
 
     try {
-      await createUserSession({
-        variables: {
-          identifier: 'test@instacart.com',
-          identifier_type: UsersIdentityType.Email,
-          verification_code: '671415',
-          accountType: UsersAccountTypes.Business,
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          identifier: 'test@instacart.com',
+          verification_code: '671415',
+        }),
       });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = typeof payload?.error === 'string' ? payload.error : 'Login failed';
+        console.error('Login failed:', payload);
+        alert(errorMessage);
+        return;
+      }
+
+      router.push('/dashboard');
+      router.refresh();
     } catch (error) {
-      // Error is already handled in onError callback
-      console.error('Mutation error:', error);
+      console.error('Login error:', error);
+      alert('Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 

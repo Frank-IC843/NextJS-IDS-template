@@ -25,7 +25,6 @@ export function DashboardWidgetSkeleton({ widget }: { widget: DashboardWidgetDra
   });
 
   const skeletonBlock = {
-    borderRadius: '999px',
     background: 'linear-gradient(90deg, rgba(226, 232, 240, 0.92) 0%, rgba(248, 250, 252, 1) 48%, rgba(226, 232, 240, 0.92) 100%)',
     backgroundSize: '220% 100%',
     animation: `${shimmer} 1.6s ease-in-out infinite`,

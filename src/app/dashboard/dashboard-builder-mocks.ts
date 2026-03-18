@@ -584,6 +584,10 @@ function resolvePlannerWidgetCount(prompt: string, allowedWidgetCount: number) {
     return Math.min(MAX_WIDGETS_PER_GENERATION, allowedWidgetCount, 4);
   }
 
+  if (dashboardIntent) {
+    return Math.min(MAX_WIDGETS_PER_GENERATION, allowedWidgetCount, Math.max(explicitWidgetCount, 3));
+  }
+
   if (explicitWidgetCount >= 2) {
     return Math.min(MAX_WIDGETS_PER_GENERATION, allowedWidgetCount, explicitWidgetCount);
   }
