@@ -12,6 +12,7 @@ import {
   type DashboardTone,
   type DashboardWidget,
   type DashboardWidgetDraft,
+  type PersistedDashboardAnalyticsQuery,
   persistedDashboardLayoutSchema,
   type PersistedDashboardChartType,
   type PersistedDashboardLayout,
@@ -108,7 +109,7 @@ export function buildPersistedDashboardLayout(widgets: DashboardWidgetDraft[]): 
           h: isFullWidth ? 2 : 1,
         },
         chart_type: getPersistedChartType(widget.widgetType),
-        query: widget.query,
+        query: runtimeQueryToPersistedQuery(widget.query),
       };
     }),
   };
@@ -206,8 +207,9 @@ function persistedWidgetToDraft(widget: PersistedDashboardWidget): DashboardWidg
   }
 
   const layout: DashboardLayout = widget.position.w >= TWO_COLUMN_WIDTH ? 'full' : 'half';
+  const query = persistedQueryToRuntimeQuery(widget.query);
   const draft = {
-    query: widget.query,
+    query,
     widgetType,
   } satisfies Pick<DashboardWidgetDraft, 'query' | 'widgetType'>;
 
@@ -218,7 +220,25 @@ function persistedWidgetToDraft(widget: PersistedDashboardWidget): DashboardWidg
     prompt: widget.prompt ?? undefined,
     layout,
     widgetType,
-    query: widget.query,
+    query,
+  };
+}
+
+function runtimeQueryToPersistedQuery(query: DashboardAnalyticsQuery): PersistedDashboardAnalyticsQuery {
+  return {
+    measures: query.measures,
+    dimensions: query.dimensions,
+    filters: query.filters,
+    time_range: query.timeRange,
+  };
+}
+
+function persistedQueryToRuntimeQuery(query: PersistedDashboardAnalyticsQuery): DashboardAnalyticsQuery {
+  return {
+    measures: query.measures,
+    dimensions: query.dimensions,
+    filters: query.filters,
+    timeRange: 'time_range' in query ? query.time_range : query.timeRange,
   };
 }
 

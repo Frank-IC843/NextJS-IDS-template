@@ -49,6 +49,22 @@ export const dashboardAnalyticsQuerySchema = z.object({
 });
 export type DashboardAnalyticsQuery = z.infer<typeof dashboardAnalyticsQuerySchema>;
 
+export const persistedDashboardAnalyticsQuerySchema = z.union([
+  z.object({
+    measures: z.array(businessAnalyticsMeasureSchema).min(1),
+    dimensions: z.array(businessAnalyticsDimensionSchema).default([]),
+    filters: z.array(dashboardAnalyticsFilterSchema).default([]),
+    time_range: businessAnalyticsTimeRangeSchema,
+  }),
+  z.object({
+    measures: z.array(businessAnalyticsMeasureSchema).min(1),
+    dimensions: z.array(businessAnalyticsDimensionSchema).default([]),
+    filters: z.array(dashboardAnalyticsFilterSchema).default([]),
+    timeRange: businessAnalyticsTimeRangeSchema,
+  }),
+]);
+export type PersistedDashboardAnalyticsQuery = z.infer<typeof persistedDashboardAnalyticsQuerySchema>;
+
 export const persistedDashboardChartTypeSchema = z.enum(['NUMBER', 'BAR_CHART', 'LINE_CHART', 'PIE_CHART', 'TABLE']);
 export type PersistedDashboardChartType = z.infer<typeof persistedDashboardChartTypeSchema>;
 
@@ -66,7 +82,7 @@ export const persistedDashboardWidgetSchema = z.object({
   prompt: z.string().trim().min(1).nullable().optional(),
   position: persistedDashboardPositionSchema,
   chart_type: persistedDashboardChartTypeSchema,
-  query: dashboardAnalyticsQuerySchema,
+  query: persistedDashboardAnalyticsQuerySchema,
 });
 export type PersistedDashboardWidget = z.infer<typeof persistedDashboardWidgetSchema>;
 
