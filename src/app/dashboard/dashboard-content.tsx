@@ -22,6 +22,10 @@ import {
 import { useDashboardContentStyles } from '@/app/dashboard/dashboard-content-styles';
 import { DashboardEmptyLaunchpad } from '@/app/dashboard/dashboard-empty-launchpad';
 import { DashboardPromptComposer } from '@/app/dashboard/dashboard-prompt-composer';
+import {
+  type DashboardReportSkippedWidget,
+  type DashboardReportWidgetState,
+} from '@/app/dashboard/dashboard-report-types';
 import { CREATE_OR_UPDATE_BUSINESS_DASHBOARD_MUTATION } from '@/app/dashboard/queries';
 import { buildPersistedDashboardLayout, getDashboardWidgetDraftsFromLayout } from '@/app/dashboard/dashboard-schema';
 import type { SupportedWidgetDefinition } from '@/app/dashboard/dashboard-supported-widgets';
@@ -61,6 +65,11 @@ export function DashboardContent({
   const remainingWidgetCapacity = MAX_WIDGETS_PER_DASHBOARD - widgets.length;
   const [dashboardNotice, setDashboardNotice] = useState<string | null>(initialErrorMessage);
   const [isSaving, setIsSaving] = useState(false);
+  const [reportWidgetStates, setReportWidgetStates] = useState<Record<string, DashboardReportWidgetState>>(() =>
+    buildInitialReportWidgetStates(initialWidgets),
+  );
+  const [isReportGenerating, setIsReportGenerating] = useState(false);
+  const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [isGenerating, setIsGenerating] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -69,6 +78,32 @@ export function DashboardContent({
   const [previewWidgets, setPreviewWidgets] = useState<DashboardWidgetDraft[]>([]);
   const [pendingBuilderAction, setPendingBuilderAction] = useState<BuilderAction | null>(null);
   const previewCacheRef = useRef<PreviewCacheEntry | null>(null);
+  const readyReportWidgets = widgets.flatMap(widget => {
+    const reportState = reportWidgetStates[widget.id];
+
+    return reportState?.status === 'ready' ? [reportState.context] : [];
+  });
+  const reportLoadingCount = widgets.filter(widget => {
+    const reportState = reportWidgetStates[widget.id];
+
+    return !reportState || reportState.status === 'loading';
+  }).length;
+  const reportSkippedWidgets = widgets.flatMap<DashboardReportSkippedWidget>(widget => {
+    const reportState = reportWidgetStates[widget.id];
+
+    return reportState?.status === 'error'
+      ? [
+          {
+            id: widget.id,
+            title: widget.title,
+            reason: 'error',
+            detail: reportState.detail,
+          },
+        ]
+      : [];
+  });
+  const dashboardPrompt = widgets.find(widget => widget.prompt?.trim())?.prompt?.trim();
+  const canGenerateReport = !isGenerating && !isReportGenerating && reportLoadingCount === 0 && readyReportWidgets.length > 0;
   const [saveDashboardLayout] = useMutation<
     CreateOrUpdateBusinessDashboardMutation,
     CreateOrUpdateBusinessDashboardMutationVariables
@@ -290,6 +325,7 @@ export function DashboardContent({
   function handleReset() {
     handleWidgetsChange([]);
     setDashboardNotice(null);
+    setReportErrorMessage(null);
     setPrompt(defaultPrompt);
     setPreviewWidgets([]);
     setRequestError(null);
@@ -297,7 +333,55 @@ export function DashboardContent({
     previewCacheRef.current = null;
   }
 
+  async function handleGenerateReport() {
+    if (!canGenerateReport) {
+      return;
+    }
+
+    setIsReportGenerating(true);
+    setReportErrorMessage(null);
+
+    try {
+      const response = await fetch('/api/dashboard/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...(dashboardPrompt ? { dashboardPrompt } : {}),
+          widgets: readyReportWidgets,
+          skippedWidgets: reportSkippedWidgets,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Unable to generate a dashboard report right now.';
+        const contentType = response.headers.get('content-type') ?? '';
+
+        if (contentType.includes('application/json')) {
+          const payload = await response.json();
+          errorMessage = typeof payload?.error === 'string' ? payload.error : errorMessage;
+        }
+
+        setReportErrorMessage(errorMessage);
+        return;
+      }
+
+      const pdfBlob = await response.blob();
+      const filename = getFilenameFromContentDisposition(response.headers.get('content-disposition')) ?? buildReportDownloadFilename();
+
+      downloadBlob(pdfBlob, filename);
+    } catch (error) {
+      console.error('Dashboard report request failed:', error);
+      setReportErrorMessage('Unable to generate a dashboard report right now.');
+    } finally {
+      setIsReportGenerating(false);
+    }
+  }
+
   function handleWidgetsChange(nextWidgets: DashboardWidgetDraft[]) {
+    setReportErrorMessage(null);
+    setReportWidgetStates(currentStates => reconcileReportWidgetStates(currentStates, nextWidgets));
     setWidgets(nextWidgets);
     queuePersistWidgets(nextWidgets);
   }
@@ -335,6 +419,14 @@ export function DashboardContent({
       });
   }
 
+  const reportStatusMessage =
+    reportLoadingCount > 0
+      ? `Report generation unlocks after ${reportLoadingCount} more dashboard view${reportLoadingCount === 1 ? '' : 's'} finish loading.`
+      : reportSkippedWidgets.length > 0
+        ? `${reportSkippedWidgets.length} dashboard view${reportSkippedWidgets.length === 1 ? '' : 's'} failed to load and will be called out as incomplete coverage in the PDF.`
+        : null;
+  const statusMessage = reportErrorMessage ?? dashboardNotice ?? reportStatusMessage;
+
   return (
     <div ref={pageRef} css={styles.container}>
       <section css={styles.overviewCard}>
@@ -365,11 +457,14 @@ export function DashboardContent({
                 <PrimaryButtonSmall
                   onClick={() => openBuilder()}
                   css={styles.primaryAction}
-                  disabled={remainingWidgetCapacity <= 0}
+                  disabled={remainingWidgetCapacity <= 0 || isReportGenerating}
                 >
                   Add widgets
                 </PrimaryButtonSmall>
-                <SecondaryButtonSmall onClick={handleReset} disabled={isGenerating}>
+                <SecondaryButtonSmall onClick={() => void handleGenerateReport()} disabled={!canGenerateReport}>
+                  {getReportActionLabel({ isGenerating: isReportGenerating })}
+                </SecondaryButtonSmall>
+                <SecondaryButtonSmall onClick={handleReset} disabled={isGenerating || isReportGenerating}>
                   Reset canvas
                 </SecondaryButtonSmall>
               </div>
@@ -380,10 +475,12 @@ export function DashboardContent({
           <Text typography="bodyMedium1" color="systemGrayscale60">
             Saving dashboard...
           </Text>
-        ) : dashboardNotice ? (
-          <Text typography="bodyMedium1" color="systemGrayscale60">
-            {dashboardNotice}
-          </Text>
+        ) : statusMessage ? (
+          <div>
+            <Text typography="bodyMedium1" color="systemGrayscale60">
+              {statusMessage}
+            </Text>
+          </div>
         ) : null}
       </section>
 
@@ -416,6 +513,7 @@ export function DashboardContent({
                       isDropTarget={dragOverWidgetId === widget.id && activeDragId !== widget.id}
                       onLayoutChange={handleLayoutChange}
                       onRemove={handleRemove}
+                      setReportWidgetStates={setReportWidgetStates}
                     />
                   ))}
                 </div>
@@ -467,4 +565,69 @@ function getBuilderRequestKey(prompt: string, allowedWidgetTypes: readonly Suppo
     prompt,
     allowedWidgetTypes,
   });
+}
+
+function buildInitialReportWidgetStates(widgets: DashboardWidgetDraft[]) {
+  return Object.fromEntries(widgets.map(widget => [widget.id, buildLoadingReportWidgetState(widget)]));
+}
+
+function reconcileReportWidgetStates(
+  currentStates: Record<string, DashboardReportWidgetState>,
+  nextWidgets: DashboardWidgetDraft[],
+) {
+  return Object.fromEntries(
+    nextWidgets.map(widget => {
+      const currentState = currentStates[widget.id];
+
+      return [widget.id, currentState ?? buildLoadingReportWidgetState(widget)];
+    }),
+  );
+}
+
+function buildLoadingReportWidgetState(widget: DashboardWidgetDraft): DashboardReportWidgetState {
+  return {
+    status: 'loading',
+    widgetId: widget.id,
+    title: widget.title,
+  };
+}
+
+function getReportActionLabel({ isGenerating }: { isGenerating: boolean }) {
+  if (isGenerating) {
+    return 'Generating PDF...';
+  }
+
+  return 'Generate report PDF';
+}
+
+function buildReportDownloadFilename(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `business-intelligence-report-${year}-${month}-${day}.pdf`;
+}
+
+function getFilenameFromContentDisposition(contentDisposition: string | null) {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const filenameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+
+  return filenameMatch?.[1] ?? null;
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const objectUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => {
+    window.URL.revokeObjectURL(objectUrl);
+  }, 0);
 }

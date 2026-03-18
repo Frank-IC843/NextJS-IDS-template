@@ -4,8 +4,9 @@ import { GrabIcon, TrashIcon, useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
+import type { DashboardReportWidgetState } from '@/app/dashboard/dashboard-report-types';
 import { DashboardWidgetHydrator } from '@/app/dashboard/dashboard-widget-hydrator';
 import type { DashboardLayout, DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 import { DashboardLayoutGlyph } from '@/app/dashboard/dashboard-layout-glyph';
@@ -205,9 +206,16 @@ interface DashboardWidgetShellProps {
   isDropTarget?: boolean;
   onLayoutChange: (widgetId: string, layout: DashboardLayout) => void;
   onRemove: (widgetId: string) => void;
+  setReportWidgetStates?: Dispatch<SetStateAction<Record<string, DashboardReportWidgetState>>>;
 }
 
-export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutChange, onRemove }: DashboardWidgetShellProps) {
+export function DashboardWidgetShell({
+  widget,
+  isDropTarget = false,
+  onLayoutChange,
+  onRemove,
+  setReportWidgetStates,
+}: DashboardWidgetShellProps) {
   const styles = useStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
@@ -364,7 +372,7 @@ export function DashboardWidgetShell({ widget, isDropTarget = false, onLayoutCha
       </div>
 
       <div css={styles.body}>
-        <DashboardWidgetHydrator widget={widget} />
+        <DashboardWidgetHydrator widget={widget} setReportWidgetStates={setReportWidgetStates} />
       </div>
     </article>
   );

@@ -3,18 +3,26 @@
 import { useQuery } from '@apollo/client';
 import { useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
+import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import type {
   BusinessAnalyticsQueryQuery,
   BusinessAnalyticsQueryQueryVariables,
 } from '@/__generated__/graphql-types';
 import type { DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
+import { buildDashboardReportWidgetContext } from '@/app/dashboard/dashboard-report-schema';
+import type { DashboardReportWidgetState } from '@/app/dashboard/dashboard-report-types';
 import { DashboardWidgetRenderer } from '@/app/dashboard/dashboard-widget-renderer';
 import { DashboardWidgetSkeleton } from '@/app/dashboard/dashboard-widget-skeleton';
 import { BUSINESS_ANALYTICS_QUERY } from '@/app/dashboard/queries';
 import { hydrateDashboardWidget } from '@/app/dashboard/dashboard-schema';
 
-export function DashboardWidgetHydrator({ widget }: { widget: DashboardWidgetDraft }) {
+interface DashboardWidgetHydratorProps {
+  widget: DashboardWidgetDraft;
+  setReportWidgetStates?: Dispatch<SetStateAction<Record<string, DashboardReportWidgetState>>>;
+}
+
+export function DashboardWidgetHydrator({ widget, setReportWidgetStates }: DashboardWidgetHydratorProps) {
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
   const { data, loading, error, refetch } = useQuery<BusinessAnalyticsQueryQuery, BusinessAnalyticsQueryQueryVariables>(
@@ -27,6 +35,39 @@ export function DashboardWidgetHydrator({ widget }: { widget: DashboardWidgetDra
       notifyOnNetworkStatusChange: true,
     },
   );
+
+  useEffect(() => {
+    if (!setReportWidgetStates) {
+      return;
+    }
+
+    if (error) {
+      setReportWidgetStates(currentStates =>
+        updateReportWidgetState(currentStates, widget.id, {
+          status: 'error',
+          widgetId: widget.id,
+          title: widget.title,
+          detail: 'Unable to load analytics for this view.',
+        }),
+      );
+      return;
+    }
+
+    if (loading && !data) {
+      return;
+    }
+
+    const hydratedWidget = hydrateDashboardWidget(widget, data?.businessAnalyticsQuery ?? null);
+
+    setReportWidgetStates(currentStates =>
+      updateReportWidgetState(currentStates, widget.id, {
+        status: 'ready',
+        widgetId: widget.id,
+        title: widget.title,
+        context: buildDashboardReportWidgetContext(hydratedWidget),
+      }),
+    );
+  }, [data, error, loading, setReportWidgetStates, widget]);
 
   if (loading && !data) {
     return <DashboardWidgetSkeleton widget={widget} />;
@@ -78,4 +119,44 @@ export function DashboardWidgetHydrator({ widget }: { widget: DashboardWidgetDra
   }
 
   return <DashboardWidgetRenderer widget={hydrateDashboardWidget(widget, data?.businessAnalyticsQuery ?? null)} />;
+}
+
+function updateReportWidgetState(
+  currentStates: Record<string, DashboardReportWidgetState>,
+  widgetId: string,
+  nextState: DashboardReportWidgetState,
+) {
+  const previousState = currentStates[widgetId];
+
+  if (areReportWidgetStatesEqual(previousState, nextState)) {
+    return currentStates;
+  }
+
+  return {
+    ...currentStates,
+    [widgetId]: nextState,
+  };
+}
+
+function areReportWidgetStatesEqual(
+  previousState: DashboardReportWidgetState | undefined,
+  nextState: DashboardReportWidgetState,
+) {
+  if (!previousState || previousState.status !== nextState.status || previousState.widgetId !== nextState.widgetId) {
+    return false;
+  }
+
+  if (nextState.status === 'loading') {
+    return previousState.title === nextState.title;
+  }
+
+  if (nextState.status === 'error') {
+    return previousState.status === 'error' && previousState.title === nextState.title && previousState.detail === nextState.detail;
+  }
+
+  return (
+    previousState.status === 'ready' &&
+    previousState.title === nextState.title &&
+    JSON.stringify(previousState.context) === JSON.stringify(nextState.context)
+  );
 }
