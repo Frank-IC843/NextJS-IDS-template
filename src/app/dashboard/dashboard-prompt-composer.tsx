@@ -78,8 +78,12 @@ function DashboardPromptComposerModal({
   const businessPalette = getDashboardBusinessPalette(theme);
   const modal = useModalState({ visible: true });
   const accessibleLabels = { close: 'Close builder' };
+  const trimmedPrompt = prompt.trim();
+  const emptyPromptErrorMessage = 'Enter a prompt before generating widgets.';
+  const isPromptEmpty = trimmedPrompt.length === 0;
+  const displayErrorMessage = isPromptEmpty ? emptyPromptErrorMessage : errorMessage;
   const isAtCapacity = currentWidgetCount >= maxWidgetCount;
-  const isSubmitDisabled = isGenerating || selectedWidgetTypes.length === 0 || isAtCapacity;
+  const isSubmitDisabled = isGenerating || isPromptEmpty || selectedWidgetTypes.length === 0 || isAtCapacity;
   const prefersReducedMotion = useReducedMotion();
   const previewWidgetCount = previewWidgets?.length ?? 0;
   const isPreviewMode = previewWidgetCount > 0;
@@ -259,6 +263,11 @@ function DashboardPromptComposerModal({
                         css={styles.textarea}
                         autoFocus
                       />
+                      {isPromptEmpty ? (
+                        <Text typography="bodyRegular" css={styles.errorText}>
+                          {emptyPromptErrorMessage}
+                        </Text>
+                      ) : null}
                     </label>
                   </div>
                 </motion.div>
@@ -311,10 +320,10 @@ function DashboardPromptComposerModal({
               </>
             )}
 
-            {errorMessage ? (
+            {displayErrorMessage && !isPromptEmpty ? (
               <motion.div initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
                 <Text typography="bodyRegular" css={styles.errorText}>
-                  {errorMessage}
+                  {displayErrorMessage}
                 </Text>
               </motion.div>
             ) : null}
@@ -362,7 +371,7 @@ function DashboardPromptComposerModal({
                     disabled={isSubmitDisabled}
                     css={{ ...styles.footerButtonBase, ...styles.footerSecondaryButton }}
                   >
-                    {isPreviewLoading ? 'Previewing dashboard...' : 'Preview plan'}
+                    {isPreviewLoading ? 'Previewing dashboard...' : 'Preview'}
                   </button>
                   <button
                     type="button"
