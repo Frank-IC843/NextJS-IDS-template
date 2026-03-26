@@ -390,7 +390,7 @@ function scoreQuestionMatch(prompt: string, question: InsightQuestionDefinition)
   return score;
 }
 
-function normalizeLayout(_widgetType: SupportedWidgetType, _suggestedLayout: DashboardLayout | undefined): DashboardLayout {
+function normalizeLayout(): DashboardLayout {
   return getDefaultLayout();
 }
 

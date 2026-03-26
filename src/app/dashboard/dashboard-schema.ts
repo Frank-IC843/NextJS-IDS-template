@@ -6,7 +6,6 @@ import {
   type DashboardCoverageGapWidget,
   type DashboardMetricItem,
   type DashboardTone,
-  type DashboardWidget,
   type DashboardWidgetDraft,
 } from '@/app/dashboard/dashboard-builder-types';
 import { insightQuestionsById } from '@/app/insights/insights-catalog';
@@ -15,7 +14,6 @@ import type {
   InsightQueryResponse,
   InsightRelativeRange,
   InsightTableColumn,
-  InsightTableRow,
   InsightTableRowValue,
 } from '@/app/insights/insights-types';
 
