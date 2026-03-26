@@ -4,7 +4,7 @@ import { responsive, useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
 import type { DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
-import { buildDashboardTimeRangeLabel } from '@/app/dashboard/dashboard-schema';
+import { getDashboardWidgetTimeRangeLabel } from '@/app/dashboard/dashboard-schema';
 import { DashboardWidgetSkeleton } from '@/app/dashboard/dashboard-widget-skeleton';
 import { useDashboardPromptComposerStyles } from '@/app/dashboard/dashboard-prompt-composer.styles';
 
@@ -46,11 +46,13 @@ export function DashboardWidgetPlanPreview({ widgets }: DashboardWidgetPlanPrevi
               ) : null}
             </div>
             <div css={styles.previewWidgetMeta}>
-              <div css={styles.previewWidgetBadge}>
-                <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
-                  {buildDashboardTimeRangeLabel(widget.query.timeRange)}
-                </Text>
-              </div>
+              {getDashboardWidgetTimeRangeLabel(widget) ? (
+                <div css={styles.previewWidgetBadge}>
+                  <Text typography="bodyMedium1" css={{ color: businessPalette.blueberryDark }}>
+                    {getDashboardWidgetTimeRangeLabel(widget)}
+                  </Text>
+                </div>
+              ) : null}
               <div css={{ ...styles.previewWidgetBadge, ...styles.previewWidgetBadgeAccent }}>
                 <Text typography="bodyMedium1" css={{ color: businessPalette.elderberryDark }}>
                   {widget.layout === 'full' ? 'Full width' : 'Half width'}
@@ -73,7 +75,7 @@ export function DashboardWidgetPlanPreview({ widgets }: DashboardWidgetPlanPrevi
                 ? 'Trend view'
                 : widget.widgetType === 'barChart'
                   ? 'Comparison view'
-                  : 'Share view'}
+                  : 'Watchlist view'}
           </Text>
         </div>
       ))}

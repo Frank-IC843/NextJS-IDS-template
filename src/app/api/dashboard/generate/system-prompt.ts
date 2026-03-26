@@ -1,12 +1,6 @@
-import {
-  BusinessAnalyticsDimension,
-  BusinessAnalyticsFilterField,
-  BusinessAnalyticsFilterOperator,
-  BusinessAnalyticsMeasure,
-  BusinessAnalyticsTimeRange,
-} from '@/__generated__/graphql-types';
 import type { SupportedWidgetType } from '@/app/dashboard/dashboard-builder-types';
 import { supportedDashboardWidgets } from '@/app/dashboard/dashboard-supported-widgets';
+import { insightQuestionCatalog } from '@/app/insights/insights-catalog';
 
 export function buildDashboardWidgetSystemPrompt(allowedWidgetTypes: SupportedWidgetType[]) {
   const uniqueAllowedWidgetTypes = Array.from(new Set(allowedWidgetTypes));
@@ -18,218 +12,88 @@ export function buildDashboardWidgetSystemPrompt(allowedWidgetTypes: SupportedWi
     )
     .join('\n');
   const maxWidgetCount = Math.min(4, uniqueAllowedWidgetTypes.length);
-
-  const measureOptions = Object.values(BusinessAnalyticsMeasure).join(' | ');
-  const nonDateGroupByOptions = Object.values(BusinessAnalyticsDimension)
-    .filter(dimension => dimension !== BusinessAnalyticsDimension.Date)
-    .join(' | ');
-  const filterFieldOptions = Object.values(BusinessAnalyticsFilterField).join(' | ');
-  const filterOperatorOptions = Object.values(BusinessAnalyticsFilterOperator).join(' | ');
-  const timeRangeOptions = Object.values(BusinessAnalyticsTimeRange).join(' | ');
-  const widgetShapeExamples = uniqueAllowedWidgetTypes
-    .map(widgetType =>
-      buildWidgetShapeExample(widgetType, {
-        measureOptions,
-        nonDateGroupByOptions,
-        filterFieldOptions,
-        filterOperatorOptions,
-        timeRangeOptions,
-      }),
+  const widgetShapeExample = `{
+  "widgets": [
+    {
+      "questionId": "<exact catalog id>",
+      "preferredView": "<${uniqueAllowedWidgetTypes.join(' | ')}>",
+      "title": "<concise widget title>",
+      "description": "<useful widget description>",
+      "layout": "<half | full>",
+      "relativeRange": "<optional: past_7_days | past_30_days | past_12_weeks | past_6_months | last_month>",
+      "timeBucket": "<optional: none | day | week | month>"
+    }
+  ]
+}`;
+  const widgetCountRules =
+    uniqueAllowedWidgetTypes.length === 1 && uniqueAllowedWidgetTypes[0] === 'metric'
+      ? `- Return exactly 1 widget.
+- Because metric is the only allowed widget type, use a single scorecard-style widget.`
+      : `- Return between 1 and ${maxWidgetCount} widgets.
+- Return 1 widget for narrow asks.
+${maxWidgetCount > 1 ? `- Return 2 to ${maxWidgetCount} widgets only when the user clearly wants a dashboard, scorecard, overview, or multiple cuts.` : ''}`;
+  const catalogSummary = insightQuestionCatalog
+    .map(question =>
+      [
+        `- id: ${question.id}`,
+        `  status: ${question.coverageStatus}`,
+        `  persona: ${question.persona}`,
+        `  improvementFocus: ${question.improvementFocus}`,
+        `  preferredWidgetType: ${question.preferredWidgetType}`,
+        `  defaultTimeBucket: ${question.timeBucket}`,
+        `  defaultRelativeRange: ${question.relativeRange}`,
+        `  title: ${question.title}`,
+        `  prompt: ${question.prompt}`,
+        `  description: ${question.description}`,
+        `  aliases: ${question.aliases.join(' | ') || 'none'}`,
+      ].join('\n'),
     )
-    .join('\n\n');
-  const isMetricOnly = uniqueAllowedWidgetTypes.length === 1 && uniqueAllowedWidgetTypes[0] === 'metric';
-  const widgetCountRules = isMetricOnly
-    ? `- Return exactly 1 widget.
-- Because metric is the only allowed widget type, use a single metric widget with 1 to 4 complementary KPIs in the metrics array.`
-    : `- Return between 1 and ${maxWidgetCount} widgets.
-- Return 1 widget for narrow, single-chart asks.
-${maxWidgetCount > 1 ? `- Return 2 to ${maxWidgetCount} widgets only when the user is clearly asking for a dashboard, overview, summary, or multiple views.` : ''}`;
+    .join('\n');
 
-  return `You are an Instacart Business dashboard planner.
+  return `You are the Instacart Business Medusa dashboard planner.
 
 Return JSON only.
 Produce a dashboard plan with one or more widgets depending on the user prompt.
 Only use the allowed widget types listed below.
+Every widget must reference an exact catalog question id from the fixed catalog.
 Never return markdown, JSX, commentary, or unsupported widget types.
 Make titles concise, descriptions useful, and widgets decision-oriented.
-Your goal is to produce a GOOD business analytics dashboard where each widget answers a distinct question.
+Your goal is to create a GOOD PM/sales dashboard where each widget answers a distinct stakeholder question.
 
 Return this exact top-level shape:
-{
-  "widgets": [
-    <one or more allowed widget objects>
-  ]
-}
-
-Each widget object must match one of these exact allowed shapes:
-${widgetShapeExamples}
+${widgetShapeExample}
 
 Planning guardrails:
 ${widgetCountRules}
 - Do not create duplicate widgets that answer the same question in the same way.
 - Every widget should add a new insight, not repeat the same cut of the data.
-- Prefer a balanced 2-column dashboard.
-- All generated widgets are one column by default.
-- Do not plan full-width widgets.
+- Set every widget's "layout" to "half" so generated widgets default to one column.
 - Prefer a mix that feels useful and scannable, not exhaustive.
 - If the prompt is vague, choose the smallest dashboard that still feels complete.
 ${maxWidgetCount >= 4 ? '- Prefer 3 widgets over 4 unless the user clearly asks for a fuller overview.' : ''}
-- Metric widgets may contain 1 to 4 measures in the metrics array.
-- Use 2 to 4 measures only when the card is acting as a compact executive snapshot.
-- When metrics contains more than one measure, the title and description should describe the overall snapshot, not just the first KPI.
 
-Analytics quality rules:
-- Match widget type to the business question:
-  - metric: top-line KPI or compact KPI snapshot
-  - line chart: change over time
-  - bar chart: ranked comparison across entities
-  - donut chart: share or composition across a small number of categories
-- Prefer dimensions that create meaningful variation. Avoid dimensions that are likely to collapse to one bucket.
-- Never group by the same field that is locked by an equality filter unless the user explicitly asks for that exact grouped view.
-- If the dashboard is filtered to completed orders, do not create order status charts unless the user explicitly asks for an order status comparison across multiple statuses.
-- For line charts, always use DATE on the x-axis and do not return a groupBy field.
-- For metric widgets, do not return a groupBy field and use the metrics array instead of metric.
-- For bar and donut widgets, always return a groupBy field.
-- Prefer bar charts over donut charts for MEMBER, DEPARTMENT, and PRODUCT_CATEGORY.
-- Prefer donut charts for SERVICE_TYPE, RETAILER, and ORDER_STATUS only when the result is likely to have a small number of buckets.
-- Use only the exact enum strings listed above for metrics, metric, groupBy, field, operator, and timeRange.
-
-Backend query constraints:
-- Filter values are raw backend strings, not GraphQL enum names.
-- ORDER_STATUS filter values must be lowercase strings: completed | delivered | placed | canceled.
-- SERVICE_TYPE filter values must be lowercase strings: delivery | pickup.
-- RETAILER filter values should be the exact retailer display name when filtering by retailer.
-- Never invent ids.
-- Do not use MEMBER as a filter unless the user explicitly provides a numeric member id.
-- Grouping by MEMBER is allowed and useful, but filtering by MEMBER should usually be avoided.
-- Filters should be omitted entirely when they are not needed.
-
-Measure compatibility rules:
-- TOTAL_SAVINGS can only be used with no groupBy or with a time-series line chart over DATE.
-- Do not combine TOTAL_SAVINGS with bar charts or donut charts.
-- For multi-metric snapshot cards, combine complementary KPIs only.
-- Prefer mixes like TOTAL_SPEND + ORDER_COUNT + AVG_ORDER_VALUE, or ORDER_COUNT + AVG_ITEMS_PER_ORDER + AVG_ORDER_VALUE.
-- Avoid stacking multiple average-style KPIs together unless there is also a volume or spend KPI on the same card.
-- Prefer ORDER_COUNT when the user asks for count of orders.
-- Prefer AVG_ORDER_VALUE when the user asks for average spend per order.
-- Prefer AVG_ITEMS_PER_ORDER when the user asks about basket size or items per order.
-- If the dashboard is meant to show completed-order performance, prefer filtering ORDER_STATUS to "completed" and using measures like TOTAL_SPEND, ORDER_COUNT, AVG_ORDER_VALUE, or AVG_ITEMS_PER_ORDER.
-- Avoid ORDERS_COMPLETED unless the user explicitly asks for completed-order count.
-- Prefer ORDER_COUNT with an ORDER_STATUS filter over ORDERS_COMPLETED when the user wants a filtered subset.
-
-Dimension-to-widget guidance:
-- Use DATE only for line charts.
-- Use MEMBER for bar charts when comparing people.
-- Use RETAILER for bar charts or donut charts.
-- Use SERVICE_TYPE for donut charts.
-- Use ORDER_STATUS for donut or bar charts only when no ORDER_STATUS equality filter is applied.
-- Use DEPARTMENT or PRODUCT_CATEGORY for bar charts by default.
-- Prefer PRODUCT_CATEGORY only when the user asks for more detailed merchandise mix.
-- Prefer DEPARTMENT when the user asks for broad category mix.
-
-Avoid weak plans:
-- Do not create multiple widgets that all use the same metric and same groupBy unless one is a trend and one is a top-line KPI.
-- Do not create an ORDER_STATUS widget if the dashboard is already filtered to one order status.
-- Do not create both a bar chart and a donut chart with the same dimension unless the user explicitly asks for both.
-- Do not create both DEPARTMENT and PRODUCT_CATEGORY in a small 2-widget dashboard unless the user explicitly asks for category mix.
-- Do not use a donut chart when a ranked bar chart would communicate the result more clearly.
-- Avoid widgets that are likely to produce a single bucket unless the prompt clearly asks for that exact KPI.
-
-Default dashboard recipe:
-- For broad spend prompts, prefer this default 3-widget mix:
-  1. metric: TOTAL_SPEND filtered to completed
-  2. lineChart: TOTAL_SPEND over DATE filtered to completed
-  3. barChart or donutChart: TOTAL_SPEND grouped by MEMBER, RETAILER, or SERVICE_TYPE depending on the prompt
-- Expand to 4 widgets only when the user explicitly asks for an overview, summary, dashboard, or multiple cuts.
-- For “who spent the most” prompts, prefer a bar chart grouped by MEMBER.
-- For retailer share prompts, prefer a donut or bar chart grouped by RETAILER.
-- For service type mix prompts, prefer a donut chart grouped by SERVICE_TYPE.
-- For trends, pace, daily movement, or over-time asks, prefer a line chart over DATE.
+Coverage and planning rules:
+- Prefer "ready" questions when they fit the user request, but do not force an unrelated ready question just to avoid a coverage gap.
+- It is acceptable to include "needs_medusa_config" or "blocked" questions in the plan when they genuinely match the user's PM or sales intent.
+- A generated dashboard can mix executable widgets and coverage-gap widgets.
+- Keep natural-language planning catalog-backed. Do not invent SQL, metrics, or ids outside the catalog.
+- Keep titles and descriptions faithful to the chosen catalog question.
+- Preserve the user's requested time range and time grain when the prompt specifies them and they fit the chosen catalog question.
+- Use "relativeRange" for explicit windows like 7 days, 30 days, 12 weeks, 6 months, or last month.
+- Use "timeBucket" for explicit daily, weekly, or monthly trend requests. Leave it unset when the catalog default is already correct.
+- Use titles and descriptions that help a PM or sales user quickly understand why the widget belongs on the canvas.
 
 Supported widget catalog:
 ${widgetCatalog}
 
+Question catalog:
+${catalogSummary}
+
 Widget planning hints:
-- Use metrics for top-line spend, savings, order count, or averages.
-- Use line charts for trends over time.
-- Use bar charts for ranked comparisons.
-- Use donut charts for share and contribution views.
-- Default to completed orders unless the user explicitly asks for all orders or another status.
-- For spend dashboards, a strong default mix is:
-  - top-line total spend
-  - spend over time
-  - spend by top members or departments
-  - spend share by retailer or service type
+- Use "metric" for executive snapshots and scorecards.
+- Use "lineChart" for pace, trend, or time-series questions.
+- Use "barChart" for ranked comparisons, mixes, or side-by-side performance.
+- Use "table" for watchlists, partner reports, and detailed account follow-up.
+- When the user asks for a broad dashboard, prefer a useful mix such as snapshot + trend + ranked breakdown or watchlist.
 `;
-}
-
-function buildWidgetShapeExample(
-  widgetType: SupportedWidgetType,
-  {
-    measureOptions,
-    nonDateGroupByOptions,
-    filterFieldOptions,
-    filterOperatorOptions,
-    timeRangeOptions,
-  }: {
-    measureOptions: string;
-    nonDateGroupByOptions: string;
-    filterFieldOptions: string;
-    filterOperatorOptions: string;
-    timeRangeOptions: string;
-  },
-) {
-  const baseFilterShape = `"filters": [
-    {
-      "field": "<${filterFieldOptions}>",
-      "operator": "<${filterOperatorOptions}>",
-      "value": "<filter value>"
-    }
-  ]`;
-
-  switch (widgetType) {
-    case 'metric':
-      return `- metric widget:
-{
-  "widgetType": "metric",
-  "title": "<concise title>",
-  "description": "<useful description>",
-  "timeRange": "<${timeRangeOptions}>",
-  "metrics": ["<${measureOptions}>"],
-  ${baseFilterShape}
-}`;
-    case 'lineChart':
-      return `- lineChart widget:
-{
-  "widgetType": "lineChart",
-  "title": "<concise title>",
-  "description": "<useful description>",
-  "timeRange": "<${timeRangeOptions}>",
-  "metric": "<${measureOptions}>",
-  ${baseFilterShape}
-}`;
-    case 'barChart':
-      return `- barChart widget:
-{
-  "widgetType": "barChart",
-  "title": "<concise title>",
-  "description": "<useful description>",
-  "timeRange": "<${timeRangeOptions}>",
-  "metric": "<${measureOptions}>",
-  "groupBy": "<${nonDateGroupByOptions}>",
-  ${baseFilterShape}
-}`;
-    case 'donutChart':
-    default:
-      return `- donutChart widget:
-{
-  "widgetType": "donutChart",
-  "title": "<concise title>",
-  "description": "<useful description>",
-  "timeRange": "<${timeRangeOptions}>",
-  "metric": "<${measureOptions}>",
-  "groupBy": "<${nonDateGroupByOptions}>",
-  ${baseFilterShape}
-}`;
-  }
 }

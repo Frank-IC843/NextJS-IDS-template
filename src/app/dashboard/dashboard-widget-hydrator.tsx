@@ -1,79 +1,126 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
 import { useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
-import { useEffect, type Dispatch, type SetStateAction } from 'react';
-import type {
-  BusinessAnalyticsQueryQuery,
-  BusinessAnalyticsQueryQueryVariables,
-} from '@/__generated__/graphql-types';
+import { useEffect, useState } from 'react';
 import type { DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
-import { buildDashboardReportWidgetContext } from '@/app/dashboard/dashboard-report-schema';
-import type { DashboardReportWidgetState } from '@/app/dashboard/dashboard-report-types';
+import { hydrateDashboardWidget } from '@/app/dashboard/dashboard-schema';
 import { DashboardWidgetRenderer } from '@/app/dashboard/dashboard-widget-renderer';
 import { DashboardWidgetSkeleton } from '@/app/dashboard/dashboard-widget-skeleton';
-import { BUSINESS_ANALYTICS_QUERY } from '@/app/dashboard/queries';
-import { hydrateDashboardWidget } from '@/app/dashboard/dashboard-schema';
+import { insightQueryResponseSchema, type InsightQueryResponse } from '@/app/insights/insights-types';
 
 interface DashboardWidgetHydratorProps {
   widget: DashboardWidgetDraft;
-  setReportWidgetStates?: Dispatch<SetStateAction<Record<string, DashboardReportWidgetState>>>;
 }
 
-export function DashboardWidgetHydrator({ widget, setReportWidgetStates }: DashboardWidgetHydratorProps) {
+type HydratorState =
+  | {
+      status: 'loading';
+      response: null;
+      errorMessage: null;
+    }
+  | {
+      status: 'ready';
+      response: InsightQueryResponse;
+      errorMessage: null;
+    }
+  | {
+      status: 'error';
+      response: null;
+      errorMessage: string;
+    };
+
+export function DashboardWidgetHydrator({ widget }: DashboardWidgetHydratorProps) {
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
-  const { data, loading, error, refetch } = useQuery<BusinessAnalyticsQueryQuery, BusinessAnalyticsQueryQueryVariables>(
-    BUSINESS_ANALYTICS_QUERY,
-    {
-      variables: {
-        input: widget.query,
-      },
-      fetchPolicy: 'cache-and-network',
-      notifyOnNetworkStatusChange: true,
-    },
-  );
+  const [reloadToken, setReloadToken] = useState(0);
+  const [state, setState] = useState<HydratorState>({
+    status: 'loading',
+    response: null,
+    errorMessage: null,
+  });
 
   useEffect(() => {
-    if (!setReportWidgetStates) {
-      return;
-    }
+    const controller = new AbortController();
 
-    if (error) {
-      setReportWidgetStates(currentStates =>
-        updateReportWidgetState(currentStates, widget.id, {
+    async function loadWidget() {
+      setState({
+        status: 'loading',
+        response: null,
+        errorMessage: null,
+      });
+
+      try {
+        const apiResponse = await fetch('/api/insights/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            question: widget.question,
+            questionId: widget.questionId,
+            preferredView: widget.preferredView ?? widget.widgetType,
+            relativeRange: widget.relativeRange,
+            timeBucket: widget.timeBucket,
+            clientRequestId: widget.id,
+          }),
+          signal: controller.signal,
+        });
+        const payload = await apiResponse.json().catch(() => null);
+
+        if (!apiResponse.ok) {
+          setState({
+            status: 'error',
+            response: null,
+            errorMessage:
+              typeof payload?.error === 'string' ? payload.error : 'Unable to load Medusa data for this widget right now.',
+          });
+          return;
+        }
+
+        const parsedPayload = insightQueryResponseSchema.safeParse(payload);
+
+        if (!parsedPayload.success) {
+          setState({
+            status: 'error',
+            response: null,
+            errorMessage: 'The Medusa widget response did not match the expected schema.',
+          });
+          return;
+        }
+
+        setState({
+          status: 'ready',
+          response: parsedPayload.data,
+          errorMessage: null,
+        });
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.error('[dashboard-widget-hydrator] Medusa request failed:', error);
+        setState({
           status: 'error',
-          widgetId: widget.id,
-          title: widget.title,
-          detail: 'Unable to load analytics for this view.',
-        }),
-      );
-      return;
+          response: null,
+          errorMessage: 'Unable to load Medusa data for this widget right now.',
+        });
+      }
     }
 
-    if (loading && !data) {
-      return;
-    }
+    void loadWidget();
 
-    const hydratedWidget = hydrateDashboardWidget(widget, data?.businessAnalyticsQuery ?? null);
+    return () => {
+      controller.abort();
+    };
+  }, [reloadToken, widget.id, widget.preferredView, widget.question, widget.questionId, widget.relativeRange, widget.timeBucket, widget.widgetType]);
 
-    setReportWidgetStates(currentStates =>
-      updateReportWidgetState(currentStates, widget.id, {
-        status: 'ready',
-        widgetId: widget.id,
-        title: widget.title,
-        context: buildDashboardReportWidgetContext(hydratedWidget),
-      }),
-    );
-  }, [data, error, loading, setReportWidgetStates, widget]);
-
-  if (loading && !data) {
+  if (state.status === 'loading') {
     return <DashboardWidgetSkeleton widget={widget} />;
   }
 
-  if (error) {
+  if (state.status === 'error') {
     return (
       <div
         css={{
@@ -91,11 +138,11 @@ export function DashboardWidgetHydrator({ widget, setReportWidgetStates }: Dashb
       >
         <Text typography="bodyEmphasized">Unable to load widget data.</Text>
         <Text typography="bodyRegular" color="systemGrayscale60">
-          The layout is saved, but this card could not hydrate from analytics right now.
+          {state.errorMessage}
         </Text>
         <button
           type="button"
-          onClick={() => void refetch()}
+          onClick={() => setReloadToken(currentToken => currentToken + 1)}
           css={{
             appearance: 'none',
             display: 'inline-flex',
@@ -118,45 +165,5 @@ export function DashboardWidgetHydrator({ widget, setReportWidgetStates }: Dashb
     );
   }
 
-  return <DashboardWidgetRenderer widget={hydrateDashboardWidget(widget, data?.businessAnalyticsQuery ?? null)} />;
-}
-
-function updateReportWidgetState(
-  currentStates: Record<string, DashboardReportWidgetState>,
-  widgetId: string,
-  nextState: DashboardReportWidgetState,
-) {
-  const previousState = currentStates[widgetId];
-
-  if (areReportWidgetStatesEqual(previousState, nextState)) {
-    return currentStates;
-  }
-
-  return {
-    ...currentStates,
-    [widgetId]: nextState,
-  };
-}
-
-function areReportWidgetStatesEqual(
-  previousState: DashboardReportWidgetState | undefined,
-  nextState: DashboardReportWidgetState,
-) {
-  if (!previousState || previousState.status !== nextState.status || previousState.widgetId !== nextState.widgetId) {
-    return false;
-  }
-
-  if (nextState.status === 'loading') {
-    return previousState.title === nextState.title;
-  }
-
-  if (nextState.status === 'error') {
-    return previousState.status === 'error' && previousState.title === nextState.title && previousState.detail === nextState.detail;
-  }
-
-  return (
-    previousState.status === 'ready' &&
-    previousState.title === nextState.title &&
-    JSON.stringify(previousState.context) === JSON.stringify(nextState.context)
-  );
+  return <DashboardWidgetRenderer widget={hydrateDashboardWidget(widget, state.response)} />;
 }

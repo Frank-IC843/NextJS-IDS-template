@@ -36,7 +36,15 @@ const useStyles = () => {
     },
 
     logoContainer: {
+      position: 'relative' as const,
       marginRight: '20px',
+      width: '250px',
+      height: '24px',
+      maxWidth: '100%',
+      [responsive.down('c')]: {
+        width: '180px',
+        height: '17px',
+      },
     },
 
     searchContainer: {
@@ -72,15 +80,6 @@ const useStyles = () => {
       marginRight: '24px',
     },
 
-    logoImage: {
-      height: 'auto',
-      maxWidth: '250px',
-      [responsive.down('c')]: {
-        width: '100%',
-        height: 'auto',
-      },
-    },
-
     headerRight: {
       display: 'flex',
       alignItems: 'center',
@@ -101,9 +100,9 @@ export function Header() {
           <Image
             src="https://www.instacart.com/image-server/x24/www.instacart.com/assets/beetstrap/brand/2022/instacart-business-logo-dark@3x-d16b19c9060685d040461f6e9a3c29e615b79792b566e74b9258f135db349c96.png"
             alt="Instacart Business"
-            width={250}
-            height={24}
-            css={styles.logoImage}
+            fill
+            sizes="(max-width: 768px) 180px, 250px"
+            style={{ objectFit: 'contain' }}
           />
         </div>
       </div>

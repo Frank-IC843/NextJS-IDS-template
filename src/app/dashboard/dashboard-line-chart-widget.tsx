@@ -1,11 +1,9 @@
 'use client';
 
-import { BusinessAnalyticsMeasure } from '@/__generated__/graphql-types';
 import { useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
 import { CartesianGrid, Label, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
-import { getDashboardChartMeasurePresentation } from '@/app/dashboard/dashboard-chart-measure-formatting';
 import {
   getDashboardChartContainerStyles,
   getDashboardChartSurfaceStyles,
@@ -16,8 +14,6 @@ import type { LineChartWidget } from '@/app/dashboard/dashboard-builder-types';
 export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidget }) {
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
-  const primaryMeasure = widget.query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
-  const measurePresentation = getDashboardChartMeasurePresentation(primaryMeasure);
   const containerStyles = getDashboardChartContainerStyles();
   const chartSurfaceStyles = getDashboardChartSurfaceStyles(theme, businessPalette, {
     borderColor: businessPalette.elderberryBorder,
@@ -43,7 +39,7 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
                 padding={{ left: 12, right: 12 }}
               >
                 <Label
-                  value="Date"
+                  value={widget.data.xLabel}
                   position="insideBottom"
                   offset={-4}
                   style={{
@@ -59,10 +55,10 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
                 tick={{ fill: theme.colors.systemGrayscale60, fontSize: 12 }}
                 tickMargin={8}
                 width={88}
-                tickFormatter={measurePresentation.formatValue}
+                tickFormatter={formatNumber}
               >
                 <Label
-                  value={measurePresentation.yAxisLabel}
+                  value={widget.data.yLabel}
                   angle={-90}
                   position="insideLeft"
                   offset={12}
@@ -77,7 +73,7 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
               <Tooltip
                 cursor={{ stroke: theme.colors.systemGrayscale30, strokeWidth: 1 }}
                 contentStyle={getDashboardChartTooltipContentStyle(businessPalette.elderberryBorder)}
-                formatter={value => [measurePresentation.formatValue(Number(value)), measurePresentation.tooltipLabel]}
+                formatter={value => [formatNumber(Number(value)), widget.data.yLabel]}
               />
               <Line
                 type="monotone"
@@ -109,4 +105,10 @@ export function DashboardLineChartWidgetView({ widget }: { widget: LineChartWidg
       </div>
     </div>
   );
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: Math.abs(value) >= 100 ? 0 : 2,
+  }).format(value);
 }

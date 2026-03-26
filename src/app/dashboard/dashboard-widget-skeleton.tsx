@@ -32,8 +32,8 @@ export function DashboardWidgetSkeleton({ widget }: { widget: DashboardWidgetDra
 
   switch (widget.widgetType) {
     case 'metric': {
-      const metricCount = Math.min(Math.max(widget.query.measures.length, 1), 4);
-      const isComposite = metricCount > 1;
+      const isComposite = widget.layout === 'full';
+      const metricCount = isComposite ? 3 : 1;
 
       return (
         <div css={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -157,50 +157,50 @@ export function DashboardWidgetSkeleton({ widget }: { widget: DashboardWidgetDra
           <div css={{ ...skeletonBlock, width: '78%', height: '12px' }} />
         </div>
       );
-    case 'donutChart':
+    case 'table':
     default:
       return (
-        <div css={containerStyles}>
-          <div css={{ ...chartSurfaceStyles, padding: '18px' }}>
-            <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', height: '100%' }}>
-              <div
-                css={{
-                  width: '112px',
-                  height: '112px',
-                  borderRadius: '999px',
-                  background:
-                    'conic-gradient(rgba(110, 72, 229, 0.35) 0deg 132deg, rgba(43, 120, 198, 0.35) 132deg 268deg, rgba(148, 163, 184, 0.3) 268deg 360deg)',
-                  position: 'relative',
-                  flexShrink: 0,
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: '22px',
-                    borderRadius: '999px',
-                    backgroundColor: theme.colors.systemGrayscale00,
-                  },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '999px',
-                    ...skeletonBlock,
-                    opacity: 0.55,
-                  },
-                }}
-              />
-              <div css={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-                {[82, 68, 56].map(width => (
-                  <div key={width} css={{ display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto', gap: '10px', alignItems: 'center' }}>
-                    <div css={{ ...skeletonBlock, width: '10px', height: '10px', borderRadius: '999px' }} />
-                    <div css={{ ...skeletonBlock, width: `${width}%`, height: '10px' }} />
-                    <div css={{ ...skeletonBlock, width: '28px', height: '10px' }} />
-                  </div>
-                ))}
-              </div>
+        <div css={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div css={{ ...chartSurfaceStyles, padding: '0' }}>
+            <div css={{ overflowX: 'auto' }}>
+              <table css={{ width: '100%', borderCollapse: 'collapse', minWidth: '460px' }}>
+                <thead>
+                  <tr>
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <th
+                        key={index}
+                        css={{
+                          padding: '12px 14px',
+                          borderBottom: `1px solid ${theme.colors.systemGrayscale20}`,
+                        }}
+                      >
+                        <div css={{ ...skeletonBlock, width: `${66 - index * 8}%`, height: '10px' }} />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 4 }).map((_, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {Array.from({ length: 3 }).map((__, cellIndex) => (
+                        <td
+                          key={`${rowIndex}-${cellIndex}`}
+                          css={{
+                            padding: '12px 14px',
+                            borderBottom:
+                              rowIndex === 3 ? 'none' : `1px solid ${theme.colors.systemGrayscale20}`,
+                          }}
+                        >
+                          <div css={{ ...skeletonBlock, width: `${72 - cellIndex * 10}%`, height: '10px' }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-          <div css={{ ...skeletonBlock, width: '74%', height: '12px' }} />
+          <div css={{ ...skeletonBlock, width: '82%', height: '12px' }} />
         </div>
       );
   }

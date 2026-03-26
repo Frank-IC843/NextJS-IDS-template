@@ -4,13 +4,12 @@ import { GrabIcon, TrashIcon, useTheme } from '@instacart/ids-core';
 import { Text } from '@instacart/ids-customers';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useState } from 'react';
 import { getDashboardBusinessPalette } from '@/app/dashboard/dashboard-business-theme';
-import type { DashboardReportWidgetState } from '@/app/dashboard/dashboard-report-types';
 import { DashboardWidgetHydrator } from '@/app/dashboard/dashboard-widget-hydrator';
 import type { DashboardLayout, DashboardWidgetDraft } from '@/app/dashboard/dashboard-builder-types';
 import { DashboardLayoutGlyph } from '@/app/dashboard/dashboard-layout-glyph';
-import { buildDashboardTimeRangeLabel } from '@/app/dashboard/dashboard-schema';
+import { getDashboardWidgetTimeRangeLabel } from '@/app/dashboard/dashboard-schema';
 
 function useStyles() {
   const theme = useTheme();
@@ -206,7 +205,6 @@ interface DashboardWidgetShellProps {
   isDropTarget?: boolean;
   onLayoutChange: (widgetId: string, layout: DashboardLayout) => void;
   onRemove: (widgetId: string) => void;
-  setReportWidgetStates?: Dispatch<SetStateAction<Record<string, DashboardReportWidgetState>>>;
 }
 
 export function DashboardWidgetShell({
@@ -214,12 +212,11 @@ export function DashboardWidgetShell({
   isDropTarget = false,
   onLayoutChange,
   onRemove,
-  setReportWidgetStates,
 }: DashboardWidgetShellProps) {
   const styles = useStyles();
   const theme = useTheme();
   const businessPalette = getDashboardBusinessPalette(theme);
-  const timeRangeLabel = buildDashboardTimeRangeLabel(widget.query.timeRange);
+  const timeRangeLabel = getDashboardWidgetTimeRangeLabel(widget);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
   });
@@ -372,7 +369,7 @@ export function DashboardWidgetShell({
       </div>
 
       <div css={styles.body}>
-        <DashboardWidgetHydrator widget={widget} setReportWidgetStates={setReportWidgetStates} />
+        <DashboardWidgetHydrator widget={widget} />
       </div>
     </article>
   );

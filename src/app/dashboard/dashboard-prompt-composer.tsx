@@ -152,7 +152,7 @@ function DashboardPromptComposerModal({
       <ModalInnerWrapper as={motion.div} css={styles.modalMotionShell} initial={shellAnimation.initial} animate={shellAnimation.animate}>
         <motion.div initial={sectionTransition?.initial} animate={sectionTransition?.animate}>
           <ModalHeader hide={modal.hide} accessibleLabels={accessibleLabels} onClick={modal.hide} disabled={isGenerating}>
-            <ModalTitle>{isPreviewMode ? 'Preview Dashboard Plan' : 'Dashboard Planner'}</ModalTitle>
+            <ModalTitle>{isPreviewMode ? 'Preview Medusa Widget Plan' : 'Medusa Dashboard Planner'}</ModalTitle>
           </ModalHeader>
         </motion.div>
         <ModalContent>
@@ -164,8 +164,8 @@ function DashboardPromptComposerModal({
                 </Text>
                 <Text typography="bodyRegular" color="systemGrayscale60">
                   {isPreviewMode
-                    ? 'Review the planned widget set before it lands on the dashboard. You can go back to refine the request or confirm the add.'
-                    : 'Describe one chart or a full dashboard. The AI will stay within the enabled widget types and keep the plan within the current two-column layout.'}
+                    ? 'Review the planned widget set before it lands on the canvas. You can go back to refine the request or confirm the add.'
+                    : 'Describe one chart or a full PM/sales dashboard. The planner stays inside the enabled widget types and maps each widget onto the current Medusa question catalog.'}
                 </Text>
               </div>
             </motion.div>
@@ -211,7 +211,7 @@ function DashboardPromptComposerModal({
                   <DashboardWidgetPlanPreview widgets={previewWidgets ?? []} />
 
                   <Text typography="bodyMedium1" css={styles.helperText}>
-                    Looks right? Add this widget set to the dashboard or go back to refine the prompt and allowed widget types.
+                    Looks right? Add this widget set to the canvas or go back to refine the prompt and enabled widget types.
                   </Text>
                 </div>
               </motion.div>
@@ -259,7 +259,7 @@ function DashboardPromptComposerModal({
                       <textarea
                         value={prompt}
                         onChange={event => onPromptChange(event.target.value)}
-                        placeholder="Example: Build a small dashboard with total spend, order trend, and department share for the past 7 days."
+                        placeholder="Example: Build a sales dashboard with a weekly health snapshot, trend, and spend-drop watchlist."
                         css={styles.textarea}
                         autoFocus
                       />

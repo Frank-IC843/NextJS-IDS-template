@@ -1,502 +1,227 @@
 import {
-  BusinessAnalyticsDimension,
-  BusinessAnalyticsMeasure,
-  BusinessAnalyticsQueryQuery,
-  BusinessAnalyticsTimeRange,
-} from '@/__generated__/graphql-types';
-import {
+  dashboardCanvasWidgetSchema,
   dashboardWidgetSchema,
-  type DashboardAnalyticsFilter,
-  type DashboardAnalyticsQuery,
-  type DashboardLayout,
+  MAX_METRICS_PER_WIDGET,
+  MAX_TABLE_ROWS_PER_WIDGET,
+  type DashboardCoverageGapWidget,
+  type DashboardMetricItem,
   type DashboardTone,
   type DashboardWidget,
   type DashboardWidgetDraft,
-  type PersistedDashboardAnalyticsQuery,
-  persistedDashboardLayoutSchema,
-  type PersistedDashboardChartType,
-  type PersistedDashboardLayout,
-  type PersistedDashboardWidget,
-  type SupportedWidgetType,
 } from '@/app/dashboard/dashboard-builder-types';
+import { insightQuestionsById } from '@/app/insights/insights-catalog';
+import type {
+  InsightAnswerShape,
+  InsightQueryResponse,
+  InsightRelativeRange,
+  InsightTableColumn,
+  InsightTableRow,
+  InsightTableRowValue,
+} from '@/app/insights/insights-types';
 
-const TWO_COLUMN_WIDTH = 2;
-const donutTones: DashboardTone[] = ['brand', 'positive', 'neutral', 'caution'];
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
-const decimalFormatter = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 1,
-});
-const integerFormatter = new Intl.NumberFormat('en-US');
-
-export function parsePersistedDashboardLayout(layout: unknown) {
-  return persistedDashboardLayoutSchema.safeParse(layout);
-}
-
-export function getDashboardWidgetDraftsFromLayout(layout: unknown) {
-  const parsedLayout = parsePersistedDashboardLayout(layout);
-
-  if (!parsedLayout.success) {
-    return {
-      layout: null,
-      drafts: [] as DashboardWidgetDraft[],
-    };
-  }
-
-  return {
-    layout: parsedLayout.data,
-    drafts: parsedLayout.data.widgets
-      .slice()
-      .sort((leftWidget, rightWidget) => {
-        if (leftWidget.position.y !== rightWidget.position.y) {
-          return leftWidget.position.y - rightWidget.position.y;
-        }
-
-        return leftWidget.position.x - rightWidget.position.x;
-      })
-      .flatMap(widget => {
-        const draft = persistedWidgetToDraft(widget);
-
-        return draft ? [draft] : [];
-      }),
-  };
-}
-
-export function buildPersistedDashboardLayout(widgets: DashboardWidgetDraft[]): PersistedDashboardLayout {
-  let currentRow = 0;
-  let currentColumn = 0;
-
-  return {
-    version: 1,
-    widgets: widgets.map(widget => {
-      const isFullWidth = widget.layout === 'full';
-      const width = isFullWidth ? TWO_COLUMN_WIDTH : 1;
-      let x = 0;
-      let y = currentRow;
-
-      if (isFullWidth) {
-        if (currentColumn !== 0) {
-          currentRow += 1;
-          currentColumn = 0;
-        }
-
-        x = 0;
-        y = currentRow;
-        currentRow += 1;
-      } else {
-        x = currentColumn;
-        y = currentRow;
-
-        if (currentColumn === 0) {
-          currentColumn = 1;
-        } else {
-          currentColumn = 0;
-          currentRow += 1;
-        }
-      }
-
-      return {
-        id: widget.id,
-        title: widget.title,
-        prompt: widget.prompt ?? null,
-        position: {
-          x,
-          y,
-          w: width,
-          h: isFullWidth ? 2 : 1,
-        },
-        chart_type: getPersistedChartType(widget.widgetType),
-        query: runtimeQueryToPersistedQuery(widget.query),
-      };
-    }),
-  };
-}
-
-export function buildDashboardTimeRangeLabel(timeRange: BusinessAnalyticsTimeRange) {
-  switch (timeRange) {
-    case BusinessAnalyticsTimeRange.Past_1Day:
-      return 'Past 1 day';
-    case BusinessAnalyticsTimeRange.Past_3Days:
-      return 'Past 3 days';
-    case BusinessAnalyticsTimeRange.Past_7Days:
-    default:
+export function buildRelativeRangeLabel(relativeRange: InsightRelativeRange) {
+  switch (relativeRange) {
+    case 'past_7_days':
       return 'Past 7 days';
+    case 'past_30_days':
+      return 'Past 30 days';
+    case 'past_12_weeks':
+      return 'Past 12 weeks';
+    case 'past_6_months':
+      return 'Past 6 months';
+    case 'last_month':
+      return 'Last month';
   }
 }
 
-export function hydrateDashboardWidget(
-  draft: DashboardWidgetDraft,
-  analyticsResult: BusinessAnalyticsQueryQuery['businessAnalyticsQuery'],
-): DashboardWidget {
-  const timeRangeLabel = buildDashboardTimeRangeLabel(draft.query.timeRange);
-  const primaryMeasure = draft.query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
-  const primaryDimension = draft.query.dimensions[0];
-  const rows = analyticsResult?.rows?.map(row => row.values ?? []) ?? [];
+export function getDashboardWidgetTimeRangeLabel(widget: DashboardWidgetDraft) {
+  if (widget.relativeRange) {
+    return buildRelativeRangeLabel(widget.relativeRange);
+  }
 
-  switch (draft.widgetType) {
-    case 'metric': {
+  if (widget.timeRangeLabel) {
+    return widget.timeRangeLabel;
+  }
+
+  if (!widget.questionId) {
+    return undefined;
+  }
+
+  const matchedQuestion = insightQuestionsById[widget.questionId as keyof typeof insightQuestionsById];
+  return matchedQuestion ? buildRelativeRangeLabel(matchedQuestion.relativeRange) : undefined;
+}
+
+export function hydrateDashboardWidget(draft: DashboardWidgetDraft, response: InsightQueryResponse) {
+  const timeRangeLabel = getDashboardWidgetTimeRangeLabel(draft);
+
+  if (response.coverage.status !== 'ready') {
+    return dashboardCanvasWidgetSchema.parse({
+      ...draft,
+      timeRangeLabel,
+      renderState: 'coverage_gap',
+      coverageStatus: response.coverage.status,
+      coverageMessage: response.coverage.message,
+      summary: response.summary,
+      matchedQuestionTitle: response.coverage.matchedQuestionTitle ?? undefined,
+      plannerReasoning: response.coverage.plannerReasoning,
+    } satisfies DashboardCoverageGapWidget);
+  }
+
+  const resolvedWidgetType = resolveWidgetType(response.plan?.answerShape ?? draft.preferredView ?? draft.widgetType);
+
+  switch (resolvedWidgetType) {
+    case 'metric':
       return dashboardWidgetSchema.parse({
         ...draft,
-        description: draft.description ?? buildWidgetDescription(draft),
+        widgetType: 'metric',
         timeRangeLabel,
+        renderState: 'ready',
+        coverageStatus: 'ready',
+        coverageMessage: response.coverage.message,
+        summary: response.summary,
+        matchedQuestionTitle: response.coverage.matchedQuestionTitle ?? undefined,
         data: {
-          metrics: buildMetricItems(draft.query, rows[0]),
-          footer: buildMetricFooter(draft.query, rows.length > 0),
+          metrics: buildMetricItems(response),
+          footer: response.summary,
         },
       });
-    }
-    case 'lineChart': {
+    case 'lineChart':
       return dashboardWidgetSchema.parse({
         ...draft,
-        description: draft.description ?? buildWidgetDescription(draft),
+        widgetType: 'lineChart',
         timeRangeLabel,
+        renderState: 'ready',
+        coverageStatus: 'ready',
+        coverageMessage: response.coverage.message,
+        summary: response.summary,
+        matchedQuestionTitle: response.coverage.matchedQuestionTitle ?? undefined,
         data: {
-          points: rows.map(row => ({
-            label: formatDimensionValue(primaryDimension, row[0] ?? ''),
-            value: formatChartValue(primaryMeasure, row[draft.query.dimensions.length]),
-          })),
-          footer: buildChartFooter(draft.query, 'over time'),
+          xLabel: response.chart?.xLabel ?? 'Time',
+          yLabel: response.chart?.yLabel ?? 'Value',
+          points: response.chart?.points ?? [],
+          footer: response.summary,
         },
       });
-    }
-    case 'barChart': {
+    case 'barChart':
       return dashboardWidgetSchema.parse({
         ...draft,
-        description: draft.description ?? buildWidgetDescription(draft),
+        widgetType: 'barChart',
         timeRangeLabel,
+        renderState: 'ready',
+        coverageStatus: 'ready',
+        coverageMessage: response.coverage.message,
+        summary: response.summary,
+        matchedQuestionTitle: response.coverage.matchedQuestionTitle ?? undefined,
         data: {
-          bars: rows.map(row => ({
-            label: formatDimensionValue(primaryDimension, row[0] ?? ''),
-            value: formatChartValue(primaryMeasure, row[draft.query.dimensions.length]),
-          })),
-          footer: buildChartFooter(draft.query, primaryDimension ? `by ${getDimensionLabel(primaryDimension).toLowerCase()}` : null),
+          xLabel: response.chart?.xLabel ?? 'Category',
+          yLabel: response.chart?.yLabel ?? 'Value',
+          bars: response.chart?.points ?? [],
+          footer: response.summary,
         },
       });
-    }
-    case 'donutChart':
-    default: {
+    case 'table':
+    default:
       return dashboardWidgetSchema.parse({
         ...draft,
-        description: draft.description ?? buildWidgetDescription(draft),
+        widgetType: 'table',
         timeRangeLabel,
+        renderState: 'ready',
+        coverageStatus: 'ready',
+        coverageMessage: response.coverage.message,
+        summary: response.summary,
+        matchedQuestionTitle: response.coverage.matchedQuestionTitle ?? undefined,
         data: {
-          segments: rows.map((row, index) => ({
-            label: formatDimensionValue(primaryDimension, row[0] ?? ''),
-            value: formatChartValue(primaryMeasure, row[draft.query.dimensions.length]),
-            tone: donutTones[index % donutTones.length] ?? donutTones[0],
-          })),
-          footer: buildChartFooter(draft.query, primaryDimension ? `share by ${getDimensionLabel(primaryDimension).toLowerCase()}` : null),
+          columns: buildTableColumns(response),
+          rows: response.rows.slice(0, MAX_TABLE_ROWS_PER_WIDGET),
+          footer: response.summary,
         },
       });
-    }
   }
 }
 
-function persistedWidgetToDraft(widget: PersistedDashboardWidget): DashboardWidgetDraft | null {
-  const widgetType = getSupportedWidgetType(widget.chart_type);
-
-  if (!widgetType) {
-    return null;
-  }
-
-  const layout: DashboardLayout = widget.position.w >= TWO_COLUMN_WIDTH ? 'full' : 'half';
-  const query = persistedQueryToRuntimeQuery(widget.query);
-  const draft = {
-    query,
-    widgetType,
-  } satisfies Pick<DashboardWidgetDraft, 'query' | 'widgetType'>;
-
-  return {
-    id: widget.id,
-    title: widget.title,
-    description: buildWidgetDescription(draft),
-    prompt: widget.prompt ?? undefined,
-    layout,
-    widgetType,
-    query,
-  };
-}
-
-function runtimeQueryToPersistedQuery(query: DashboardAnalyticsQuery): PersistedDashboardAnalyticsQuery {
-  return {
-    measures: query.measures,
-    dimensions: query.dimensions,
-    filters: query.filters,
-    time_range: query.timeRange,
-  };
-}
-
-function persistedQueryToRuntimeQuery(query: PersistedDashboardAnalyticsQuery): DashboardAnalyticsQuery {
-  return {
-    measures: query.measures,
-    dimensions: query.dimensions,
-    filters: query.filters,
-    timeRange: 'time_range' in query ? query.time_range : query.timeRange,
-  };
-}
-
-function getSupportedWidgetType(chartType: PersistedDashboardChartType): SupportedWidgetType | null {
-  switch (chartType) {
-    case 'NUMBER':
+function resolveWidgetType(answerShape: InsightAnswerShape) {
+  switch (answerShape) {
+    case 'metric':
       return 'metric';
-    case 'LINE_CHART':
+    case 'lineChart':
       return 'lineChart';
-    case 'BAR_CHART':
+    case 'barChart':
       return 'barChart';
-    case 'PIE_CHART':
-      return 'donutChart';
-    case 'TABLE':
+    case 'table':
     default:
-      return null;
+      return 'table';
   }
 }
 
-function getPersistedChartType(widgetType: SupportedWidgetType) {
-  switch (widgetType) {
-    case 'metric':
-      return 'NUMBER';
-    case 'lineChart':
-      return 'LINE_CHART';
-    case 'barChart':
-      return 'BAR_CHART';
-    case 'donutChart':
-    default:
-      return 'PIE_CHART';
+function buildMetricItems(response: InsightQueryResponse): DashboardMetricItem[] {
+  const firstRow = response.rows[0];
+  const numericColumns = response.columns.filter(column => column.kind === 'number').slice(0, MAX_METRICS_PER_WIDGET);
+
+  if (!firstRow || numericColumns.length === 0) {
+    return [
+      {
+        label: 'Matched rows',
+        value: String(response.rows.length),
+        tone: 'neutral',
+      },
+    ];
   }
-}
 
-function buildWidgetDescription(draft: Pick<DashboardWidgetDraft, 'query' | 'widgetType'>) {
-  const primaryMeasure = draft.query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
-  const primaryDimension = draft.query.dimensions[0];
-  const timeRangeLabel = buildDashboardTimeRangeLabel(draft.query.timeRange).toLowerCase();
-  const filterSuffix = buildFilterSuffix(draft.query.filters);
-
-  switch (draft.widgetType) {
-    case 'metric':
-      return draft.query.measures.length > 1
-        ? `Top-line snapshot of ${formatMeasureList(draft.query.measures)} for ${timeRangeLabel}${filterSuffix}.`
-        : `${getMeasureLabel(primaryMeasure)} for ${timeRangeLabel}${filterSuffix}.`;
-    case 'lineChart':
-      return `${getMeasureLabel(primaryMeasure)} over time for ${timeRangeLabel}${filterSuffix}.`;
-    case 'barChart':
-      return `${getMeasureLabel(primaryMeasure)} by ${getDimensionLabel(primaryDimension ?? BusinessAnalyticsDimension.ServiceType).toLowerCase()} for ${timeRangeLabel}${filterSuffix}.`;
-    case 'donutChart':
-    default:
-      return `${getMeasureLabel(primaryMeasure)} share by ${getDimensionLabel(primaryDimension ?? BusinessAnalyticsDimension.Department).toLowerCase()} for ${timeRangeLabel}${filterSuffix}.`;
-  }
-}
-
-function buildMetricItems(query: DashboardAnalyticsQuery, rowValues: string[] | undefined) {
-  return query.measures.slice(0, 4).map((measure, index) => ({
-    label: getMeasureLabel(measure),
-    value: formatMetricValue(measure, rowValues?.[query.dimensions.length + index] ?? null),
-    tone: getMeasureTone(measure),
+  return numericColumns.map(column => ({
+    label: column.label,
+    value: formatCellValue(firstRow[column.id], column.kind),
+    tone: inferMetricTone(column.label),
   }));
 }
 
-function buildMetricFooter(query: DashboardAnalyticsQuery, hasData: boolean) {
-  if (!hasData) {
-    return 'No matching data was returned for the selected widget query.';
-  }
-
-  const primaryMeasure = query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
-
-  return query.measures.length > 1
-    ? `Top-line snapshot of ${formatMeasureList(query.measures)} for ${buildDashboardTimeRangeLabel(query.timeRange).toLowerCase()}${buildFilterSuffix(query.filters)}.`
-    : `${getMeasureLabel(primaryMeasure)} for ${buildDashboardTimeRangeLabel(query.timeRange).toLowerCase()}${buildFilterSuffix(query.filters)}.`;
+function buildTableColumns(response: InsightQueryResponse) {
+  return response.columns.length > 0
+    ? response.columns
+    : [
+        {
+          id: 'summary',
+          label: 'Summary',
+          kind: 'text',
+        } satisfies InsightTableColumn,
+      ];
 }
 
-function buildChartFooter(query: DashboardAnalyticsQuery, groupingText: string | null) {
-  const primaryMeasure = query.measures[0] ?? BusinessAnalyticsMeasure.OrderCount;
-  const rangeText = buildDashboardTimeRangeLabel(query.timeRange).toLowerCase();
+function inferMetricTone(label: string): DashboardTone {
+  const normalizedLabel = label.toLowerCase();
 
-  return `${getMeasureLabel(primaryMeasure)} ${groupingText ?? 'across matching records'} for ${rangeText}${buildFilterSuffix(query.filters)}.`;
-}
-
-function buildFilterSuffix(filters: DashboardAnalyticsFilter[]) {
-  if (filters.length === 0) {
-    return '';
+  if (normalizedLabel.includes('risk') || normalizedLabel.includes('drop')) {
+    return 'caution';
   }
 
-  if (filters.length === 1) {
-    const filter = filters[0];
-    const fieldLabel = getFilterFieldLabel(filter.field).toLowerCase();
-    const operatorLabel = filter.operator === 'EQUALS' ? '' : 'not ';
-
-    if (filter.field === 'ORDER_STATUS') {
-      return ` for ${operatorLabel}${humanizeLabel(filter.value).toLowerCase()} orders`;
-    }
-
-    return ` filtered to ${fieldLabel} ${operatorLabel}${humanizeLabel(filter.value).toLowerCase()}`;
+  if (normalizedLabel.includes('average') || normalizedLabel.includes('rate') || normalizedLabel.includes('conversion')) {
+    return 'neutral';
   }
 
-  return ' with filters applied';
-}
-
-function getMeasureTone(measure: BusinessAnalyticsMeasure): DashboardTone {
-  switch (measure) {
-    case BusinessAnalyticsMeasure.TotalSpend:
-    case BusinessAnalyticsMeasure.TotalSavings:
-    case BusinessAnalyticsMeasure.AvgOrderValue:
-      return 'brand';
-    case BusinessAnalyticsMeasure.AvgItemsPerOrder:
-      return 'neutral';
-    case BusinessAnalyticsMeasure.OrdersCompleted:
-    case BusinessAnalyticsMeasure.OrdersPlaced:
-    case BusinessAnalyticsMeasure.OrderCount:
-    default:
-      return 'positive';
+  if (normalizedLabel.includes('gtv') || normalizedLabel.includes('revenue') || normalizedLabel.includes('spend')) {
+    return 'brand';
   }
+
+  return 'positive';
 }
 
-function formatMetricValue(measure: BusinessAnalyticsMeasure, rawValue: string | null) {
-  if (rawValue == null) {
+export function formatCellValue(value: InsightTableRowValue | undefined, kind: InsightTableColumn['kind']) {
+  if (value === null || value === undefined) {
     return 'No data';
   }
 
-  const numericValue = Number(rawValue);
-
-  if (Number.isNaN(numericValue)) {
-    return rawValue;
+  if (kind === 'date') {
+    return String(value);
   }
 
-  switch (measure) {
-    case BusinessAnalyticsMeasure.TotalSpend:
-    case BusinessAnalyticsMeasure.TotalSavings:
-    case BusinessAnalyticsMeasure.AvgOrderValue:
-      return currencyFormatter.format(numericValue / 100);
-    case BusinessAnalyticsMeasure.AvgItemsPerOrder:
-      return decimalFormatter.format(numericValue);
-    case BusinessAnalyticsMeasure.OrdersCompleted:
-    case BusinessAnalyticsMeasure.OrdersPlaced:
-    case BusinessAnalyticsMeasure.OrderCount:
-    default:
-      return integerFormatter.format(Math.round(numericValue));
+  if (kind === 'number' && typeof value === 'number') {
+    return formatNumber(value);
   }
+
+  return String(value);
 }
 
-function formatChartValue(measure: BusinessAnalyticsMeasure, rawValue: string | undefined) {
-  if (!rawValue) {
-    return 0;
-  }
-
-  const numericValue = Number(rawValue);
-
-  if (Number.isNaN(numericValue)) {
-    return 0;
-  }
-
-  switch (measure) {
-    case BusinessAnalyticsMeasure.TotalSpend:
-    case BusinessAnalyticsMeasure.TotalSavings:
-    case BusinessAnalyticsMeasure.AvgOrderValue:
-      return Math.max(Math.round(numericValue / 100), 0);
-    case BusinessAnalyticsMeasure.AvgItemsPerOrder:
-      return Math.max(Number(numericValue.toFixed(1)), 0);
-    case BusinessAnalyticsMeasure.OrdersCompleted:
-    case BusinessAnalyticsMeasure.OrdersPlaced:
-    case BusinessAnalyticsMeasure.OrderCount:
-    default:
-      return Math.max(numericValue, 0);
-  }
-}
-
-function formatDimensionValue(dimension: BusinessAnalyticsDimension | undefined, rawValue: string) {
-  if (!rawValue) {
-    return 'Unknown';
-  }
-
-  if (dimension === BusinessAnalyticsDimension.Date) {
-    const parsedDate = new Date(rawValue);
-
-    if (!Number.isNaN(parsedDate.getTime())) {
-      return parsedDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      });
-    }
-  }
-
-  return humanizeLabel(rawValue);
-}
-
-function humanizeLabel(value: string) {
-  return value
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, character => character.toUpperCase());
-}
-
-function getMeasureLabel(measure: BusinessAnalyticsMeasure) {
-  switch (measure) {
-    case BusinessAnalyticsMeasure.OrdersPlaced:
-      return 'Orders placed';
-    case BusinessAnalyticsMeasure.OrdersCompleted:
-      return 'Orders completed';
-    case BusinessAnalyticsMeasure.TotalSpend:
-      return 'Total spend';
-    case BusinessAnalyticsMeasure.TotalSavings:
-      return 'Total savings';
-    case BusinessAnalyticsMeasure.AvgOrderValue:
-      return 'Average order value';
-    case BusinessAnalyticsMeasure.AvgItemsPerOrder:
-      return 'Average items per order';
-    case BusinessAnalyticsMeasure.OrderCount:
-    default:
-      return 'Order count';
-  }
-}
-
-function formatMeasureList(measures: BusinessAnalyticsMeasure[]) {
-  const labels = measures.slice(0, 4).map(measure => getMeasureLabel(measure).toLowerCase());
-
-  if (labels.length <= 1) {
-    return labels[0] ?? 'top-line metrics';
-  }
-
-  if (labels.length === 2) {
-    return `${labels[0]} and ${labels[1]}`;
-  }
-
-  return `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`;
-}
-
-function getDimensionLabel(dimension: BusinessAnalyticsDimension) {
-  switch (dimension) {
-    case BusinessAnalyticsDimension.Date:
-      return 'Date';
-    case BusinessAnalyticsDimension.ServiceType:
-      return 'Service type';
-    case BusinessAnalyticsDimension.OrderStatus:
-      return 'Order status';
-    case BusinessAnalyticsDimension.Retailer:
-      return 'Retailer';
-    case BusinessAnalyticsDimension.Member:
-      return 'Member';
-    case BusinessAnalyticsDimension.Department:
-      return 'Department';
-    case BusinessAnalyticsDimension.ProductCategory:
-    default:
-      return 'Product category';
-  }
-}
-
-function getFilterFieldLabel(field: DashboardAnalyticsFilter['field']) {
-  switch (field) {
-    case 'SERVICE_TYPE':
-      return 'Service type';
-    case 'ORDER_STATUS':
-      return 'Order status';
-    case 'RETAILER':
-      return 'Retailer';
-    case 'DEPARTMENT':
-      return 'Department';
-    case 'PRODUCT_CATEGORY':
-    default:
-      return 'Product category';
-  }
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: Math.abs(value) >= 100 ? 0 : 2,
+  }).format(value);
 }

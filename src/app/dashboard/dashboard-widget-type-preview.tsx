@@ -57,24 +57,20 @@ export function DashboardWidgetTypePreview({ widgetType }: DashboardWidgetTypePr
           ))}
         </div>
       );
-    case 'donutChart':
+    case 'table':
       return (
-        <div css={styles.previewDonutWrap}>
-          <div css={{ ...styles.previewDonut, backgroundColor: theme.colors.systemGrayscale00 }} />
-          <div css={styles.previewLegend}>
-            <div css={styles.previewLegendRow}>
-              <div css={{ ...styles.previewLegendDot, backgroundColor: businessPalette.elderberry }} />
-              <div css={{ ...styles.previewLegendBar, maxWidth: '68%' }} />
+        <div css={styles.previewInsightList}>
+          {[92, 76, 88, 70].map((width, index) => (
+            <div key={width} css={styles.previewInsightRow}>
+              <div
+                css={{
+                  ...styles.previewInsightDot,
+                  backgroundColor: index === 0 ? businessPalette.elderberry : businessPalette.blueberry,
+                }}
+              />
+              <div css={{ ...styles.previewInsightLine, width: `${width}%` }} />
             </div>
-            <div css={styles.previewLegendRow}>
-              <div css={{ ...styles.previewLegendDot, backgroundColor: businessPalette.blueberry }} />
-              <div css={{ ...styles.previewLegendBar, maxWidth: '82%' }} />
-            </div>
-            <div css={styles.previewLegendRow}>
-              <div css={{ ...styles.previewLegendDot, backgroundColor: 'rgba(43, 120, 198, 0.32)' }} />
-              <div css={{ ...styles.previewLegendBar, maxWidth: '52%' }} />
-            </div>
-          </div>
+          ))}
         </div>
       );
     default:

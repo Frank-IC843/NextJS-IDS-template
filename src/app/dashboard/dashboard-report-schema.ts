@@ -9,7 +9,7 @@ export function buildDashboardReportWidgetContext(widget: DashboardWidget) {
         title: widget.title,
         description: widget.description,
         widgetType: widget.widgetType,
-        timeRangeLabel: widget.timeRangeLabel,
+        timeRangeLabel: widget.timeRangeLabel ?? 'Current selection',
         summary: {
           metrics: widget.data.metrics.map(metric => ({
             label: metric.label,
@@ -24,7 +24,7 @@ export function buildDashboardReportWidgetContext(widget: DashboardWidget) {
         title: widget.title,
         description: widget.description,
         widgetType: widget.widgetType,
-        timeRangeLabel: widget.timeRangeLabel,
+        timeRangeLabel: widget.timeRangeLabel ?? 'Current selection',
         summary: {
           points: widget.data.points,
           footer: widget.data.footer,
@@ -36,22 +36,23 @@ export function buildDashboardReportWidgetContext(widget: DashboardWidget) {
         title: widget.title,
         description: widget.description,
         widgetType: widget.widgetType,
-        timeRangeLabel: widget.timeRangeLabel,
+        timeRangeLabel: widget.timeRangeLabel ?? 'Current selection',
         summary: {
           bars: widget.data.bars,
           footer: widget.data.footer,
         },
       });
-    case 'donutChart':
+    case 'table':
     default:
       return dashboardReportWidgetContextSchema.parse({
         id: widget.id,
         title: widget.title,
         description: widget.description,
         widgetType: widget.widgetType,
-        timeRangeLabel: widget.timeRangeLabel,
+        timeRangeLabel: widget.timeRangeLabel ?? 'Current selection',
         summary: {
-          segments: widget.data.segments,
+          columns: widget.data.columns,
+          rows: widget.data.rows,
           footer: widget.data.footer,
         },
       });

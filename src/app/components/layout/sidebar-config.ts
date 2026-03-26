@@ -22,7 +22,9 @@ export type SidebarMenuConfigItem = {
 };
 
 export const menuItemRoutes: Record<string, string> = {
+  Assistant: '/assistant',
   Dashboard: '/dashboard',
+  Insights: '/insights',
   'Order history': '/order-history',
   'Account settings': '/account-settings',
   'Instacart+': '/instacart-plus',
@@ -77,8 +79,18 @@ export const personalMenuItems: SidebarMenuConfigItem[] = [
 
 export const businessMenuItems: SidebarMenuConfigItem[] = [
   {
+    Icon: DealsCategoryFilledIcon,
+    label: 'Assistant',
+    isNew: true,
+  },
+  {
     Icon: DashboardIcon,
     label: 'Dashboard',
+  },
+  {
+    Icon: DashboardIcon,
+    label: 'Insights',
+    isNew: true,
   },
   {
     Icon: TeamIcon,

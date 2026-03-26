@@ -7,6 +7,7 @@ import { getStarterDashboardWidgets } from '@/app/dashboard/dashboard-builder-mo
 import type { DashboardWidget } from '@/app/dashboard/dashboard-builder-types';
 import { useDashboardContentStyles } from '@/app/dashboard/dashboard-content-styles';
 import { DashboardHeroCarousel } from '@/app/dashboard/dashboard-hero-carousel';
+import { DashboardWidgetTypePreview } from '@/app/dashboard/dashboard-widget-type-preview';
 import { DashboardWidgetRenderer } from '@/app/dashboard/dashboard-widget-renderer';
 
 const exampleLayoutWidgets = getStarterDashboardWidgets();
@@ -40,6 +41,7 @@ export function DashboardEmptyLaunchpad({ onOpenBuilder }: DashboardEmptyLaunchp
 
 function DashboardExampleWidgetShell({ widget }: { widget: DashboardWidget }) {
   const styles = useDashboardContentStyles();
+  const isChartPreview = widget.widgetType === 'lineChart' || widget.widgetType === 'barChart';
 
   return (
     <article
@@ -69,7 +71,7 @@ function DashboardExampleWidgetShell({ widget }: { widget: DashboardWidget }) {
       </div>
 
       <div css={styles.exampleWidgetBody}>
-        <DashboardWidgetRenderer widget={widget} />
+        {isChartPreview ? <DashboardWidgetTypePreview widgetType={widget.widgetType} /> : <DashboardWidgetRenderer widget={widget} />}
       </div>
     </article>
   );

@@ -828,7 +828,7 @@ function renderVisualForWidget(widget: DashboardReportWidgetContext) {
           <div class="chart-footer">${escapeHtml(widget.summary.footer)}</div>
         </div>
       `;
-    case 'donutChart':
+    case 'table':
     default:
       return `
         <div class="visual-card">
@@ -837,9 +837,7 @@ function renderVisualForWidget(widget: DashboardReportWidgetContext) {
             <div class="visual-time-range">${escapeHtml(widget.timeRangeLabel)}</div>
           </div>
           ${widget.description ? `<div class="visual-description">${escapeHtml(widget.description)}</div>` : ''}
-          <div class="chart-shell">
-            ${renderDonutChart(widget.summary.segments)}
-          </div>
+          ${renderTableVisual(widget.summary.columns, widget.summary.rows)}
           <div class="chart-footer">${escapeHtml(widget.summary.footer)}</div>
         </div>
       `;
@@ -885,6 +883,70 @@ function renderMetricVisual(widget: Extract<DashboardReportWidgetContext, { widg
       <div class="chart-footer">${escapeHtml(widget.summary.footer)}</div>
     </div>
   `;
+}
+
+function renderTableVisual(
+  columns: Array<{ id: string; label: string }>,
+  rows: Array<Record<string, string | number | null>>,
+) {
+  if (columns.length === 0) {
+    return '<div class="empty-state">No table columns were available for this widget.</div>';
+  }
+
+  const headerHtml = columns
+    .map(
+      column => `
+        <th style="padding: 10px 12px; text-align: left; font-size: 11px; color: ${PDF_COLORS.softText}; border-bottom: 1px solid ${PDF_COLORS.line};">
+          ${escapeHtml(column.label)}
+        </th>
+      `,
+    )
+    .join('');
+  const rowHtml = rows
+    .slice(0, 6)
+    .map(
+      row => `
+        <tr>
+          ${columns
+            .map(
+              column => `
+                <td style="padding: 10px 12px; font-size: 12px; color: ${PDF_COLORS.text}; border-bottom: 1px solid ${PDF_COLORS.line};">
+                  ${escapeHtml(formatTableCell(row[column.id]))}
+                </td>
+              `,
+            )
+            .join('')}
+        </tr>
+      `,
+    )
+    .join('');
+
+  return `
+    <div style="border: 1px solid ${PDF_COLORS.line}; border-radius: 14px; overflow: hidden; background: ${PDF_COLORS.white};">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>${headerHtml}</tr>
+        </thead>
+        <tbody>
+          ${rowHtml || `<tr><td colspan="${columns.length}" style="padding: 14px 12px; color: ${PDF_COLORS.softText};">No rows returned.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function formatTableCell(value: string | number | null | undefined) {
+  if (value === null || value === undefined) {
+    return 'No data';
+  }
+
+  if (typeof value === 'number') {
+    return new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: Math.abs(value) >= 100 ? 0 : 2,
+    }).format(value);
+  }
+
+  return value;
 }
 
 function renderLineChartSvg(points: Array<{ label: string; value: number }>) {
@@ -993,94 +1055,12 @@ function renderBarChartSvg(bars: Array<{ label: string; value: number }>) {
   `;
 }
 
-function renderDonutChart(segments: Array<{ label: string; value: number; tone: string }>) {
-  if (segments.length === 0) {
-    return renderEmptyChartState();
-  }
-
-  const total = Math.max(
-    segments.reduce((sum, segment) => sum + segment.value, 0),
-    1,
-  );
-  const radius = 44;
-  const circumference = 2 * Math.PI * radius;
-  let offset = 0;
-  const circlesHtml = segments
-    .map(segment => {
-      const length = (segment.value / total) * circumference;
-      const circle = `
-        <circle
-          cx="66"
-          cy="66"
-          r="${radius}"
-          fill="none"
-          stroke="${getSegmentColor(segment.tone)}"
-          stroke-width="18"
-          stroke-dasharray="${length} ${circumference - length}"
-          stroke-dashoffset="${-offset}"
-          stroke-linecap="butt"
-          transform="rotate(-90 66 66)"
-        />
-      `;
-
-      offset += length;
-      return circle;
-    })
-    .join('');
-  const legendHtml = segments
-    .map(segment => {
-      const percent = Math.round((segment.value / total) * 100);
-
-      return `
-        <div class="donut-legend-item">
-          <div class="donut-legend-label">
-            <span class="donut-legend-dot" style="background: ${getSegmentColor(segment.tone)};"></span>
-            <span>${escapeHtml(truncateLabel(segment.label, 18))}</span>
-          </div>
-          <span>${percent}%</span>
-        </div>
-      `;
-    })
-    .join('');
-
-  return `
-    <div class="donut-layout">
-      <svg viewBox="0 0 132 132" width="132" height="132" role="img" aria-label="Donut chart">
-        <circle cx="66" cy="66" r="${radius}" fill="none" stroke="${PDF_COLORS.line}" stroke-width="18" />
-        ${circlesHtml}
-        <circle cx="66" cy="66" r="28" fill="${PDF_COLORS.white}" />
-        <text x="66" y="62" text-anchor="middle" font-size="10" fill="${PDF_COLORS.softText}">Total</text>
-        <text x="66" y="78" text-anchor="middle" font-size="14" font-weight="800" fill="${PDF_COLORS.text}">${escapeHtml(
-          formatCompactNumber(total),
-        )}</text>
-      </svg>
-      <div class="donut-legend">
-        ${legendHtml}
-      </div>
-    </div>
-  `;
-}
-
 function renderEmptyChartState() {
   return `
     <div style="display:flex;align-items:center;justify-content:center;height:200px;color:${PDF_COLORS.softText};">
       No analytics data available for this visual.
     </div>
   `;
-}
-
-function getSegmentColor(tone: string) {
-  switch (tone) {
-    case 'positive':
-      return PDF_COLORS.positive;
-    case 'caution':
-      return PDF_COLORS.caution;
-    case 'neutral':
-      return PDF_COLORS.neutral;
-    case 'brand':
-    default:
-      return PDF_COLORS.brand;
-  }
 }
 
 function formatGeneratedAt(date: Date) {

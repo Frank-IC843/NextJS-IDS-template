@@ -1,15 +1,16 @@
+import { z } from 'zod';
 import {
   chartPointSchema,
-  donutChartSegmentSchema,
   MAX_METRICS_PER_WIDGET,
+  MAX_TABLE_ROWS_PER_WIDGET,
   MAX_WIDGETS_PER_DASHBOARD,
 } from '@/app/dashboard/dashboard-builder-types';
-import { z } from 'zod';
+import { insightTableColumnSchema, insightTableRowSchema } from '@/app/insights/insights-types';
 
 const dashboardReportWidgetBaseSchema = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(1).max(80),
-  description: z.string().trim().min(1).max(200).optional(),
+  description: z.string().trim().min(1).max(220).optional(),
   timeRangeLabel: z.string().trim().min(1).max(40),
 });
 
@@ -22,31 +23,32 @@ const dashboardReportMetricWidgetContextSchema = dashboardReportWidgetBaseSchema
   widgetType: z.literal('metric'),
   summary: z.object({
     metrics: z.array(dashboardReportMetricItemSchema).min(1).max(MAX_METRICS_PER_WIDGET),
-    footer: z.string().trim().min(1).max(200),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
 
 const dashboardReportLineChartWidgetContextSchema = dashboardReportWidgetBaseSchema.extend({
   widgetType: z.literal('lineChart'),
   summary: z.object({
-    points: z.array(chartPointSchema).max(12),
-    footer: z.string().trim().min(1).max(200),
+    points: z.array(chartPointSchema).max(24),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
 
 const dashboardReportBarChartWidgetContextSchema = dashboardReportWidgetBaseSchema.extend({
   widgetType: z.literal('barChart'),
   summary: z.object({
-    bars: z.array(chartPointSchema).max(12),
-    footer: z.string().trim().min(1).max(200),
+    bars: z.array(chartPointSchema).max(24),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
 
-const dashboardReportDonutChartWidgetContextSchema = dashboardReportWidgetBaseSchema.extend({
-  widgetType: z.literal('donutChart'),
+const dashboardReportTableWidgetContextSchema = dashboardReportWidgetBaseSchema.extend({
+  widgetType: z.literal('table'),
   summary: z.object({
-    segments: z.array(donutChartSegmentSchema).max(12),
-    footer: z.string().trim().min(1).max(200),
+    columns: z.array(insightTableColumnSchema).min(1).max(8),
+    rows: z.array(insightTableRowSchema).max(MAX_TABLE_ROWS_PER_WIDGET),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
 
@@ -54,7 +56,7 @@ export const dashboardReportWidgetContextSchema = z.discriminatedUnion('widgetTy
   dashboardReportMetricWidgetContextSchema,
   dashboardReportLineChartWidgetContextSchema,
   dashboardReportBarChartWidgetContextSchema,
-  dashboardReportDonutChartWidgetContextSchema,
+  dashboardReportTableWidgetContextSchema,
 ]);
 export type DashboardReportWidgetContext = z.infer<typeof dashboardReportWidgetContextSchema>;
 

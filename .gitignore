@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.dashboard-saves/
 
 # debug
 npm-debug.log*

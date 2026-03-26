@@ -1,16 +1,17 @@
-import {
-  BusinessAnalyticsDimension,
-  BusinessAnalyticsFilterField,
-  BusinessAnalyticsFilterOperator,
-  BusinessAnalyticsMeasure,
-  BusinessAnalyticsTimeRange,
-} from '@/__generated__/graphql-types';
 import { z } from 'zod';
+import {
+  insightAnswerShapeSchema,
+  insightCoverageStatusSchema,
+  insightRelativeRangeSchema,
+  insightTableColumnSchema,
+  insightTableRowSchema,
+  insightTimeBucketSchema,
+} from '@/app/insights/insights-types';
 
 export const dashboardToneSchema = z.enum(['positive', 'brand', 'neutral', 'caution']);
 export type DashboardTone = z.infer<typeof dashboardToneSchema>;
 
-export const supportedWidgetTypeSchema = z.enum(['metric', 'lineChart', 'barChart', 'donutChart']);
+export const supportedWidgetTypeSchema = z.enum(['metric', 'lineChart', 'barChart', 'table']);
 export type SupportedWidgetType = z.infer<typeof supportedWidgetTypeSchema>;
 
 export const dashboardLayoutSchema = z.enum(['half', 'full']);
@@ -19,83 +20,8 @@ export type DashboardLayout = z.infer<typeof dashboardLayoutSchema>;
 export const MAX_WIDGETS_PER_GENERATION = 4;
 export const MAX_WIDGETS_PER_DASHBOARD = 12;
 export const MAX_METRICS_PER_WIDGET = 4;
-
-export const businessAnalyticsMeasureSchema = z.nativeEnum(BusinessAnalyticsMeasure);
-export type DashboardAnalyticsMeasure = z.infer<typeof businessAnalyticsMeasureSchema>;
-
-export const businessAnalyticsDimensionSchema = z.nativeEnum(BusinessAnalyticsDimension);
-export type DashboardAnalyticsDimension = z.infer<typeof businessAnalyticsDimensionSchema>;
-
-export const businessAnalyticsFilterFieldSchema = z.nativeEnum(BusinessAnalyticsFilterField);
-export type DashboardAnalyticsFilterField = z.infer<typeof businessAnalyticsFilterFieldSchema>;
-
-export const businessAnalyticsFilterOperatorSchema = z.nativeEnum(BusinessAnalyticsFilterOperator);
-export type DashboardAnalyticsFilterOperator = z.infer<typeof businessAnalyticsFilterOperatorSchema>;
-
-export const businessAnalyticsTimeRangeSchema = z.nativeEnum(BusinessAnalyticsTimeRange);
-export type DashboardAnalyticsTimeRange = z.infer<typeof businessAnalyticsTimeRangeSchema>;
-
-export const dashboardAnalyticsFilterSchema = z.object({
-  field: businessAnalyticsFilterFieldSchema,
-  operator: businessAnalyticsFilterOperatorSchema,
-  value: z.string().trim().min(1),
-});
-export type DashboardAnalyticsFilter = z.infer<typeof dashboardAnalyticsFilterSchema>;
-
-export const dashboardAnalyticsQuerySchema = z.object({
-  measures: z.array(businessAnalyticsMeasureSchema).min(1),
-  dimensions: z.array(businessAnalyticsDimensionSchema).default([]),
-  filters: z.array(dashboardAnalyticsFilterSchema).default([]),
-  timeRange: businessAnalyticsTimeRangeSchema,
-});
-export type DashboardAnalyticsQuery = z.infer<typeof dashboardAnalyticsQuerySchema>;
-
-export const persistedDashboardAnalyticsQuerySchema = z.union([
-  z.object({
-    measures: z.array(businessAnalyticsMeasureSchema).min(1),
-    dimensions: z.array(businessAnalyticsDimensionSchema).default([]),
-    filters: z.array(dashboardAnalyticsFilterSchema).default([]),
-    time_range: businessAnalyticsTimeRangeSchema,
-  }),
-  z.object({
-    measures: z.array(businessAnalyticsMeasureSchema).min(1),
-    dimensions: z.array(businessAnalyticsDimensionSchema).default([]),
-    filters: z.array(dashboardAnalyticsFilterSchema).default([]),
-    timeRange: businessAnalyticsTimeRangeSchema,
-  }),
-]);
-export type PersistedDashboardAnalyticsQuery = z.infer<typeof persistedDashboardAnalyticsQuerySchema>;
-
-export const persistedDashboardChartTypeSchema = z.enum(['NUMBER', 'BAR_CHART', 'LINE_CHART', 'PIE_CHART', 'TABLE']);
-export type PersistedDashboardChartType = z.infer<typeof persistedDashboardChartTypeSchema>;
-
-const persistedDashboardIntegerSchema = z.coerce.number().int();
-
-export const persistedDashboardPositionSchema = z.object({
-  x: persistedDashboardIntegerSchema.nonnegative(),
-  y: persistedDashboardIntegerSchema.nonnegative(),
-  w: persistedDashboardIntegerSchema.positive(),
-  h: persistedDashboardIntegerSchema.positive(),
-});
-export type PersistedDashboardPosition = z.infer<typeof persistedDashboardPositionSchema>;
-
-export const persistedDashboardWidgetSchema = z.object({
-  id: z.string().trim().min(1),
-  title: z.string().trim().min(1),
-  prompt: z.string().trim().min(1).nullable().optional(),
-  position: persistedDashboardPositionSchema,
-  chart_type: persistedDashboardChartTypeSchema,
-  query: persistedDashboardAnalyticsQuerySchema,
-});
-export type PersistedDashboardWidget = z.infer<typeof persistedDashboardWidgetSchema>;
-
-export const persistedDashboardLayoutSchema = z.object({
-  version: persistedDashboardIntegerSchema.refine(version => version === 1, {
-    message: 'Unsupported dashboard layout version.',
-  }),
-  widgets: z.array(persistedDashboardWidgetSchema).default([]),
-});
-export type PersistedDashboardLayout = z.infer<typeof persistedDashboardLayoutSchema>;
+export const MAX_TABLE_ROWS_PER_WIDGET = 10;
+export const MAX_SAVED_DASHBOARD_HISTORY = 30;
 
 export const dashboardGenerateInputSchema = z.object({
   prompt: z.string().trim().min(1).max(400),
@@ -105,86 +31,143 @@ export type DashboardGenerateInput = z.infer<typeof dashboardGenerateInputSchema
 
 export const dashboardWidgetDraftSchema = z.object({
   id: z.string().trim().min(1),
-  title: z.string().trim().min(1),
-  description: z.string().trim().min(1).optional(),
-  prompt: z.string().trim().min(1).optional(),
+  title: z.string().trim().min(1).max(80),
+  description: z.string().trim().min(1).max(220).optional(),
+  question: z.string().trim().min(1).max(400),
+  questionId: z.string().trim().min(1).optional(),
+  preferredView: insightAnswerShapeSchema.optional(),
+  relativeRange: insightRelativeRangeSchema.optional(),
+  timeBucket: insightTimeBucketSchema.optional(),
   layout: dashboardLayoutSchema,
   widgetType: supportedWidgetTypeSchema,
-  query: dashboardAnalyticsQuerySchema,
+  timeRangeLabel: z.string().trim().min(1).max(40).optional(),
 });
 export type DashboardWidgetDraft = z.infer<typeof dashboardWidgetDraftSchema>;
 
-const dashboardWidgetBaseSchema = dashboardWidgetDraftSchema.extend({
-  timeRangeLabel: z.string().min(1).optional(),
+const dashboardReadyWidgetBaseSchema = dashboardWidgetDraftSchema.extend({
+  renderState: z.literal('ready'),
+  coverageStatus: z.literal('ready'),
+  coverageMessage: z.string().trim().min(1),
+  summary: z.string().trim().min(1),
+  matchedQuestionTitle: z.string().trim().min(1).optional(),
 });
 
-export const metricWidgetSchema = dashboardWidgetBaseSchema.extend({
+export const dashboardMetricItemSchema = z.object({
+  label: z.string().trim().min(1).max(48),
+  value: z.string().trim().min(1).max(80),
+  tone: dashboardToneSchema,
+});
+export type DashboardMetricItem = z.infer<typeof dashboardMetricItemSchema>;
+
+export const metricWidgetSchema = dashboardReadyWidgetBaseSchema.extend({
   widgetType: z.literal('metric'),
   data: z.object({
-    metrics: z
-      .array(
-        z.object({
-          label: z.string().min(1).max(48),
-          value: z.string().min(1).max(80),
-          tone: dashboardToneSchema,
-        }),
-      )
-      .min(1)
-      .max(MAX_METRICS_PER_WIDGET),
-    footer: z.string().min(1),
+    metrics: z.array(dashboardMetricItemSchema).min(1).max(MAX_METRICS_PER_WIDGET),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
 export type MetricWidget = z.infer<typeof metricWidgetSchema>;
 
 export const chartPointSchema = z.object({
-  label: z.string().min(1),
-  value: z.number().nonnegative(),
+  label: z.string().trim().min(1),
+  value: z.number(),
 });
 export type ChartPoint = z.infer<typeof chartPointSchema>;
 
-export const lineChartWidgetSchema = dashboardWidgetBaseSchema.extend({
+export const lineChartWidgetSchema = dashboardReadyWidgetBaseSchema.extend({
   widgetType: z.literal('lineChart'),
   data: z.object({
-    points: z.array(chartPointSchema),
-    footer: z.string().min(1),
+    xLabel: z.string().trim().min(1),
+    yLabel: z.string().trim().min(1),
+    points: z.array(chartPointSchema).max(200),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
 export type LineChartWidget = z.infer<typeof lineChartWidgetSchema>;
 
-export const barChartWidgetSchema = dashboardWidgetBaseSchema.extend({
+export const barChartWidgetSchema = dashboardReadyWidgetBaseSchema.extend({
   widgetType: z.literal('barChart'),
   data: z.object({
-    bars: z.array(chartPointSchema),
-    footer: z.string().min(1),
+    xLabel: z.string().trim().min(1),
+    yLabel: z.string().trim().min(1),
+    bars: z.array(chartPointSchema).max(200),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
 export type BarChartWidget = z.infer<typeof barChartWidgetSchema>;
 
-export const donutChartSegmentSchema = z.object({
-  label: z.string().min(1),
-  value: z.number().nonnegative(),
-  tone: dashboardToneSchema,
-});
-export type DonutChartSegment = z.infer<typeof donutChartSegmentSchema>;
-
-export const donutChartWidgetSchema = dashboardWidgetBaseSchema.extend({
-  widgetType: z.literal('donutChart'),
+export const tableWidgetSchema = dashboardReadyWidgetBaseSchema.extend({
+  widgetType: z.literal('table'),
   data: z.object({
-    segments: z.array(donutChartSegmentSchema),
-    footer: z.string().min(1),
+    columns: z.array(insightTableColumnSchema).min(1).max(8),
+    rows: z.array(insightTableRowSchema).max(MAX_TABLE_ROWS_PER_WIDGET),
+    footer: z.string().trim().min(1).max(240),
   }),
 });
-export type DonutChartWidget = z.infer<typeof donutChartWidgetSchema>;
+export type TableWidget = z.infer<typeof tableWidgetSchema>;
 
 export const dashboardWidgetSchema = z.discriminatedUnion('widgetType', [
   metricWidgetSchema,
   lineChartWidgetSchema,
   barChartWidgetSchema,
-  donutChartWidgetSchema,
+  tableWidgetSchema,
 ]);
 export type DashboardWidget = z.infer<typeof dashboardWidgetSchema>;
+
+export const dashboardCoverageGapWidgetSchema = dashboardWidgetDraftSchema.extend({
+  renderState: z.literal('coverage_gap'),
+  coverageStatus: z.enum(['needs_medusa_config', 'blocked']),
+  coverageMessage: z.string().trim().min(1),
+  summary: z.string().trim().min(1),
+  matchedQuestionTitle: z.string().trim().min(1).optional(),
+  plannerReasoning: z.string().trim().min(1),
+});
+export type DashboardCoverageGapWidget = z.infer<typeof dashboardCoverageGapWidgetSchema>;
+
+export const dashboardCanvasWidgetSchema = z.union([dashboardWidgetSchema, dashboardCoverageGapWidgetSchema]);
+export type DashboardCanvasWidget = z.infer<typeof dashboardCanvasWidgetSchema>;
 
 export const dashboardGenerateResponseSchema = z.object({
   widgets: z.array(dashboardWidgetDraftSchema).min(1).max(MAX_WIDGETS_PER_GENERATION),
 });
 export type DashboardGenerateResponse = z.infer<typeof dashboardGenerateResponseSchema>;
+
+export const dashboardCoverageStatusSchema = insightCoverageStatusSchema;
+export type DashboardCoverageStatus = z.infer<typeof dashboardCoverageStatusSchema>;
+
+export const dashboardSaveInputSchema = z.object({
+  name: z.string().trim().max(80).optional(),
+  widgets: z.array(dashboardWidgetDraftSchema).min(1).max(MAX_WIDGETS_PER_DASHBOARD),
+});
+export type DashboardSaveInput = z.infer<typeof dashboardSaveInputSchema>;
+
+export const savedDashboardSchema = z.object({
+  id: z.string().trim().min(1),
+  name: z.string().trim().min(1).max(80),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  widgets: z.array(dashboardWidgetDraftSchema).min(1).max(MAX_WIDGETS_PER_DASHBOARD),
+});
+export type SavedDashboard = z.infer<typeof savedDashboardSchema>;
+
+export const savedDashboardSummarySchema = savedDashboardSchema.omit({
+  widgets: true,
+}).extend({
+  widgetCount: z.number().int().min(1).max(MAX_WIDGETS_PER_DASHBOARD),
+});
+export type SavedDashboardSummary = z.infer<typeof savedDashboardSummarySchema>;
+
+export const savedDashboardListResponseSchema = z.object({
+  dashboards: z.array(savedDashboardSummarySchema),
+});
+export type SavedDashboardListResponse = z.infer<typeof savedDashboardListResponseSchema>;
+
+export const savedDashboardResponseSchema = z.object({
+  dashboard: savedDashboardSchema,
+});
+export type SavedDashboardResponse = z.infer<typeof savedDashboardResponseSchema>;
+
+export const savedDashboardSummaryResponseSchema = z.object({
+  dashboard: savedDashboardSummarySchema,
+});
+export type SavedDashboardSummaryResponse = z.infer<typeof savedDashboardSummaryResponseSchema>;
